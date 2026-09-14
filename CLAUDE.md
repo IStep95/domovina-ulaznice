@@ -17,6 +17,11 @@ stagingu** — nedostaju Stripe/Resend tajne i objavljen događaj u jezgri.
 - `ulaznice-staging.domovina.ai` — puna aplikacija, Stripe **sandbox**
 - `ulaznice.domovina.ai` — **samo najava** (`NAJAVA=1`, bez D1/KV/ASSETS/crona)
 
+Mobilne aplikacije za **kupce** (iOS SwiftUI + Android Compose) su u `mobile/`
+— pričaju samo s Workerom, QR dolazi kroz `POST /api/ulaznice/:id/preuzmi`
+(rotacija tokena, isti mehanizam kao ponovna dostava). Kako se grade, mock API i
+što fali: `mobile/README.md`, `docs/2026-09-11-mobilne-aplikacije.md`.
+
 Deploy ide s `npm run deploy` (= staging); produkcija je `npm run deploy:prod`.
 Tajne su po okruženju: `wrangler secret put … --env staging`.
 Stanje, zamke i otvorena pitanja: `docs/2026-08-08-deploy-okruzenja-i-stripe.md`.
@@ -49,7 +54,9 @@ Stanje, zamke i otvorena pitanja: `docs/2026-08-08-deploy-okruzenja-i-stripe.md`
 ## Stack
 
 - Worker + Hono + D1 (operativni podaci) + KV (rate limit) + React SPA → Cloudflare
-  - `npm test` (89 testova, node:test, **nikad na mrežu**), `npm run build`, `npm run api`
+  - `npm test` (97 testova, node:test, **nikad na mrežu**), `npm run build`, `npm run api`
+- Mobilno: `mobile/ios` (XcodeGen, `xcodegen generate`), `mobile/android`
+  (`./gradlew :app:assembleDebug`, JDK 17), `node mobile/mock-api.mjs` (port 8797)
 - Ticketing: `domovina-api` edge funkcije `events-*`
 - Računi: `InvoiceProvider` (organizator | fira | domovina_fiskal)
 
