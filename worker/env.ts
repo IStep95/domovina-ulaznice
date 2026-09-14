@@ -35,6 +35,14 @@ export interface Env {
    */
   DOMOVINA_API_ANON_KEY?: string;
 
+  /**
+   * Mobilne aplikacije (`mobile/`): Universal/App Links za `/ulaznice/<id>`.
+   * Prazno = datoteke u `/.well-known/` vraćaju 404 (bolje nego prazna lista
+   * koju OS cachea). Nisu tajne — obje su javne po dizajnu.
+   */
+  APPLE_APP_IDS?: string;
+  ANDROID_CERT_SHA256?: string;
+
   /** Adresa na koju idu alarmi rekoncilijacije i zaostale dostave. */
   ALARM_EMAIL?: string;
   /** Koliko minuta isti alarm šuti nakon slanja (zadano 180). */

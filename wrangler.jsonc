@@ -81,6 +81,11 @@
         // prijava organizatora i skener ulaza ne rade. Tajna je i ostaje samo
         // service ključ (wrangler secret) i HS256 JWT_SECRET (nikad ovdje).
         "DOMOVINA_API_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3OTExMTcxMywiZXhwIjo0OTMyNzExNzEzLCJyb2xlIjoiYW5vbiJ9.Q4Ef7xMc2dmjMyfJebPDyqNirnARZzMxTWe7i0dASPI",
+        // Mobilne aplikacije (mobile/): Universal Links (iOS) i App Links (Android)
+        // za /ulaznice/<id>. Team ID je ITalk (isti kao domovina-browser);
+        // Android otisak dodati kad postoji release potpis (mobile/README.md).
+        "APPLE_APP_IDS": "6SCK58757K.ai.domovina.ulaznice",
+        "ANDROID_CERT_SHA256": "",
         "EMAIL_FROM": "Domovina ulaznice (staging) <ulaznice@domovina.ai>",
         "EMAIL_REPLY_TO": "podrska@domovina.ai",
         // Kamo idu alarmi rekoncilijacije i zaostale dostave. Bez ove adrese

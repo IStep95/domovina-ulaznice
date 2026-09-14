@@ -197,6 +197,7 @@ export const PORUKE: Record<string, string> = {
   order_not_found: "Narudžba nije pronađena.",
   narudzba_nije_placena: "Narudžba još nije plaćena.",
   nema_email_adrese: "Za ovu narudžbu nemamo e-mail adresu.",
+  email_ne_odgovara: "E-mail se ne podudara s narudžbom.",
   previse_pokusaja: "Previše pokušaja — pokušajte za koju minutu.",
   nije_prijavljen: "Prijava je istekla. Prijavite se ponovno.",
   prijava_neuspjela: "Neispravna e-mail adresa ili lozinka.",

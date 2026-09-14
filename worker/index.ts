@@ -119,6 +119,47 @@ function publicEvent(ev: api.FeedEvent, rail: { connected: boolean; charges_enab
 
 // ------------------------------------------------------------------- rute
 
+/**
+ * Universal Links (iOS) i App Links (Android) za mobilne aplikacije (`mobile/`).
+ *
+ * Bez ovih datoteka povratak sa Stripe Checkouta (`success_url` =
+ * `/ulaznice/<id>?placeno=1`) ostaje u pregledniku; s njima ga sustav otvori u
+ * aplikaciji. Obje se poslužuju samo kad je konfiguracija poznata — prazna
+ * lista bi bila laž koju iOS/Android cacheiraju danima.
+ *
+ *   APPLE_APP_IDS        "TEAMID.ai.domovina.ulaznice" (zarezom više)
+ *   ANDROID_CERT_SHA256  "AA:BB:…" otisak potpisnog certifikata (zarezom više)
+ */
+app.get("/.well-known/apple-app-site-association", (c) => {
+  const ids = (c.env.APPLE_APP_IDS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  if (!ids.length) return c.json({ error: "not_configured" }, 404);
+  return c.json(
+    {
+      applinks: {
+        apps: [],
+        details: [{ appIDs: ids, components: [{ "/": "/ulaznice/*", comment: "narudžba → aplikacija" }] }],
+      },
+    },
+    200,
+    { "cache-control": "public, max-age=3600" },
+  );
+});
+
+app.get("/.well-known/assetlinks.json", (c) => {
+  const fps = (c.env.ANDROID_CERT_SHA256 ?? "").split(",").map((s) => s.trim().toUpperCase()).filter(Boolean);
+  if (!fps.length) return c.json({ error: "not_configured" }, 404);
+  return c.json(
+    [
+      {
+        relation: ["delegate_permission/common.handle_all_urls"],
+        target: { namespace: "android_app", package_name: "ai.domovina.ulaznice", sha256_cert_fingerprints: fps },
+      },
+    ],
+    200,
+    { "cache-control": "public, max-age=3600" },
+  );
+});
+
 app.get("/api/zdravlje", (c) => {
   // dev override (STRIPE_API_BASE / RESEND_API_BASE) smije postojati samo
   // lokalno. Ako se provuče u produkciju, pozivi prema Stripeu i Resendu
@@ -313,12 +354,13 @@ app.get("/api/ulaznice/:order_id", async (c) => {
 });
 
 /**
- * Ponovna dostava ulaznica na e-mail.
+ * Izdavanje QR tokena za PLAĆENU narudžbu — zajednička jezgra ponovne dostave
+ * e-mailom i prijenosa u mobilnu aplikaciju.
  *
  * Dva koraka, tim redoslijedom:
  *
  *   1. `events-tickets` — ako prva dostava nikad nije prošla, tokeni još
- *      postoje i dovoljno ih je poslati. Ništa se ne poništava.
+ *      postoje i dovoljno ih je isporučiti. Ništa se ne poništava.
  *   2. rotacija (`rotate_ticket_tokens`) — ako su tokeni potrošeni, izdaju se
  *      NOVI, a stari prestaju vrijediti.
  *
@@ -331,6 +373,28 @@ app.get("/api/ulaznice/:order_id", async (c) => {
  * bi ponovna dostava bila tvornica duplikata iste ulaznice — dva QR-a za isto
  * mjesto, oba važeća do prvog skena.
  */
+type IzdaniTokeni =
+  | { ok: true; tickets: api.ConfirmTicket[]; rotirano: boolean }
+  | { ok: false; razlog: "nema_vazecih_ulaznica" }
+  | { ok: false; razlog: "previse_pokusaja" }
+  | { ok: false; razlog: "rotacija_nije_uspjela"; status: string };
+
+async function izdajTokene(env: Env, orderId: string): Promise<IzdaniTokeni> {
+  const { orders } = await api.deliverTickets(env, [orderId]);
+  const tickets = orders[0]?.tickets ?? [];
+  if (tickets.some((t) => t.qr_token)) return { ok: true, tickets, rotirano: false };
+
+  // Tokeni su potrošeni na prvoj dostavi → izdaj nove, stari prestaju vrijediti.
+  const rot = await api.rotateTicketTokens(env, orderId);
+  if (rot.status === "rate_limited") return { ok: false, razlog: "previse_pokusaja" };
+  if (rot.status === "nothing_to_rotate") return { ok: false, razlog: "nema_vazecih_ulaznica" };
+  if (rot.status !== "rotated" || !rot.tickets?.length) {
+    return { ok: false, razlog: "rotacija_nije_uspjela", status: rot.status };
+  }
+  return { ok: true, tickets: rot.tickets, rotirano: true };
+}
+
+/** Ponovna dostava ulaznica na e-mail kupca (v. `izdajTokene`). */
 app.post("/api/ulaznice/:order_id/ponovna-dostava", async (c) => {
   const orderId = c.req.param("order_id");
   if (!UUID_RE.test(orderId)) return fail("invalid_order_id");
@@ -344,26 +408,16 @@ app.post("/api/ulaznice/:order_id/ponovna-dostava", async (c) => {
   const recipient = status.order.buyer_email;
   if (!recipient) return fail("nema_email_adrese", 409);
 
-  const { orders } = await api.deliverTickets(c.env, [orderId]);
-  let tickets = orders[0]?.tickets ?? [];
-  let rotirano = false;
-
-  if (!tickets.some((t) => t.qr_token)) {
-    // Tokeni su potrošeni na prvoj dostavi → izdaj nove, stari prestaju vrijediti.
-    const rot = await api.rotateTicketTokens(c.env, orderId);
-    if (rot.status === "rate_limited") {
-      return fail("previse_pokusaja", 429, { retry_after: 3600 });
-    }
-    if (rot.status === "nothing_to_rotate") {
+  const izdano = await izdajTokene(c.env, orderId);
+  if (!izdano.ok) {
+    if (izdano.razlog === "previse_pokusaja") return fail("previse_pokusaja", 429, { retry_after: 3600 });
+    if (izdano.razlog === "nema_vazecih_ulaznica") {
       // sve ulaznice su iskorištene ili poništene — nema što isporučiti
       return c.json({ status: "nema_vazecih_ulaznica", recipient: maskEmail(recipient) });
     }
-    if (rot.status !== "rotated" || !rot.tickets?.length) {
-      return fail("rotacija_nije_uspjela", 502, { status: rot.status });
-    }
-    tickets = rot.tickets;
-    rotirano = true;
+    return fail("rotacija_nije_uspjela", 502, { status: izdano.status });
   }
+  const { tickets, rotirano } = izdano;
 
   const { events } = await api.feed(c.env);
   const ev = events.find((e) => e.campaign_id === status.order.campaign_id);
@@ -399,6 +453,79 @@ app.post("/api/ulaznice/:order_id/ponovna-dostava", async (c) => {
     // kupcu se MORA reći da stari QR više ne vrijedi
     stari_qr_ponisten: rotirano,
     error: res.error,
+  });
+});
+
+/**
+ * Prijenos ulaznica u mobilnu aplikaciju (iOS/Android, `mobile/`).
+ *
+ * Jedini put kojim QR token izlazi iz sustava mimo e-maila. Isti mehanizam
+ * kao ponovna dostava (`izdajTokene`): ako tokeni još postoje, isporuče se;
+ * ako su potrošeni, ROTIRAJU se i QR iz starog e-maila prestaje vrijediti.
+ * Aplikacija ih čuva u Keychainu / Android Keystoreu i crta QR lokalno.
+ *
+ * Autorizacija: `order_id` (128-bit random) + e-mail kupca. Sam `order_id`
+ * nije dovoljan: on prolazi kroz Stripeov success_url i povijest preglednika,
+ * a ponovna dostava ga štiti time što šalje SAMO na e-mail kupca. Ovdje tokeni
+ * idu izravno pozivatelju, pa e-mail kupca igra ulogu drugog faktora — tko zna
+ * link i e-mail, znao bi i pročitati izvorni mail.
+ *
+ * ⚠️ REVIEW(fable): e-mail kao drugi faktor je slabiji od potpisanog linka u
+ * mailu (kupčev e-mail je često javan). Jača opcija: jednokratni kod poslan na
+ * e-mail prije izdavanja. Odluka je svjesno na strani jednostavnosti za prvi
+ * prolaz — tvrdi limit rotacija u bazi i `resend` rate limit ostaju.
+ */
+app.post("/api/ulaznice/:order_id/preuzmi", async (c) => {
+  const orderId = c.req.param("order_id");
+  if (!UUID_RE.test(orderId)) return fail("invalid_order_id");
+  const rl = await consume(c.env, "resend", orderId);
+  if (!rl.allowed) return fail("previse_pokusaja", 429, { retry_after: rl.retryAfter });
+
+  let body: { buyer_email?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return fail("bad_json");
+  }
+  const email = (body.buyer_email ?? "").trim().toLowerCase();
+  if (!EMAIL_RE.test(email)) return fail("invalid_buyer_email");
+
+  const status = await api.orderStatus(c.env, orderId);
+  if (!status) return fail("order_not_found", 404);
+  if (status.order.state !== "paid") return fail("narudzba_nije_placena", 409, { state: status.order.state });
+  if ((status.order.buyer_email ?? "").trim().toLowerCase() !== email) return fail("email_ne_odgovara", 403);
+
+  const izdano = await izdajTokene(c.env, orderId);
+  if (!izdano.ok) {
+    if (izdano.razlog === "previse_pokusaja") return fail("previse_pokusaja", 429, { retry_after: 3600 });
+    if (izdano.razlog === "nema_vazecih_ulaznica") return c.json({ status: "nema_vazecih_ulaznica" });
+    return fail("rotacija_nije_uspjela", 502, { status: izdano.status });
+  }
+
+  // Dostava je obavljena (u aplikaciju) — cron više ne treba slati e-mail, a
+  // trag ostaje istraživ: „nisam dobio ulaznice" uz zapis 'preuzimanje_app'.
+  await c.env.DB.prepare("DELETE FROM pending_deliveries WHERE order_id = ?").bind(orderId).run().catch(() => undefined);
+  await c.env.DB.prepare(
+    "INSERT INTO sent_emails (order_id, recipient, template, subject, status, provider_id, error) VALUES (?,?,?,?,?,?,?)",
+  )
+    .bind(orderId, status.order.buyer_email ?? "", "preuzimanje_app", "Ulaznice preuzete u aplikaciju", "sent", null, null)
+    .run()
+    .catch((e) => console.error(`[preuzmi] zapis u sent_emails nije uspio: ${String(e)}`));
+
+  const { events } = await api.feed(c.env);
+  const ev = events.find((e) => e.campaign_id === status.order.campaign_id);
+  return c.json({
+    status: "preuzeto",
+    // kupcu se MORA reći da stari QR (iz e-maila) više ne vrijedi
+    stari_qr_ponisten: izdano.rotirano,
+    qr_prefix: QR_PREFIX,
+    event: ev ? { title: ev.title, slug: ev.slug, ...(ev.event ?? {}) } : null,
+    tickets: izdano.tickets.map((t) => ({
+      serial: t.serial,
+      holder_name: t.holder_name,
+      state: t.state,
+      qr_token: t.qr_token,
+    })),
   });
 });
 
