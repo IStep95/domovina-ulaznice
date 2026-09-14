@@ -131,6 +131,16 @@ export default function Narudzba() {
           <p className="mutno">
             QR kodovi su u e-mailu koji smo poslali i ovdje se namjerno ne prikazuju.
           </p>
+          {/* Mobilna aplikacija (mobile/) prenosi ulaznice u Keychain/Keystore preko
+              /api/ulaznice/:id/preuzmi. Link s vlastitom shemom radi bez AASA/assetlinks;
+              tko nema aplikaciju, klik ne radi ništa — zato je tekst uvjetan. */}
+          {order.state === "paid" && (
+            <p className="mutno">
+              Imate aplikaciju Ulaznice?{" "}
+              <a href={`domovina-ulaznice://narudzba/${orderId}`}>Otvorite narudžbu u aplikaciji</a> i
+              prenesite QR kodove na mobitel.
+            </p>
+          )}
         </>
       )}
 
