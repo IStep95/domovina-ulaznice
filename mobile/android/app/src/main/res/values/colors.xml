@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- isti tokeni kao ui/Theme.kt i web src/styles.css -->
+    <color name="brand_zelena">#2F855A</color>
+    <color name="brand_zelena_tamna">#14331F</color>
+</resources>

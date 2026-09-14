@@ -1,0 +1,74 @@
+# XcodeGen spec — izvor istine za Ulaznice.xcodeproj (kao u ../domovina-browser).
+# Regeneriraj projekt s:  xcodegen generate
+#
+# .xcodeproj se NE commita; commita se ovaj project.yml.
+# Build bez potpisa (CI / provjera):
+#   xcodebuild -project Ulaznice.xcodeproj -scheme Ulaznice \
+#     -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+name: Ulaznice
+
+options:
+  bundleIdPrefix: ai.domovina
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  minimumXcodeGenVersion: "2.0.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    PRODUCT_NAME: Ulaznice
+    TARGETED_DEVICE_FAMILY: "1"
+
+targets:
+  Ulaznice:
+    type: application
+    platform: iOS
+    sources:
+      - path: Ulaznice
+    entitlements:
+      path: Ulaznice/Ulaznice.entitlements
+    info:
+      path: Ulaznice/Info.plist
+      properties:
+        CFBundleName: Ulaznice
+        CFBundleDisplayName: Ulaznice
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        CFBundleDevelopmentRegion: hr
+        # Launch screen: brend zelena + bijela ulaznica (Assets.xcassets)
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+          UIImageName: LaunchLogo
+        # Brend font (OFL) — datoteke su u Ulaznice/Resources/Fonts
+        UIAppFonts:
+          - Manrope-Regular.ttf
+          - Manrope-Medium.ttf
+          - Manrope-SemiBold.ttf
+          - Manrope-Bold.ttf
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        ITSAppUsesNonExemptEncryption: false
+        # Povratak sa Stripe Checkouta i otvaranje narudžbe iz e-maila:
+        #   domovina-ulaznice://narudzba/<order_id>
+        # (universal link https://ulaznice…/ulaznice/<id> traži AASA na Workeru —
+        #  v. mobile/README.md §Povratak iz Checkouta)
+        CFBundleURLTypes:
+          - CFBundleURLName: ai.domovina.ulaznice
+            CFBundleURLSchemes: [domovina-ulaznice]
+        NSAppTransportSecurity:
+          # samo za `npm run api` na localhostu; produkcija je uvijek https
+          NSAllowsLocalNetworking: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: ai.domovina.ulaznice
+        CODE_SIGN_ENTITLEMENTS: Ulaznice/Ulaznice.entitlements
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "6SCK58757K"
+        INFOPLIST_FILE: Ulaznice/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SWIFT_STRICT_CONCURRENCY: minimal
