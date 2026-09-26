@@ -155,34 +155,48 @@ select pinka_finance.create_event(
 );
 
 -- ═══════════════════════════════════════════════════════════════════════════
--- 3. Susret osoba otvorenih za katolički brak Varaždin — 14. 11. 2026.
+-- 3. Susret Varaždin — 14. 11. 2026.
 --
--- Stranica objavljuje SAMO datum i satnicu. Nema mjesta, nema cjenika, nema
--- roka, nema prijavnog linka — i nema fira konfiguracije. Zato:
---   * BEZ tierova → SPA prikazuje „Organizator još nije objavio cjenik."
---   * venue_name je obavezan u create_event, a mjesto nije objavljeno, pa
---     stoji doslovna praznina umjesto izmišljene dvorane. Grad je poznat
---     jer je u samom nazivu događaja.
+-- Izvor: fira-forms-connector/google-apps-script/events/varazdin-2026/Config.gs
+-- (commit 7f068c6, 2026-09-24) — organizatorova vlastita konfiguracija:
+-- Pastoralni centar Varaždin, subota 9:30–19:00, prijave do 6. 11. 2026.,
+-- rana kotizacija 50 € do 15. 10., redovna 55 € nakon toga.
+--   * „Na dan susreta 60 €" je GOTOVINSKA uplata na ulazu → NIJE tier za
+--     online prodaju; spominje se samo u opisu.
+--   * Broj mjesta je „ograničen", ali broj nije objavljen → inventory_total
+--     ostaje NULL umjesto izmišljenog „još N mjesta".
+--   * Adresa Pastoralnog centra nije u konfiguraciji → NULL.
 -- ═══════════════════════════════════════════════════════════════════════════
 select pinka_finance.create_event(
   p_id                  => '00000000-0000-4000-8000-000000000f04',
   p_account_id          => '00000000-0000-4000-8000-0000000000e2',
-  p_title               => 'Susret osoba otvorenih za katolički brak, Varaždin 14. 11. 2026.',
+  p_title               => 'Susret Varaždin 2026',
   p_destination_address => '0x1111111111111111111111111111111111111111',
-  p_venue_name          => 'Mjesto održavanja još nije objavljeno',
+  p_venue_name          => 'Pastoralni centar',
   p_venue_address       => null,
   p_venue_city          => 'Varaždin',
   p_event_type          => 'susret',
-  p_starts_at           => '2026-11-14T09:00:00+01',   -- studeni → CET (+01)
+  p_starts_at           => '2026-11-14T09:30:00+01',   -- studeni → CET (+01)
   p_ends_at             => '2026-11-14T19:00:00+01',
-  p_description_hr      => E'Jednodnevni susret u subotu 14. 11. 2026. od 9:00 do 19:00.\n\n'
-                           'Organizator još nije objavio mjesto održavanja, cjenik ni rok prijave. '
-                           'Za upite: prilikazasusret@gmail.com',
+  p_description_hr      => E'Jednodnevni susret osoba otvorenih za katolički brak, u subotu 14. 11. 2026. od 9:30 do 19:00, '
+                           'uz podršku Obiteljskog centra — ureda za obitelj Varaždinske biskupije.\n\n'
+                           'Prijave do 6. 11. 2026. — broj mjesta je ograničen. Kotizacija za ranu prijavu (do 15. 10.) '
+                           'može se vratiti do 2. 11. 2026. ili uz zamjensku prijavu.\n\n'
+                           'Na sam dan susreta kotizacija je 60 € i plaća se gotovinom na ulazu.',
   p_organizer_name      => 'Katolička udruga Prilika za Susret',
   p_organizer_email     => 'prilikazasusret@gmail.com',
   p_organizer_web       => 'https://www.prilikazasusret.hr',
   p_visibility          => 'public',
-  p_tiers               => '[]'::jsonb    -- cjenik nije objavljen — praznina ostaje vidljiva
+  p_tiers               => '[
+    {"title":"Rana kotizacija",
+     "description":"Prijava do 15. 10. 2026. Povrat moguć do 2. 11. ili uz zamjensku prijavu.",
+     "price_cents":5000,"imenska":true,
+     "sale_end":"2026-10-15T23:59:59+02"},
+    {"title":"Redovna kotizacija",
+     "description":"Prijava od 16. 10. do 6. 11. 2026.",
+     "price_cents":5500,"imenska":true,
+     "sale_start":"2026-10-16T00:00:00+02","sale_end":"2026-11-06T23:59:59+01"}
+  ]'::jsonb
 );
 
 -- ── Objava ─────────────────────────────────────────────────────────────────
@@ -213,7 +227,7 @@ select c.slug, c.title, c.state,
  order by e.starts_at;
 
 -- Očekivano na dan 8.8.2026.: Badija svi tierovi zatvoreni (rok bio 1.8.),
--- Sinj "Rana kotizacija" otvorena, Varaždin bez ijednog reda.
+-- Sinj "Rana kotizacija" otvorena. Varaždin (od 24. 9.): rana otvorena, redovna od 16. 10.
 select c.title,
        t.title as tier,
        t.price_cents,
