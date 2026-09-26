@@ -25,6 +25,8 @@ Mobilne aplikacije za **kupce** (iOS SwiftUI + Android Compose) su u `mobile/`
 Deploy ide s `npm run deploy` (= staging); produkcija je `npm run deploy:prod`.
 Tajne su po okruženju: `wrangler secret put … --env staging`.
 Stanje, zamke i otvorena pitanja: `docs/2026-08-08-deploy-okruzenja-i-stripe.md`.
+Što je u gitu a nije deployano (i kako/kamo): **`docs/deploy-dug.md`** — svaka
+promjena koja traži deploy upisuje se tamo u istom commitu.
 Što još treba do produkcije: `docs/2026-09-03-plan-do-produkcije.md`
 (+ `docs/2026-09-03-implementacija-p0-p1.md` za popis `REVIEW(fable)` mjesta).
 
