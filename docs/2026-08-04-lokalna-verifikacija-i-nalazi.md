@@ -130,3 +130,40 @@ flowchart LR
 Tajna mora postojati **prije** funkcija (inače 503), a backend **prije** Workera
 (inače Worker nema s čim razgovarati). Webhook u Stripeu mora biti **Connect**
 endpoint — inače eventi ne nose `account: acct_…` i povrat se ne može izvesti.
+
+## 9. Lokalni demo stack jednom naredbom (dopuna 2026-09-28)
+
+`scripts/lokalno/pokreni.sh` diže cijelu kupnju bez interneta i bez pravih
+ključeva, na isti način kao gore, ali ponovljivo. Tako su 26. 9. demonstrirane
+kupnje za Priliku za Susret.
+
+| Port | Proces | Datoteka |
+| --- | --- | --- |
+| 55390 | edge funkcije `events-*` iz `../domovina-api`, vožene Denom | `scripts/lokalno/fn-shim.ts` |
+| 8901 | lažni Stripe: checkout stranica i webhook potpisan pravim `whsec_` iz `.dev.vars`; Resend inbox na `/inbox` s QR-om iz `cid:` privitka | `scripts/lokalno/fake-stripe.mjs` |
+| 8788 | Worker `--env staging` + SPA iz `dist/` | `pokreni.sh` |
+
+Preduvjet: lokalni Supabase u `../domovina-api` radi (v. §4), a `.dev.vars`
+ima `STRIPE_API_BASE` i `RESEND_API_BASE` na `http://127.0.0.1:8901`. Ključeve
+Supabasea skripta čita iz `supabase status`, pa ništa nije upisano u repo.
+
+Za razliku od `fake-stripe` iz §1, ovaj **glumi i korisnika**: checkout
+stranica ima gumb „Plati“ koji pošalje `checkout.session.completed` s
+`account: acct_…` i preusmjeri na `success_url`. Poslovna logika i dalje je
+sva u Workeru i jezgri. U zapisu poziva vidi se da `application_fee_amount`
+nije poslan.
+
+Zamke:
+
+- **`:8787` zna biti zauzet** drugim projektom (`stadion-maksimir`), a odgovor
+  izgleda kao naš („neispravan token“). Zato `:8788`, a `PUBLIC_BASE_URL` se
+  prosljeđuje kroz `--var`, koji pobjeđuje `.dev.vars`.
+- **`--env staging` iz `wrangler.jsonc` nosi produkcijski anon ključ** i
+  `api.domovina.ai`. Oboje se mora pregaziti s `--var`, inače lokalni Worker
+  priča s produkcijom.
+- **Bez `--env staging` Worker je u načinu `NAJAVA=1`** (vrh konfiguracije je
+  produkcija) i vraća samo najavu.
+- **`events-feed` je bez `?limit` vraćao 1 događaj** (`Number(null)` je `0`, a
+  `clampInt` ga stisne na 1). Popravljeno u `domovina-api@ca375ab`, na produkciji
+  još nije (v. [deploy-dug](deploy-dug.md)). Simptom: na početnoj stranici vidi
+  se samo najnoviji događaj.
