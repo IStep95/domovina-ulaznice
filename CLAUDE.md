@@ -10,8 +10,10 @@ Organizator prodaje s vlastite stranice, novac ide izravno na njegov Stripe rač
 koji se skenira na ulazu.
 
 Status: **U1 ✅ živ na `api.domovina.ai` · U2 ✅ deployan na staging · U3/U4/U5 🟡
-djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; editor događaja,
-Connect onboarding i `domovina_fiskal` ne). Prodaja **još ne radi ni na
+djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; Connect onboarding i
+`domovina_fiskal` ne). **Editor događaja je namjerno odgođen**: organizator
+događaj priprema na svoj način (Google Forms, FIRA `Config.gs`…), a agent ga u
+chatu formalizira u seed — pravila mapiranja: `docs/2026-09-28-unos-dogadjaja-kroz-chat.md`. Prodaja **još ne radi ni na
 stagingu** — nedostaju Stripe/Resend tajne i objavljen događaj u jezgri.
 
 - `ulaznice-staging.domovina.ai` — puna aplikacija, Stripe **sandbox**
@@ -57,6 +59,8 @@ promjena koja traži deploy upisuje se tamo u istom commitu.
 
 - Worker + Hono + D1 (operativni podaci) + KV (rate limit) + React SPA → Cloudflare
   - `npm test` (97 testova, node:test, **nikad na mrežu**), `npm run build`, `npm run api`
+  - `scripts/lokalno/pokreni.sh` — cijela kupnja lokalno (jezgra + lažni Stripe + inbox),
+    app na `:8788`, inbox na `:8901/inbox`; v. `docs/2026-08-04-…` §9
 - Mobilno: `mobile/ios` (XcodeGen, `xcodegen generate`), `mobile/android`
   (`./gradlew :app:assembleDebug`, JDK 17), `node mobile/mock-api.mjs` (port 8797)
 - Ticketing: `domovina-api` edge funkcije `events-*`

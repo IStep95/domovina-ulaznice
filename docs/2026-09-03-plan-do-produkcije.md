@@ -216,7 +216,8 @@ javan na GitHubu i **nema `LICENSE`** — bez nje „public" nije open source.
 
 ## 5. P2 — drugi događaj, ne prvi
 
-- **Puni U3 dashboard** — Connect onboarding samouslužno, editor događaja i tierova,
+- **Puni U3 dashboard** — Connect onboarding samouslužno, editor događaja i tierova
+  (editor **odgođen** 28. 9.: unos ide kroz chat, v. [2026-09-28](2026-09-28-unos-dogadjaja-kroz-chat.md)),
   DAC7 zapis, uvoz postojećih prijava iz Google Formsa (CSV).
 - **Brand prodajne stranice** — tablica `event_pages` postoji, ali ništa u nju ne piše.
 - **Retencijski cron** — anonimizacija `holder_name`/`holder_email` 90 dana nakon

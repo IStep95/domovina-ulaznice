@@ -12,17 +12,18 @@ psql "postgresql://postgres:postgres@127.0.0.1:55322/postgres" -f seeds/susret-z
 
 | Datoteka | Što je |
 | --- | --- |
-| `prilika-za-susret-2026.sql` | **stvarni** nadolazeći događaji koje organizira Prilika za Susret: Badija (12.–17. 8. 2026.), Sinj (19. 9. 2026.) i Varaždin (14. 11. 2026.). Datum, satnica i mjesto sa stranica organizatora; kotizacije iz njegovih vlastitih FIRA konfiguracija (`fira-forms-connector/google-apps-script/events/*/Config.gs`). Varaždin nema objavljen cjenik pa **namjerno nema tierova**. |
+| `prilika-za-susret-2026.sql` | **stvarni** događaji koje organizira Prilika za Susret: Badija (12.–17. 8. 2026.), Sinj (19. 9. 2026.) i Varaždin (14. 11. 2026.). Datum, satnica i mjesto sa stranica organizatora; kotizacije iz njegovih vlastitih FIRA konfiguracija (`fira-forms-connector/google-apps-script/events/*/Config.gs`). Varaždin je 28. 9. dopunjen iz `varazdin-2026/Config.gs` (Pastoralni centar, rana 50 € / redovna 55 €). Kako se takav izvor prevodi u shemu: [`docs/2026-09-28-unos-dogadjaja-kroz-chat.md`](../docs/2026-09-28-unos-dogadjaja-kroz-chat.md). |
 | `susret-zagreb-2027.sql` | **stvarni** događaj — Međunarodni susret osoba otvorenih za katolički brak, Zagreb, 12.–14. 2. 2027. Podaci sa stranice organizatora; cjenik i satnica nisu objavljeni pa su iznosi preuzeti s vikend susreta Šibenik 2026. istog organizatora i to piše u opisu događaja. |
 | `demo-dom-sportova.sql` | izmišljeni događaj za demonstraciju rubnih stanja (rasprodan tier, "još N komada", zatvoren prodajni prozor) |
 
 Sva tri „stvarna" seeda dijele isti račun organizatora (`…0000e2`), pa se mogu
 pustiti u bilo kojem redoslijedu. Svaki je idempotentan — drugi run vraća
-`existing: true` i ništa ne mijenja.
+`existing: true` i ništa ne mijenja. **Zato ispravak seeda ne mijenja događaj koji
+već postoji u bazi** — v. docs/2026-09-28 §4.
 
 **Što u seedovima namjerno NIJE popunjeno**, jer organizator to nije objavio:
 kapacitet (`inventory_total` je `NULL` → bez limita, umjesto lažnog „još N
-komada"), mjesto održavanja u Varaždinu, te cjenik za Varaždin. Ljetni kamp
+komada") i adresa Pastoralnog centra u Varaždinu. Ljetni kamp
 Papuk i Susret Visoko BiH nisu u katalogu — na njihovim stranicama doslovno
 piše da PzS nije organizator.
 

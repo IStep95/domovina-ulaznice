@@ -58,7 +58,7 @@ događaj Prilike za Susret ili BlockSplit/MoMo (kontakt već postoji).
 | ---- | -------------------------------------------------------------------------------------------------------- |
 | U1   | curl scenarij prolazi: order → stripe-confirm → 2 ulaznice; ponovljeni confirm = `already_paid`; underpaid i `expired_sold_out` vraćaju status, ne exception |
 | U2   | Stripe test kartica → e-mail s QR-om; dupli webhook ne duplicira; rasprodan tier → automatski refund       |
-| U3   | Organizator bez ijednog SQL-a: spoji Stripe, kreira event, objavi ga, vidi prodaju i izveze popis holdera |
+| U3   | Organizator bez ijednog SQL-a: spoji Stripe, kreira event, objavi ga, vidi prodaju i izveze popis holdera. **Editor događaja odgođen 28. 9. 2026.** — događaje formalizira agent iz organizatorovih materijala ([2026-09-28](2026-09-28-unos-dogadjaja-kroz-chat.md)) |
 | U4   | Prvi sken ✅ s imenom holdera, drugi ⛔ s vremenom prvog ulaska; ne-admin odbijen                          |
 | U5   | Naplaćena narudžba proizvede račun kroz odabrani provider; TEST okolina; storno na refund                 |
 | U6   | Isti event nudi "plati karticom" i "plati iz walleta"; obje staze daju identičnu ulaznicu i check-in       |
