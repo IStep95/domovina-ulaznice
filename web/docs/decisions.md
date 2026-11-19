@@ -128,15 +128,14 @@ nepromijenjeno.
 **22. Dva Workera za `web/` postoje od koraka 0, na računu D.O.M.**
 `domovina-ulaznice-web` → `ulaznice-web.domovina.ai` (produkcija) i
 `domovina-ulaznice-web-staging` → `ulaznice-web-staging.domovina.ai` (staging). Oba
-serviraju statičnu stranicu „u izradi” (`noindex`) iz `web/privremeno/`. Staging se
-deploya sam kroz Workers Builds na merge u `main` upstreama (root `web/`, build
-`npm ci && npm run build`, deploy `npm run deploy:staging`). Produkcija se deploya
-ručno (`npm --prefix web run deploy:prod`, Matija). Imena Workera, domene i skripte
-`build`, `deploy:staging`, `deploy:prod` u `web/package.json` se ne mijenjaju bez nove
-odluke, jer je na njih spojen Workers Builds.
-Razlog: Ivan vidi svoj rad živ čim se PR mergea, bez pristupa Cloudflare računu i bez
-tajni u forku.
-Revizija: S6, kad kupačke stranice prijeđu na `ulaznice(-staging).domovina.ai` kroz
+serviraju statičnu stranicu „u izradi” (`noindex`) iz `web/privremeno/`. Oba se deployaju
+**ručno** (Matija, nakon mergea PR-a): `npm --prefix web run deploy:staging`, odnosno
+`deploy:prod`. Auto-deploy (Workers Builds) je svjesno odgođen: Cloudflare GitHub app
+nije instaliran na organizaciji `domovinatv` i Matija ga zasad ne želi. Imena Workera,
+domene i skripte `build`, `deploy:staging`, `deploy:prod` u `web/package.json` se ne
+mijenjaju bez nove odluke.
+Razlog: Ivan dobiva živi preview bez pristupa Cloudflare računu i bez tajni u forku.
+Revizija: auto-deploy kad Matija odobri GitHub app ili API token; S6, kad kupačke stranice prijeđu na `ulaznice(-staging).domovina.ai` kroz
 service binding; tada se odlučuje ostaju li `ulaznice-web*` domene kao preview.
 
 **23. Test događaj za staging je pripremljen, ne pušten.**

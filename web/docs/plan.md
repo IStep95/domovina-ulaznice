@@ -56,7 +56,7 @@ flowchart LR
 
 | Okruženje | Worker | Domena | Deploy | API |
 | --- | --- | --- | --- | --- |
-| staging | `domovina-ulaznice-web-staging` | `ulaznice-web-staging.domovina.ai` | Workers Builds, merge u `main` | `ulaznice-staging.domovina.ai` |
+| staging | `domovina-ulaznice-web-staging` | `ulaznice-web-staging.domovina.ai` | ručno, Matija, nakon mergea | `ulaznice-staging.domovina.ai` |
 | produkcija | `domovina-ulaznice-web` | `ulaznice-web.domovina.ai` | ručno, Matija | `ulaznice.domovina.ai` (najava, `/api` 404) |
 | lokalno | `astro dev` / `wrangler dev` | `localhost:4321` | — | `mobile/mock-api.mjs` (8797) |
 
@@ -116,4 +116,4 @@ odu svaki na svoju stranu.
 ## Gdje smo
 
 S0 (2026-11-19): plan, odluke i handoffi napisani; dopunjeno Ivanovim prijedlogom sheme (S2b).
-Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, staging na Workers Buildsu. Koda u `web/` nema. Sljedeće: S1.
+Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, deploy ručno (auto-deploy odgođen, odluka 22). Koda u `web/` nema. Sljedeće: S1.

@@ -4,12 +4,12 @@
   // KORAK 0 (2026-11-19): još nema Astra; Worker servira samo statičnu stranicu
   // „u izradi” iz ./privremeno. S1 ovo zamjenjuje Astro buildom i dodaje `main`,
   // a imena Workera, domene i skripte `build` / `deploy:*` u package.json ostaju
-  // iste (na njih je spojen Workers Builds).
+  // iste (na njih se oslanja ručni deploy i budući auto-deploy).
   //
   // Bez D1, KV i tajni — namjerno (web/docs/decisions.md, odluka 4).
   //
   //   vrh datoteke  → PRODUKCIJA  ulaznice-web.domovina.ai           ručni deploy (Matija)
-  //   env.staging   → STAGING     ulaznice-web-staging.domovina.ai   Workers Builds, merge u main
+  //   env.staging   → STAGING     ulaznice-web-staging.domovina.ai   ručni deploy (Matija) nakon mergea
   "name": "domovina-ulaznice-web",
   "account_id": "7dc7167b7e2e00923bfa7cd697df14e4", // D.O.M.
   "compatibility_date": "2025-11-01",
