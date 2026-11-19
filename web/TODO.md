@@ -10,13 +10,13 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F0 — temelj i mjerenje
 
-- [ ] `web/` kao Astro projekt: `astro`, `@astrojs/cloudflare`, `@astrojs/react`, TypeScript strict → S1
-- [ ] `web/wrangler.jsonc` bez D1, KV i tajni; jedini var `API_BASE_URL` → S1
-- [ ] zajednički tipovi API-ja u `shared/api-tipovi.ts`; `src/lib/api.ts` i `web/` ih uvoze → S1
-- [ ] dev proxy `/api/*` → `node mobile/mock-api.mjs` (port 8797, `PUBLIC_BASE_URL=http://localhost:4321`) → S1
-- [ ] mjerenje: SSR stranica događaja iz `wrangler dev` vraća `<title>` i `og:title` s naslovom događaja → S1
-- [ ] `npm --prefix web run check` = `astro check` + testovi (`node:test`) + `astro build` → S1
-- [ ] `web/docs/design-brief.md`: ekrani, stanja i podaci za Claude Design → S1
+- [x] `web/` kao Astro projekt: `astro`, `@astrojs/cloudflare`, `@astrojs/react`, TypeScript strict → S1
+- [x] `web/wrangler.jsonc` bez D1, KV i tajni; jedini var `API_BASE_URL` → S1
+- [x] zajednički tipovi API-ja u `shared/api-tipovi.ts`; `src/lib/api.ts` i `web/` ih uvoze → S1
+- [x] dev proxy `/api/*` → `node mobile/mock-api.mjs` (port 8797, `PUBLIC_BASE_URL=http://localhost:4321`) → S1
+- [x] mjerenje: SSR stranica događaja iz `wrangler dev` vraća `<title>` i `og:title` s naslovom događaja → S1
+- [x] `npm --prefix web run check` = `astro check` + testovi (`node:test`) + `astro build` → S1
+- [x] `web/docs/design-brief.md`: ekrani, stanja i podaci za Claude Design → S1
 - [ ] (!) Ivan u Claude Designu napravi dizajnerski sustav i 5 ekrana po briefu, export u `web/design/` → vrata prije S2
 
 ## F1 — stranice za kupce

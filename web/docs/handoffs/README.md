@@ -30,7 +30,7 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | --- | --- | --- | --- | --- | --- |
 | S0 | plan, odluke, handoffi | gotovo | 0506839 | korijen 97 | Matija, 2026-11-19; odluke 1–13 |
 | K0 | infrastruktura: Workeri, domene, test seed pripremljen | gotovo | cbeb792 | — | Matija; odluke 22–24 |
-| S1 | Astro kostur, tipovi, mock, mjerenje SSR-a, design brief | otvoreno | | | |
+| S1 | Astro kostur, tipovi, mock, mjerenje SSR-a, design brief | gotovo | 010ab24 | web 13, korijen 97 | Ivan, 2026-11-19; odluke 100–107; SSR na Workersu radi |
 | — | (!) dizajn u Claude Designu | čeka | | | Ivan, po `web/docs/design-brief.md` |
 | S2 | dizajnerski sustav | otvoreno | | | |
 | S2b | dorada sheme događaja (Ivanov prijedlog) | otvoreno | | | može odmah nakon S1 |

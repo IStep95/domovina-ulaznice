@@ -6,7 +6,7 @@ Pročitaj prvo: `web/docs/handoffs/README.md`, `web/docs/plan.md`, `web/docs/dec
 
 # S2b: dorada sheme događaja (Ivanov prijedlog)
 
-Polazni commit: (upisuje S1). `check`: (upisuje S1). Odluke od **250**.
+Polazni commit: `010ab24`. `check`: zelen, web 13 testova, korijen 97, skipped 0. Odluke od **250**.
 
 Može ići odmah nakon S1, dok Ivan radi dizajn. Jedina sesija koja mijenja ugovor
 `/api/*`, i to samo aditivno (odluka 21).
@@ -21,9 +21,9 @@ Paket:
    Ako RPC za stvaranje/izmjenu događaja (`p_venue_city`, … u `seeds/*.sql`) treba nove
    parametre, dodaj ih s `default null` da postojeći pozivi rade.
 2. **`events-feed`** vraća nova polja u detalju događaja (i u popisu ako ga vraća).
-3. **Worker:** `publicEvent` u `worker/api.ts` prosljeđuje polja; test u `worker-tests/`
+3. **Worker:** `publicEvent` u `worker/index.ts` prosljeđuje polja; test u `worker-tests/`
    da prolaze i da `null` ostaje `null`.
-4. **`shared/api-tipovi.ts`** (`EventDetails`) i **`mobile/mock-api.mjs`** (koordinate
+4. **`shared/api-tipovi.ts`** (`EventDetails`; usput dodaj i `description_en` i `brand.logo_url` koje Worker već vraća, a tipovi nemaju) i **`mobile/mock-api.mjs`** (koordinate
    za mock događaje) u istom commitu.
 5. **Seedovi:** koordinate za mjesta u `seeds/*.sql` (Dom sportova Zagreb, Korčula, Sinj,
    Varaždin…). Koordinate uzmi iz OpenStreetMapa i zapiši izvor u komentar; ne izmišljaj.

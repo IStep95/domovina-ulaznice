@@ -150,3 +150,50 @@ Revizija: kad je pušten, upiši datum ovdje.
 Isto načelo kao `NAJAVA=1` na `ulaznice.domovina.ai`. Ručni deploy produkcije prije
 S6 servira samo stranicu „u izradi” ili Astro build bez gumba „Kupi”.
 Revizija: kad krene prodaja.
+
+## S1 (2026-11-19)
+
+Mjerenje: [research/2026-11-19-ssr-na-workersu.md](research/2026-11-19-ssr-na-workersu.md).
+
+**100. Verzije.** `astro` 7.4.1, `@astrojs/cloudflare` 14.4.9, `@astrojs/react` 7.1.0,
+`react`/`react-dom` 19.3.1, `wrangler` 4.165.0, `@astrojs/check` 0.9.12, `typescript` 6.0.3,
+`@types/node` ^22 (Node 22).
+Revizija: pri nadogradnji Astra ili adaptera.
+
+**101. Zadani bindingi adaptera su isključeni.** U `astro.config.mjs`: `session: false`
+(inače adapter sam dodaje `SESSION` KV), `imageService: "passthrough"` (inače Cloudflare
+Images binding), `remoteBindings: false`. Jedini bindingi su `ASSETS` i `API_BASE_URL`.
+Razlog: odluka 4.
+Revizija: ako zatreba optimizacija slika; tada nova odluka o Images bindingu.
+
+**102. Okruženje se bira pri buildu, ne pri deployu.** Wrangler deploya generirani
+`dist/server/wrangler.json`, pa `deploy:staging` = `CLOUDFLARE_ENV=staging npm run build &&
+wrangler deploy --env staging`, a `deploy:prod` gradi bez `CLOUDFLARE_ENV`. Dry-run je
+pokazao da goli `wrangler deploy --env staging` nad produkcijskim buildom tiho deploya
+produkciju. Deploy samo kroz skripte. Upisano u `docs/deploy-dug.md`.
+Revizija: ako adapter vrati čitanje `--env` pri deployu.
+
+**103. `compatibility_date` ostaje `2025-11-01`, bez `nodejs_compat`.** Build, `astro dev`,
+`wrangler dev` i dry-run rade. `@astrojs/react` lijeno uvozi `node:stream` samo izvan edge
+puta; izgrađeni Worker nema `node:` uvoza.
+Revizija: prvi React otok (S2–S4) se provjerava u `wrangler dev`; ako padne, dodaje se
+`compatibility_flags: ["nodejs_compat"]`.
+
+**104. `web/` uvozi zajedničke tipove relativnom putanjom, samo `import type`.**
+`../../../shared/api-tipovi.ts`, bez aliasa; u runtimeu nestaje. Testovi idu kroz Nodeovo
+skidanje TS tipova (Node ≥ 22.18), bez loadera i bez nove ovisnosti.
+Revizija: ako `shared/` dobije runtime kod.
+
+**105. SSR u `astro dev` ide izravno na mock `:8797`.** Nadjačava se s `API_BASE_URL_DEV` u
+`web/.dev.vars` (npr. na `:8788` u S6). Preglednik koristi relativni `/api` kroz Vite proxy
+(i `/mock-checkout`). Razlog: isti oblik kao produkcija, gdje SSR zove Worker izravno.
+Revizija: S6.
+
+**106. Astro telemetrija je isključena u skriptama** (`ASTRO_TELEMETRY_DISABLED=1` u `check`).
+Prvi build u S1 vjerojatno je poslao jedan anonimni ping prije nego što je isključena.
+Revizija: nema.
+
+**107. Odluka 2 potvrđena mjerenjem.** SSR na Workersu (`wrangler dev --local`) vraća
+naslov u `<title>` i `og:title`; nepostojeći slug 404; topli medijan 8,0 ms, hladni prvi
+36–42 ms (lokalni workerd, ne produkcijski edge).
+Revizija: S7 mjeri na stagingu.
