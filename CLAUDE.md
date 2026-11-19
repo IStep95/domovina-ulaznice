@@ -32,6 +32,15 @@ promjena koja traži deploy upisuje se tamo u istom commitu.
 Što još treba do produkcije: `docs/2026-09-03-plan-do-produkcije.md`
 (+ `docs/2026-09-03-implementacija-p0-p1.md` za popis `REVIEW(fable)` mjesta).
 
+## Lanac `web/` — Astro frontend za kupce (Ivan, fork `IStep95`)
+
+Zaseban Astro na Cloudflare Workersima za stranice kupaca (popis, događaj, kupnja,
+narudžba, pravno), bez vlastite baze i tajni, podaci samo iz `/api/*` ovog Workera.
+Radi ga Ivan Stepanić u forku `IStep95/domovina-ulaznice` kroz lanac sesija:
+`web/TODO.md`, `web/docs/plan.md`, `web/docs/decisions.md`, `web/docs/handoffs/`.
+„Nastavi web” = prvi otvoreni red u „Stanje lanca” u `web/docs/handoffs/README.md`.
+Matija prati fork kroz remote `ivan` (`git fetch ivan && git log origin/main..ivan/main`).
+
 ## Prvo pročitaj
 
 1. `docs/02-arhitektura.md` — granice odgovornosti (najvažnije)
