@@ -1,0 +1,15 @@
+{
+  "name": "domovina-ulaznice-web",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "echo 'korak 0: nema builda, servira se ./privremeno'",
+    "check": "echo 'korak 0: nema koda za provjeru'",
+    "deploy:staging": "npm run build && wrangler deploy --env staging",
+    "deploy:prod": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.165.0"
+  }
+}

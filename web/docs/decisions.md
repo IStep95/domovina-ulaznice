@@ -122,3 +122,32 @@ Revizija: nema.
 **21. Ugovor `/api/*` se mijenja samo u S2b, i samo aditivno.** Odluka 6 vrijedi za sve
 ostale sesije. Nova polja su nullable, pa stari klijenti (mobilne aplikacije) rade
 nepromijenjeno.
+
+## Korak 0: infrastruktura (2026-11-19, Matija)
+
+**22. Dva Workera za `web/` postoje od koraka 0, na računu D.O.M.**
+`domovina-ulaznice-web` → `ulaznice-web.domovina.ai` (produkcija) i
+`domovina-ulaznice-web-staging` → `ulaznice-web-staging.domovina.ai` (staging). Oba
+serviraju statičnu stranicu „u izradi” (`noindex`) iz `web/privremeno/`. Staging se
+deploya sam kroz Workers Builds na merge u `main` upstreama (root `web/`, build
+`npm ci && npm run build`, deploy `npm run deploy:staging`). Produkcija se deploya
+ručno (`npm --prefix web run deploy:prod`, Matija). Imena Workera, domene i skripte
+`build`, `deploy:staging`, `deploy:prod` u `web/package.json` se ne mijenjaju bez nove
+odluke, jer je na njih spojen Workers Builds.
+Razlog: Ivan vidi svoj rad živ čim se PR mergea, bez pristupa Cloudflare računu i bez
+tajni u forku.
+Revizija: S6, kad kupačke stranice prijeđu na `ulaznice(-staging).domovina.ai` kroz
+service binding; tada se odlučuje ostaju li `ulaznice-web*` domene kao preview.
+
+**23. Test događaj za staging je pripremljen, ne pušten.**
+`seeds/staging-web-pregled.sql`: jedan `[TEST]` događaj bez Stripe raila
+(`kupovno: false`). Pušta ga samo Matija, na zajedničku jezgru. Dok nije pušten,
+staging API vraća `{"events":[]}` i razvoj ide protiv `mobile/mock-api.mjs`.
+Razlog: jezgra je zajednička za staging i produkciju; događaj je vidljiv u javnom
+feedu, pa je to Matijina odluka.
+Revizija: kad je pušten, upiši datum ovdje.
+
+**24. `ulaznice-web.domovina.ai` ne smije izgledati kao prodaja dok prodaja ne radi.**
+Isto načelo kao `NAJAVA=1` na `ulaznice.domovina.ai`. Ručni deploy produkcije prije
+S6 servira samo stranicu „u izradi” ili Astro build bez gumba „Kupi”.
+Revizija: kad krene prodaja.

@@ -1,0 +1,30 @@
+{
+  // web/ — Astro frontend za kupce (lanac web/docs/handoffs/).
+  //
+  // KORAK 0 (2026-11-19): još nema Astra; Worker servira samo statičnu stranicu
+  // „u izradi” iz ./privremeno. S1 ovo zamjenjuje Astro buildom i dodaje `main`,
+  // a imena Workera, domene i skripte `build` / `deploy:*` u package.json ostaju
+  // iste (na njih je spojen Workers Builds).
+  //
+  // Bez D1, KV i tajni — namjerno (web/docs/decisions.md, odluka 4).
+  //
+  //   vrh datoteke  → PRODUKCIJA  ulaznice-web.domovina.ai           ručni deploy (Matija)
+  //   env.staging   → STAGING     ulaznice-web-staging.domovina.ai   Workers Builds, merge u main
+  "name": "domovina-ulaznice-web",
+  "account_id": "7dc7167b7e2e00923bfa7cd697df14e4", // D.O.M.
+  "compatibility_date": "2025-11-01",
+  "routes": [{ "pattern": "ulaznice-web.domovina.ai", "custom_domain": true }],
+  "workers_dev": false,
+  "assets": { "directory": "./privremeno" },
+  "vars": { "API_BASE_URL": "https://ulaznice.domovina.ai" },
+
+  "env": {
+    "staging": {
+      "name": "domovina-ulaznice-web-staging",
+      "routes": [{ "pattern": "ulaznice-web-staging.domovina.ai", "custom_domain": true }],
+      "workers_dev": true,
+      "assets": { "directory": "./privremeno" },
+      "vars": { "API_BASE_URL": "https://ulaznice-staging.domovina.ai" }
+    }
+  }
+}

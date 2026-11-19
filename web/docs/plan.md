@@ -48,8 +48,20 @@ flowchart LR
    zaseban, mali commit na `worker/` s testom, a `mobile/mock-api.mjs` se ažurira u istom
    commitu.
 4. **Novac u cijelim centima**, formatira se tek za prikaz.
-5. **Produkcija nije dio lanca.** `ulaznice.domovina.ai` ostaje najava (`NAJAVA=1`).
-   Deploy na staging radi Matija (vrata nakon S6).
+5. **Prodaja na produkciji nije dio lanca.** `ulaznice.domovina.ai` ostaje najava
+   (`NAJAVA=1`), a `ulaznice-web.domovina.ai` ne smije izgledati kao prodaja (odluka 24).
+   Staging `web/` se deploya sam na merge; sve ostalo deploya Matija.
+
+## Korak 0 (gotovo 2026-11-19, Matija)
+
+| Okruženje | Worker | Domena | Deploy | API |
+| --- | --- | --- | --- | --- |
+| staging | `domovina-ulaznice-web-staging` | `ulaznice-web-staging.domovina.ai` | Workers Builds, merge u `main` | `ulaznice-staging.domovina.ai` |
+| produkcija | `domovina-ulaznice-web` | `ulaznice-web.domovina.ai` | ručno, Matija | `ulaznice.domovina.ai` (najava, `/api` 404) |
+| lokalno | `astro dev` / `wrangler dev` | `localhost:4321` | — | `mobile/mock-api.mjs` (8797) |
+
+Oba Workera serviraju `web/privremeno/` dok S1 ne uvede Astro (odluke 22–24). Test
+događaj za staging je pripremljen u `seeds/staging-web-pregled.sql` i čeka Matiju.
 
 ## Sesije
 
@@ -103,4 +115,5 @@ odu svaki na svoju stranu.
 
 ## Gdje smo
 
-S0 (2026-11-19): plan, odluke i handoffi napisani; dopunjeno Ivanovim prijedlogom sheme (S2b). Koda u `web/` nema. Sljedeće: S1.
+S0 (2026-11-19): plan, odluke i handoffi napisani; dopunjeno Ivanovim prijedlogom sheme (S2b).
+Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, staging na Workers Buildsu. Koda u `web/` nema. Sljedeće: S1.
