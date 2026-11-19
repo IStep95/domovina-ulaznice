@@ -28,7 +28,7 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 
 | Sesija | Paket | Stanje | Commit | Testovi | Napomena |
 | --- | --- | --- | --- | --- | --- |
-| S0 | plan, odluke, handoffi | gotovo | (upisuje se) | korijen 97 | Matija, 2026-11-19; odluke 1–13 |
+| S0 | plan, odluke, handoffi | gotovo | 0506839 | korijen 97 | Matija, 2026-11-19; odluke 1–13 |
 | S1 | Astro kostur, tipovi, mock, mjerenje SSR-a, design brief | otvoreno | | | |
 | — | (!) dizajn u Claude Designu | čeka | | | Ivan, po `web/docs/design-brief.md` |
 | S2 | dizajnerski sustav | otvoreno | | | |
