@@ -26,8 +26,8 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [ ] seedovi (`seeds/*.sql`) dobiju koordinate za postojeće događaje → S2b
 - [ ] (!) Matija primijeni migraciju i deploya `events-feed` → vrata nakon S2b
 
-- [ ] tokeni iz Claude Designa u `web/src/styles/tokens.css`, `brand.accent_color` nadjačava naglasnu boju → S2
-- [ ] osnovni layout, zaglavlje, podnožje (link na uvjete i privatnost), komponente iz dizajna → S2
+- [x] tokeni iz Claude Designa u `web/src/styles/tokens.css`, `brand.accent_color` nadjačava naglasnu boju → S2
+- [x] osnovni layout, zaglavlje, podnožje (link na uvjete i privatnost), komponente iz dizajna → S2
 - [ ] `/` popis događaja, SSR → S3
 - [ ] `/dogadjaj/[slug]`: SSR, `og:*`, `twitter:*`, JSON-LD `Event`, stanja tierova (rasprodano, nije počelo, završilo, `kupovno: false`) → S3
 - [ ] karta i link na Google/Apple Maps iz `venue_lat`/`venue_lon`; `geo` u JSON-LD-u; bez koordinata samo adresa → S3

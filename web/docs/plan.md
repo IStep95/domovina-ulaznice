@@ -118,3 +118,5 @@ odu svaki na svoju stranu.
 S0 (2026-11-19): plan, odluke i handoffi napisani; dopunjeno Ivanovim prijedlogom sheme (S2b).
 Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, deploy ručno (auto-deploy odgođen, odluka 22). 
 S1 (2026-11-19): Astro 7.4 kostur, zajednički tipovi, API klijent, `dev:mock`, stranica događaja; SSR na Workersu izmjeren i radi (`research/2026-11-19-ssr-na-workersu.md`); design brief napisan. Sljedeće: vrata dizajna (Ivan), paralelno S2b.
+
+S2 (2026-11-19): tokeni, samohostan Figtree, `Osnovni.astro`, 20 komponenti (`.astro` + React), naglasna boja s pravilom kontrasta (`naglasak.ts`), dev stranica `/_komponente` i snimke na 390/1280 px. Sljedeće: S3 (S2b paralelno).

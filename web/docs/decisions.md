@@ -197,3 +197,60 @@ Revizija: nema.
 naslov u `<title>` i `og:title`; nepostojeći slug 404; topli medijan 8,0 ms, hladni prvi
 36–42 ms (lokalni workerd, ne produkcijski edge).
 Revizija: S7 mjeri na stagingu.
+
+## S2 (2026-11-19)
+
+Snimke: [research/2026-11-19-komponente-390.png](research/2026-11-19-komponente-390.png),
+[research/2026-11-19-komponente-1280.png](research/2026-11-19-komponente-1280.png)
+(`/_komponente` u `astro dev`, snimljeno kroz Chrome DevTools protokol, bez dev toolbara).
+
+**200. Figtree je samohostan** (`@fontsource-variable/figtree`, `wght.css`, latin + latin-ext,
+samo uspravni rez), ne s Google Fonts CDN-a. Kupčev preglednik ne šalje ništa Googleu.
+`--font` počinje s `"Figtree Variable"`.
+Revizija: ako zatreba kurziv.
+
+**201. Kontrast naglaska se računa prema `--color-bg` (#f3f4f2)**, kako kaže pravilo 2 u
+`Main.dc.html` (opis događaja stoji na podlozi); što prođe tu, prolazi i na bijelom.
+Zato je zadani `--color-accent-text` `#2c7d55` (zadana #2f855a kao tekst ima 4,1:1).
+Konstanta `ZADANA_PODLOGA` u `src/lib/naglasak.ts`.
+Revizija: nema.
+
+**202. Potamnjivanje je najmanje potrebno**: HSL svjetlina pada po 0,5 % do 4,5:1, nijansa i
+zasićenje ostaju. `#f6e05e` → `#816f07` (README dizajna navodi tamniji `#6e5a00`, 6,7:1).
+Revizija: nema.
+
+**203. `onAccent` bira između stvarnih `#ffffff` i `#131714`**, ne čiste crne kao
+`renderVals()` u dizajnu; formula dizajna bi za zadanu zelenu izabrala tamni tekst, a token
+traži bijeli. Otvoreno: srednje zasićene boje (npr. `#e53e3e`, najviše 4,39:1) ne daju AA ni
+s jednim; zasad se prihvaća (gumb je 16/700, „velik tekst” ≥ 3:1). Odluka u S3 ako smeta.
+Revizija: S3.
+
+**204. `brand.accent_color` prihvaća se samo kao `#rgb`/`#rrggbb`**, inače zadana boja; ide u
+inline `style`, pa kroz nju ne može ući CSS.
+Revizija: nema.
+
+**205. Stil komponenti**: Gumb, Oznaka i Banner su `.astro` sa stilom u `*.module.css` da ih
+React otoci (S4, S5) dijele; dijelovi forme (Polje, PotvrdniOkvir, Stepper, IzborTiera,
+SazetakNarudzbe, OdbrojavanjeGumb) su `.tsx` + CSS modul i bez `client:` se iscrtavaju kao
+HTML; ostalo `.astro` sa scoped `<style>`. Jedan prijelom: 720 px.
+Revizija: nema.
+
+**206. Datumi i novac u komponentama su privremeni.** Komponente primaju gotov tekst datuma;
+novac ide kroz `eurPrivremeno` u `src/lib/prikaz.ts`, svako mjesto označeno „PRIVREMENO … S3”.
+Datumska pločica sama računa dan i mjesec u zoni događaja.
+Revizija: S3 (`format.ts`) zamjenjuje.
+
+**207. Layout `Osnovni.astro`**: `noindex` zadano uključen (odluka 24); širine 760/960/1040 px;
+link „Preskoči na sadržaj”; slot `dno` za ljepljivu traku; naglasak samo kad je prop zadan.
+Revizija: kad produkcija krene u prodaju (odluka 24).
+
+**208. `/_komponente` postoji samo u `astro dev`**: Astro ignorira stranice s `_`, pa je ruta
+ubačena integracijom u `astro.config.mjs` (`injectRoute` kad je `command === 'dev'`) prema
+`src/dev/komponente.astro`. U produkcijskom `dist/` je nema.
+Revizija: nema.
+
+**209. React otok u `wrangler dev` (odluka 103) nije provjeren** jer produkcijske stranice
+još nemaju otoka; u `astro dev` sva četiri otoka na `/_komponente` se hidriraju bez
+upozorenja. Provjera se seli u S4. Worker bundle: 1 266 755 B sirovo (≈ 298 KB gzip), +12 KB
+prema S1 (zbroj `dist/server/**/*.js` bez `.map`).
+Revizija: S4.
