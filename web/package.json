@@ -8,7 +8,8 @@
     "dev:mock": "node scripts/dev-mock.mjs",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "echo 'korak 0: nema koda za provjeru'",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "check": "ASTRO_TELEMETRY_DISABLED=1 astro check && npm test && ASTRO_TELEMETRY_DISABLED=1 astro build",
     "deploy:staging": "CLOUDFLARE_ENV=staging npm run build && wrangler deploy --env staging",
     "deploy:prod": "CLOUDFLARE_ENV= npm run build && wrangler deploy"
   },
