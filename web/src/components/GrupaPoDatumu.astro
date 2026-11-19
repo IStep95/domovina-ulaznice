@@ -1,0 +1,74 @@
+---
+// Skupina kartica pod jednim datumom na popisu (Popis-1280/390, stil Luma).
+// Računalo: datum lijevo u stupcu 132 px, godina ispod uz dan u tjednu.
+// Mobitel: datum iznad kartica, godina uz datum. Tekstovi dolaze gotovi (S3).
+interface Props {
+  /** Npr. „12. veljače”. */
+  datum: string;
+  /** Npr. „petak”. */
+  danUTjednu: string;
+  /** Npr. „2027.”; izostaviti za tekuću godinu. */
+  godina?: string;
+}
+
+const { datum, danUTjednu, godina } = Astro.props;
+---
+<section class="grupa">
+  <h2 class="datum">
+    <b>{datum}<span class="godina-mobitel">{godina && ` ${godina}`}</span></b>
+    <span class="dan">{danUTjednu}<span class="godina-racunalo">{godina && ` · ${godina}`}</span></span>
+  </h2>
+  <div class="kartice"><slot /></div>
+</section>
+
+<style>
+  .grupa {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    gap: 18px;
+  }
+  .datum {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: var(--space-1);
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+  .datum b {
+    font-weight: 700;
+  }
+  .dan {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .kartice {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    min-width: 0;
+  }
+  .godina-mobitel {
+    display: none;
+  }
+
+  @media (max-width: 719px) {
+    .grupa {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 10px;
+    }
+    .datum {
+      flex-direction: row;
+      align-items: baseline;
+      gap: var(--space-2);
+      padding-top: 0;
+    }
+    .godina-mobitel {
+      display: inline;
+    }
+    .godina-racunalo {
+      display: none;
+    }
+  }
+</style>

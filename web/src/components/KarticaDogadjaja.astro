@@ -1,0 +1,153 @@
+---
+// Kartica događaja na popisu (Popis-1280/390, Main.dc.html). Cijela kartica je
+// link. Desno je datumska pločica u boji organizatora ili, s naslovnom slikom,
+// kvadratni izrez slike. Na mobitelu: manja pločica, bez organizatora i vrste.
+// Oznaka prodaje uvijek ima tekst: „od 35,00 €” ili „prodaja nije otvorena”.
+import DatumskaPlocica from "./DatumskaPlocica.astro";
+import Ikona from "./Ikona.astro";
+import Oznaka from "./Oznaka.astro";
+import { eurPrivremeno } from "../lib/prikaz.ts";
+
+interface Props {
+  href: string;
+  naslov: string;
+  /** Gotov tekst termina, npr. „9:00 – nedjelja, 18. travnja” (formater je S3). */
+  termin: string;
+  organizator?: string | null;
+  mjesto?: string | null;
+  vrsta?: string | null;
+  /** ISO `starts_at`, za pločicu. */
+  datum: string | null;
+  timeZone?: string;
+  /** `brand.accent_color`; null → zadana zelena. */
+  naglasak?: string | null;
+  /** `cover_image_url`; umjesto pločice. */
+  slika?: string | null;
+  /** `kupovno` iz API-ja; false → „prodaja nije otvorena” (odluka 24). */
+  kupovno: boolean;
+  /** Najniža cijena dostupnog tiera, cijeli centi. */
+  cijenaOdCenti?: number | null;
+}
+
+const { href, naslov, termin, organizator, mjesto, vrsta, datum, timeZone, naglasak = null, slika, kupovno, cijenaOdCenti } =
+  Astro.props;
+const prodaja = kupovno && cijenaOdCenti != null;
+---
+<a class="kartica" href={href}>
+  <div class="tekst">
+    <span class="termin">{termin}</span>
+    <span class="naslov">{naslov}</span>
+    {organizator && <span class="organizator">{organizator}</span>}
+    {
+      mjesto && (
+        <span class="mjesto">
+          <Ikona ime="mjesto" velicina={16} class="mjesto-ikona" />
+          {mjesto}
+        </span>
+      )
+    }
+    <span class="oznake">
+      {/* PRIVREMENO: formater novca je S3. */}
+      {prodaja ? <Oznaka ton="ok">od {eurPrivremeno(cijenaOdCenti!)}</Oznaka> : <Oznaka ton="neutral">prodaja nije otvorena</Oznaka>}
+      {vrsta && <Oznaka ton="obrub" class="vrsta">{vrsta}</Oznaka>}
+    </span>
+  </div>
+  {
+    slika ? (
+      <img class="slika" src={slika} alt="" loading="lazy" decoding="async" />
+    ) : (
+      <DatumskaPlocica datum={datum} timeZone={timeZone} varijanta="boja" velicina="prilagodljiva" naglasak={naglasak} ukras />
+    )
+  }
+</a>
+
+<style>
+  .kartica {
+    display: flex;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    color: inherit;
+    text-decoration: none;
+  }
+  .kartica:hover {
+    color: inherit;
+    border-color: var(--color-border-strong);
+  }
+  .kartica:hover .naslov {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .tekst {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .termin {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+  .naslov {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .organizator,
+  .mjesto {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .mjesto {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .oznake {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+  .slika {
+    flex: none;
+    width: 112px;
+    height: 112px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    background: var(--color-neutral-bg);
+  }
+
+  @media (max-width: 719px) {
+    .kartica {
+      gap: var(--space-3);
+      padding: 14px;
+    }
+    .tekst {
+      gap: 5px;
+    }
+    .termin {
+      font-size: 13px;
+    }
+    .naslov {
+      font-size: 17px;
+    }
+    .organizator,
+    .mjesto :global(.mjesto-ikona),
+    .oznake :global(.vrsta) {
+      display: none;
+    }
+    .oznake {
+      gap: 6px;
+    }
+    .slika {
+      width: 76px;
+      height: 76px;
+    }
+  }
+</style>

@@ -1,0 +1,103 @@
+/* Gumbi (Main.dc.html, „Gumbi, oznake, banneri”). Dijele ga Gumb.astro i React
+ * otoci (OdbrojavanjeGumb.tsx, kasnije kupnja u S4), zato CSS modul, ne <style>.
+ * Platformski gumb je --color-ink; naglasni samo na stranicama događaja. */
+.gumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.primarni {
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+
+.naglasni {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+.sekundarni {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.tanki {
+  padding: 0 14px;
+  background: transparent;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* „Pokušaj ponovno” unutar bannera greške (Popis-390). */
+.greska {
+  border: 1px solid var(--color-error);
+  background: var(--color-surface);
+  color: var(--color-error);
+}
+
+/* Globalni a:hover (--color-accent-text) ne smije obojiti gumb-link. */
+.primarni:hover { color: var(--color-on-ink); }
+.naglasni:hover { color: var(--color-on-accent); }
+.sekundarni:hover,
+.tanki:hover { color: var(--color-text); }
+.greska:hover { color: var(--color-error); }
+
+.sekundarni:hover:not(:disabled):not([aria-disabled="true"]) {
+  border-color: var(--color-text-muted);
+}
+
+/* Onemogućen: tokeni, ne opacity (pravilo 3 vrijedi i ovdje). Vrijedi i za <a>. */
+.gumb:disabled,
+.gumb[aria-disabled="true"] {
+  border: 0;
+  background: var(--color-disabled-bg);
+  color: var(--color-disabled-text);
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+/* Slanje u tijeku: zadržava boju varijante, samo ne prima klik. */
+.gumb[aria-busy="true"] {
+  cursor: progress;
+}
+.naglasni[aria-busy="true"]:disabled {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+.primarni[aria-busy="true"]:disabled {
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+.sekundarni[aria-busy="true"]:disabled {
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+/* „Kupi ulaznice”, „Nastavi na plaćanje”, 404: 48 px, 16/700. */
+.velik {
+  min-height: 48px;
+  padding: 0 22px;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.blok {
+  display: flex;
+  width: 100%;
+}

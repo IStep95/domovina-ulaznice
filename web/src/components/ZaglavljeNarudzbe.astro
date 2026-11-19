@@ -1,0 +1,104 @@
+---
+// Zaglavlje stranice narudžbe po stanju (Narudzba-stanja-1280). Ton boje prati
+// stanje, a naslov ga uvijek kaže i riječima (pravilo 3). Tekstovi su iz dizajna;
+// slot je za dodatak (rok rezervacije, „Natrag na događaj”, poništene ulaznice).
+import Ikona from "./Ikona.astro";
+import type { IkonaIme, Ton } from "../lib/ikone.ts";
+
+export type StanjeNarudzbe = "pending" | "pending-placeno" | "paid" | "expired" | "refunded" | "failed";
+
+interface Props {
+  stanje: StanjeNarudzbe;
+  /** Nadjačava zadani naslov stanja. */
+  naslov?: string;
+  /** Nadjačava zadani opis stanja. */
+  opis?: string;
+}
+
+const ZADANO: Record<StanjeNarudzbe, { ton: Ton; ikona: IkonaIme; naslov: string; opis: string }> = {
+  pending: {
+    ton: "wait",
+    ikona: "sat",
+    naslov: "Čeka plaćanje",
+    opis: "Mjesta su rezervirana dok rezervacija ne istekne. Ulaznice izdajemo čim plaćanje bude potvrđeno.",
+  },
+  "pending-placeno": {
+    ton: "wait",
+    ikona: "vrtnja",
+    naslov: "Potvrđujemo plaćanje…",
+    opis: "Plaćanje je zaprimljeno kod Stripea. Ulaznice izdajemo čim potvrda stigne — ova stranica se osvježava sama.",
+  },
+  paid: {
+    ton: "ok",
+    ikona: "kvacica",
+    naslov: "Plaćeno",
+    opis: "Ulaznice su izdane i poslane e-mailom. Na ulazu pokažite QR kod iz poruke.",
+  },
+  expired: {
+    ton: "error",
+    ikona: "usklik-krug",
+    naslov: "Rezervacija je istekla",
+    opis: "Plaćanje nije stiglo na vrijeme pa su mjesta vraćena u prodaju. Ništa nije naplaćeno.",
+  },
+  refunded: {
+    ton: "neutral",
+    ikona: "povrat",
+    naslov: "Vraćeno",
+    opis: "Uplata je vraćena na karticu, a ulaznice su poništene.",
+  },
+  failed: {
+    ton: "error",
+    ikona: "x-krug",
+    naslov: "Plaćanje nije uspjelo",
+    opis: "Ništa nije naplaćeno. Možete pokušati ponovno sa stranice događaja.",
+  },
+};
+
+const { stanje, naslov, opis } = Astro.props;
+const z = ZADANO[stanje];
+---
+<section class:list={["zaglavlje", z.ton]}>
+  <div class="naslov-red">
+    <Ikona ime={z.ikona} velicina={24} />
+    <h1 class="naslov">{naslov ?? z.naslov}</h1>
+  </div>
+  <p class="opis">{opis ?? z.opis}</p>
+  {Astro.slots.has("default") && <div class="dodatak"><slot /></div>}
+</section>
+
+<style>
+  .zaglavlje {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: 22px;
+    border-radius: var(--radius-lg);
+  }
+  .ok { background: var(--color-ok-bg); color: var(--color-ok); }
+  .wait { background: var(--color-wait-bg); color: var(--color-wait); }
+  .error { background: var(--color-error-bg); color: var(--color-error); }
+  .neutral { background: var(--color-neutral-bg); color: var(--color-neutral); }
+
+  .naslov-red {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .naslov {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+  }
+  .opis {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--color-text);
+  }
+  .dodatak {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+</style>

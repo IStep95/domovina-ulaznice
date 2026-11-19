@@ -1,0 +1,107 @@
+/* Izbor vrste ulaznice (Kupnja-1280): kartice s radio gumbom. */
+.skupina {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.legenda {
+  margin-bottom: 10px;
+  padding: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.opcija {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.opcija:has(input:checked) {
+  border: 2px solid var(--color-ink);
+  padding: 13px 15px;
+}
+
+.opcija:has(input:focus-visible) {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Nedostupno: pozadina i boja teksta, ne opacity (pravilo 3). */
+.opcija:has(input:disabled) {
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.lijevo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.radio {
+  flex: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  min-height: 18px;
+  margin: 0;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 50%;
+  background: var(--color-surface);
+  cursor: inherit;
+}
+
+.radio:checked {
+  border: 6px solid var(--color-ink);
+}
+
+.radio:disabled {
+  border-color: var(--color-border-strong);
+  background: transparent;
+}
+
+.radio:focus-visible {
+  outline: none; /* fokus crta cijela kartica */
+}
+
+.tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.naziv {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+}
+
+.napomena {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.cijena {
+  flex: none;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

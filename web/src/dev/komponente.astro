@@ -1,0 +1,789 @@
+---
+// /_komponente — katalog dizajnerskog sustava (S2), samo u `astro dev`
+// (ruta se ubacuje u astro.config.mjs; u produkcijskom buildu ne postoji).
+// Redoslijed i grupe prate web/design/canvas/Main.dc.html, a iza toga dolaze
+// uzorci s ekrana (popis, događaj, kupnja, narudžba, greške). Svi podaci su
+// primjeri iz dizajna; ništa se ne dohvaća s API-ja.
+import Osnovni from "../layouts/Osnovni.astro";
+import Banner from "../components/Banner.astro";
+import Cjenik from "../components/Cjenik.astro";
+import DatumskaPlocica from "../components/DatumskaPlocica.astro";
+import GrupaPoDatumu from "../components/GrupaPoDatumu.astro";
+import Gumb from "../components/Gumb.astro";
+import Ikona from "../components/Ikona.astro";
+import IzborTiera from "../components/IzborTiera.tsx";
+import KarticaDogadjaja from "../components/KarticaDogadjaja.astro";
+import KosturKartice from "../components/KosturKartice.astro";
+import NaslovnaPloha from "../components/NaslovnaPloha.astro";
+import OdbrojavanjeGumb from "../components/OdbrojavanjeGumb.tsx";
+import Oznaka from "../components/Oznaka.astro";
+import Polje from "../components/Polje.tsx";
+import PotvrdniOkvir from "../components/PotvrdniOkvir.tsx";
+import PraznoStanje from "../components/PraznoStanje.astro";
+import ProdajnaTraka from "../components/ProdajnaTraka.astro";
+import RedTiera from "../components/RedTiera.astro";
+import RedUlaznice from "../components/RedUlaznice.astro";
+import SazetakNarudzbe from "../components/SazetakNarudzbe.tsx";
+import Stepper from "../components/Stepper.tsx";
+import StranicaGreske from "../components/StranicaGreske.astro";
+import ZaglavljeNarudzbe from "../components/ZaglavljeNarudzbe.astro";
+import { izracunajNaglasak, kontrast, naglasakStil, ZADANA_PODLOGA } from "../lib/naglasak.ts";
+import { IKONE, type IkonaIme } from "../lib/ikone.ts";
+
+const boje = [
+  ["--color-bg", "podloga"],
+  ["--color-surface", "kartice"],
+  ["--color-surface-2", "zaglavlja, prigušeno"],
+  ["--color-border", "rubovi"],
+  ["--color-border-strong", "polja, sekundarni"],
+  ["--color-text", "tekst, --color-ink"],
+  ["--color-text-muted", "6,2:1 na bijelom"],
+  ["--color-accent", "zadano, nadjačava događaj"],
+  ["--color-accent-text", "naglasak kao tekst"],
+  ["--color-disabled-bg", "onemogućeno"],
+];
+const stanja = [
+  ["ok", "ok"],
+  ["wait", "čekanje"],
+  ["error", "greška"],
+  ["neutral", "neutralno"],
+];
+const razmaci = [1, 2, 3, 4, 6, 8, 12, 16];
+const radijusi = ["sm", "md", "lg", "xl", "pill"];
+
+const primjeriNaglaska = [
+  { hex: "#2f855a", opis: "zadana" },
+  { hex: "#f6e05e", opis: "žuta (svijetla)" },
+  { hex: "#1a365d", opis: "tamnoplava" },
+].map((p) => {
+  const n = izracunajNaglasak(p.hex);
+  return {
+    ...p,
+    n,
+    stil: naglasakStil(p.hex),
+    kontrastGumba: kontrast(n.accent, n.onAccent).toFixed(2).replace(".", ","),
+    kontrastTeksta: kontrast(n.accentText, ZADANA_PODLOGA).toFixed(2).replace(".", ","),
+  };
+});
+
+const opcijeTiera = [
+  { id: "redovna", naziv: "Redovna ulaznica", napomena: "Sva tri dana, uključen ručak", cijenaCenti: 6000, dostupno: true },
+  { id: "studentska", naziv: "Studentska", napomena: "Uz predočenje indeksa · još 4", cijenaCenti: 3500, dostupno: true },
+  { id: "rani", naziv: "Rani upis", napomena: "Rasprodano", cijenaCenti: 5000, dostupno: false },
+];
+
+const imenaIkona = Object.keys(IKONE) as IkonaIme[];
+---
+<Osnovni title="Komponente · Ulaznice" opis="Katalog dizajnerskog sustava (samo dev)." sirina="siroka">
+  <div class="katalog">
+    <header class="uvod">
+      <span class="nadnaslov">Ulaznice · dizajnerski sustav v1 · samo <code>astro dev</code></span>
+      <h1>Mirno, čitko, bez buke</h1>
+      <p>
+        Komponente iz <code>web/design/canvas/Main.dc.html</code> i ekrana, sa svim stanjima. Suzite prozor ispod 720 px
+        za mobilni izgled (i ljepljivu traku „Kupi” na dnu).
+      </p>
+    </header>
+
+    <!-- Boje -->
+    <section class="odjeljak">
+      <h2>Boje</h2>
+      <div class="mreza-boja">
+        {
+          boje.map(([ime, opis]) => (
+            <div class="boja">
+              <div class="uzorak" style={`background: var(${ime})`} />
+              <b>{ime}</b>
+              <span>{opis}</span>
+            </div>
+          ))
+        }
+      </div>
+      <div class="mreza-4">
+        {
+          stanja.map(([ton, opis]) => (
+            <div class="stanje" style={`background: var(--color-${ton}-bg); color: var(--color-${ton})`}>
+              {opis} · --color-{ton} na --color-{ton}-bg
+            </div>
+          ))
+        }
+      </div>
+    </section>
+
+    <!-- Tipografija; razmaci, radijusi, fokus -->
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Tipografija</h2>
+        <div class="ploca tipografija">
+          <div><span>display 44/800</span><span class="t-display">Prilika za Susret</span></div>
+          <div><span>h1 28/700</span><span class="t-h1">Događaji u Zagrebu</span></div>
+          <div><span>h2 22/700</span><span class="t-h2">Ulaznice</span></div>
+          <div><span>naslov kartice 18/600</span><span class="t-lg">Redovna ulaznica</span></div>
+          <div><span>tijelo 16/400 · 1,55</span><span>Tri dana susreta, predavanja i radionica.</span></div>
+          <div><span>sitno 14/500</span><span class="t-sm">Dom sportova, Zagreb</span></div>
+          <div><span>oznaka 12/600</span><span class="t-xs">Konferencija</span></div>
+          <div><span>iznos tabular</span><span class="t-iznos">1.234,56 € · 60,00 €</span></div>
+          <div><span>latin-ext</span><span>Čćđšž ČĆĐŠŽ — Šibenik, Đakovo, Čakovec</span></div>
+        </div>
+      </div>
+      <div class="odjeljak">
+        <h2>Razmaci, radijusi, fokus</h2>
+        <div class="ploca razmaci">
+          <div class="niz-razmaka">
+            {
+              razmaci.map((r) => (
+                <div class="razmak">
+                  <div style={`width: var(--space-${r}); height: var(--space-${r})`} />
+                  <span>{r}</span>
+                </div>
+              ))
+            }
+          </div>
+          <div class="niz-radijusa">
+            {radijusi.map((r) => <div style={`border-radius: var(--radius-${r})`}>{r}</div>)}
+          </div>
+          <div class="red-fokusa">
+            <Gumb varijanta="sekundarni" class="prikaz-fokus">Fokus</Gumb>
+            <span>obrub 2 px --color-focus, razmak 2 px; isti na svim kontrolama (Tab)</span>
+          </div>
+          <div class="ikone">
+            {
+              imenaIkona.map((ime) => (
+                <span title={ime}>
+                  <Ikona ime={ime} velicina={22} />
+                </span>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gumbi, oznake, banneri -->
+    <section class="odjeljak">
+      <h2>Gumbi, oznake, banneri</h2>
+      <div class="niz">
+        <Gumb>Primarni</Gumb>
+        <Gumb varijanta="naglasni">Kupi ulaznice</Gumb>
+        <Gumb varijanta="sekundarni">Sekundarni</Gumb>
+        <Gumb varijanta="tanki">Tanki</Gumb>
+        <Gumb disabled>Onemogućen</Gumb>
+        <Gumb ucitava>Otvaram plaćanje…</Gumb>
+      </div>
+      <div class="niz">
+        <Gumb href="#" varijanta="primarni">Link kao gumb</Gumb>
+        <Gumb href="#" varijanta="naglasni" velik>Kupi ulaznice (48 px)</Gumb>
+        <Gumb varijanta="greska">Pokušaj ponovno</Gumb>
+        <Gumb href="#" disabled>Onemogućen link</Gumb>
+        <Gumb varijanta="naglasni" ucitava velik>Otvaram plaćanje…</Gumb>
+      </div>
+      <div class="niz">
+        <Oznaka ton="ok" vece>još 4</Oznaka>
+        <Oznaka ton="error" vece>rasprodano</Oznaka>
+        <Oznaka ton="wait" vece>prodaja od 1. 3. u 10:00</Oznaka>
+        <Oznaka ton="neutral" vece>prodaja zatvorena</Oznaka>
+        <Oznaka ton="obrub" vece>Konferencija</Oznaka>
+        <Oznaka ton="neutral" vece>glasi na ime</Oznaka>
+        <Oznaka ton="ok">vrijedi</Oznaka>
+        <Oznaka ton="neutral">ušlo</Oznaka>
+        <Oznaka ton="error">poništena</Oznaka>
+      </div>
+      <div class="mreza-2 zbijeno">
+        <Banner ton="neutral">Online prodaja za ovaj događaj trenutačno nije aktivna.</Banner>
+        <Banner ton="ok">Poslano na an••••@primjer.hr.</Banner>
+        <Banner ton="error">Ulaznice te vrste su rasprodane.</Banner>
+        <Banner ton="wait"><b>Plaćanje je prekinuto.</b> Ulaznice nisu naplaćene — možete pokušati ponovno.</Banner>
+        <Banner ton="wait" uloga="note">
+          Ako je prva poruka stigla, novi QR kodovi poništavaju stare — proslijeđene ulaznice iz stare poruke prestaju
+          vrijediti.
+        </Banner>
+        <Banner ton="ok" istaknut>
+          Poslano na an••••@primjer.hr. <b>Vrijede QR kodovi iz NOVE poruke — stari više ne rade.</b>
+        </Banner>
+      </div>
+    </section>
+
+    <!-- Polja forme; redovi tiera -->
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Polja forme</h2>
+        <div class="ploca stupac">
+          <Polje id="f1" oznaka="E-mail adresa" type="email" placeholder="ime@primjer.hr" pomoc="Ulaznice s QR kodom šaljemo na ovu adresu." />
+          <Polje id="f2" oznaka="1. ulaznica — ime i prezime" defaultValue="Ana Horvat" prikaziFokus />
+          <Polje id="f3" oznaka="2. ulaznica — ime i prezime" defaultValue="M" greska="Upišite ime i prezime (najmanje 2 znaka)." />
+          <Polje id="f4" oznaka="Onemogućeno" defaultValue="—" disabled />
+          <Stepper client:load max={10} pocetna={2} opis="najviše 10 za ovu vrstu" />
+          <Stepper max={4} pocetna={4} opis="gornja granica (statično, bez JS-a)" />
+          <PotvrdniOkvir id="uvjeti">
+            Prihvaćam <a href="/uvjeti">uvjete korištenja</a> i <a href="#">uvjete organizatora</a>.
+          </PotvrdniOkvir>
+        </div>
+      </div>
+      <div class="odjeljak">
+        <h2>Redovi tiera (sva stanja)</h2>
+        <div class="ploca bez-paddinga">
+          <RedTiera naziv="Redovna ulaznica" opis="Sva tri dana, uključen ručak" imenska cijenaCenti={6000} />
+          <RedTiera naziv="Studentska" opis="Uz predočenje indeksa na ulazu" cijenaCenti={3500} stanje="malo" preostalo={4} />
+          <RedTiera naziv="Rani upis" cijenaCenti={5000} stanje="rasprodano" />
+          <RedTiera naziv="Dnevna, subota" cijenaCenti={2500} stanje="nije-pocelo" prodajaOd="1. 3. 2027. u 10:00" />
+          <RedTiera naziv="Večernji program" cijenaCenti={2000} stanje="zavrseno" />
+          <RedTiera naziv="Parter" opis="bez ograničenja broja" cijenaCenti={2500} />
+        </div>
+        <p class="napomena">
+          Prigušeni red mijenja pozadinu i boju teksta (--color-text-muted na --color-surface-2), nikad opacity. Stanje
+          uvijek ima i tekst.
+        </p>
+      </div>
+    </section>
+
+    <!-- Kartica događaja i datumska pločica; naglasna boja -->
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Kartica događaja i datumska pločica</h2>
+        <KarticaDogadjaja
+          href="#"
+          naslov="Prilika za Susret 2027"
+          termin="pet, 16. 4. u 9:00 – ned, 18. 4."
+          organizator="Udruga Prilika za Susret"
+          mjesto="Dom sportova, Zagreb"
+          vrsta="Konferencija"
+          datum="2027-04-16T07:00:00Z"
+          kupovno={true}
+          cijenaOdCenti={3500}
+        />
+        <KarticaDogadjaja
+          href="#"
+          naslov="Koncert u Lisinskom (satnica uskoro)"
+          termin="satnica još nije objavljena"
+          organizator="Demo organizator"
+          mjesto="KD Vatroslav Lisinski, Zagreb"
+          vrsta="Koncert"
+          datum="2026-11-21T19:00:00Z"
+          naglasak="#1a365d"
+          kupovno={false}
+        />
+        <p class="napomena">
+          Bez naslovne slike (danas svi događaji) pločica u boji organizatora nosi datum. S <code>cover_image_url</code> na
+          tom mjestu je kvadratni izrez slike.
+        </p>
+        <div class="niz">
+          {
+            ["2027-01-10T10:00:00Z", "2027-02-12T10:00:00Z", "2027-03-05T10:00:00Z", "2027-04-16T07:00:00Z", "2027-05-01T10:00:00Z", "2027-06-20T10:00:00Z"].map((d) => (
+              <DatumskaPlocica datum={d} />
+            ))
+          }
+          <DatumskaPlocica datum={null} />
+        </div>
+        <div class="niz">
+          {
+            ["2027-07-04T10:00:00Z", "2027-08-15T10:00:00Z", "2027-09-30T10:00:00Z", "2027-10-31T10:00:00Z", "2027-11-21T10:00:00Z", "2027-12-31T23:30:00Z"].map((d) => (
+              <DatumskaPlocica datum={d} varijanta="boja" velicina="s" />
+            ))
+          }
+        </div>
+        <div class="niz">
+          <DatumskaPlocica datum="2027-04-16T07:00:00Z" varijanta="boja" velicina="l" naglasak="#7b2d43" />
+          <DatumskaPlocica datum="2027-04-16T07:00:00Z" varijanta="boja" velicina="m" naglasak="#f6e05e" />
+          <DatumskaPlocica datum={null} varijanta="boja" velicina="s" />
+        </div>
+        <p class="napomena">31. 12. u 23:30 UTC je već 1. 1. u Zagrebu (zadnja pločica: SIJ 1): pločica računa u zoni događaja.</p>
+        <div class="termin">
+          <DatumskaPlocica datum="2027-04-16T07:00:00Z" ukras />
+          <div><b>petak, 16. travnja 2027.</b><span>9:00 – nedjelja, 18. travnja</span></div>
+        </div>
+      </div>
+      <div class="odjeljak">
+        <h2>Naglasna boja organizatora (AA)</h2>
+        <div class="mreza-3">
+          {
+            primjeriNaglaska.map((p) => (
+              <div class="ploca naglasak" style={p.stil}>
+                <Gumb varijanta="naglasni" blok>Kupi ulaznice</Gumb>
+                <span class="sitno">
+                  {p.hex} · {p.opis}
+                  <br />
+                  tekst {p.n.onAccent} · {p.kontrastGumba}:1
+                </span>
+                <a class="link-naglasak" href="#">link kao tekst</a>
+                <span class="sitno">
+                  {p.n.accentText === p.n.accent ? "boja prolazi kao tekst" : `potamnjeno u ${p.n.accentText}`} ·{" "}
+                  {p.kontrastTeksta}:1 na --color-bg
+                </span>
+              </div>
+            ))
+          }
+        </div>
+        <ol class="napomena pravila">
+          <li><code>--color-on-accent</code> = tamna ili bijela, ona s većim kontrastom (WCAG).</li>
+          <li>Naglasak kao tekst mora imati 4,5:1 prema <code>--color-bg</code>; ako nema, potamni se dok ne prođe.</li>
+          <li>Platformski gumbi ostaju tamni (<code>--color-ink</code>); naglasak samo na stranicama događaja.</li>
+        </ol>
+        <div class="mreza-3">
+          {
+            primjeriNaglaska.map((p) => (
+              <NaslovnaPloha vrsta="Konferencija" datumVeliki="16.–18." datumMali="travnja 2027." stil={p.stil} />
+            ))
+          }
+        </div>
+      </div>
+    </section>
+
+    <!-- Sažetak; red ulaznice -->
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Sažetak cijene</h2>
+        <SazetakNarudzbe kartica stavke={[{ opis: "Redovna ulaznica × 2", iznosCenti: 12000 }]} />
+      </div>
+      <div class="odjeljak">
+        <h2>Red ulaznice</h2>
+        <div class="ploca bez-paddinga">
+          <RedUlaznice ime="Ana Horvat" serijski="MOCK-000001" stanje="vrijedi" />
+          <RedUlaznice ime="Marko Horvat" serijski="MOCK-000002" stanje="uslo" />
+          <RedUlaznice serijski="MOCK-000003" vrsta="Redovna ulaznica" stanje="ponistena" />
+        </div>
+      </div>
+    </section>
+
+    <hr />
+
+    <!-- Uzorci s ekrana -->
+    <section class="odjeljak">
+      <h2>Popis: grupa po datumu, prazno, greška, učitavanje</h2>
+      <div class="popis">
+        <GrupaPoDatumu datum="21. studenoga" danUTjednu="subota">
+          <KarticaDogadjaja
+            href="#"
+            naslov="Koncert u Lisinskom (satnica uskoro)"
+            termin="satnica još nije objavljena"
+            organizator="Demo organizator"
+            mjesto="KD Vatroslav Lisinski, Zagreb"
+            vrsta="Koncert"
+            datum="2026-11-21T19:00:00Z"
+            naglasak="#1a365d"
+            kupovno={false}
+          />
+        </GrupaPoDatumu>
+        <GrupaPoDatumu datum="12. veljače" danUTjednu="petak" godina="2027.">
+          <KarticaDogadjaja
+            href="#"
+            naslov="Međunarodni susret osoba otvorenih za katolički brak"
+            termin="12. – 14. veljače 2027."
+            organizator="Udruga Prilika za Susret"
+            mjesto="Aula Magna, Hrvatsko katoličko sveučilište, Zagreb"
+            vrsta="Susret"
+            datum="2027-02-12T09:00:00Z"
+            naglasak="#7b2d43"
+            kupovno={true}
+            cijenaOdCenti={7000}
+          />
+        </GrupaPoDatumu>
+        <PraznoStanje naslov="Trenutačno nema objavljenih događaja." opis="Kad organizator objavi događaj, pojavit će se ovdje." />
+        <Banner ton="error">
+          Događaje trenutačno ne možemo učitati.
+          <Gumb slot="akcija" varijanta="greska" href="">Pokušaj ponovno</Gumb>
+        </Banner>
+        <KosturKartice />
+      </div>
+    </section>
+
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Događaj: naslovna ploha i cjenik</h2>
+        <NaslovnaPloha vrsta="Konferencija" datumVeliki="16.–18." datumMali="travnja 2027." mjesto="Dom sportova · Zagreb" />
+      </div>
+      <div class="odjeljak">
+        <h2 class="prazan-naslov" aria-hidden="true">&nbsp;</h2>
+        <Cjenik id="ulaznice-primjer">
+          <RedTiera naziv="Redovna ulaznica" opis="Sva tri dana, uključen ručak" imenska cijenaCenti={6000} />
+          <RedTiera naziv="Studentska" opis="Uz predočenje indeksa na ulazu" imenska cijenaCenti={3500} stanje="malo" preostalo={4} />
+          <RedTiera naziv="Rani upis" cijenaCenti={5000} stanje="rasprodano" />
+          <Fragment slot="dno">
+            <Gumb varijanta="naglasni" href="#" velik blok>Kupi ulaznice</Gumb>
+            <span>Kupujete izravno od organizatora — bez naknade posrednika.</span>
+          </Fragment>
+        </Cjenik>
+        <h3 class="podnaslov">Ljepljiva traka (mobitel)</h3>
+        <div class="okvir-trake">
+          <ProdajnaTraka href="#" cijenaOdCenti={3500} uvijekVidljiva />
+        </div>
+      </div>
+    </section>
+
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Kupnja: izbor tiera (otok), stanja gumba</h2>
+        <div class="ploca stupac">
+          <IzborTiera client:load opcije={opcijeTiera} pocetni="redovna" />
+          <Banner ton="error">
+            <b>Previše pokušaja.</b> Pokušajte ponovno za 2 min.
+          </Banner>
+          <Gumb varijanta="naglasni" velik blok disabled>Nastavi na plaćanje</Gumb>
+          <Gumb varijanta="naglasni" velik blok ucitava>Otvaram plaćanje…</Gumb>
+        </div>
+      </div>
+      <div class="odjeljak">
+        <h2>Narudžba: ponovna dostava (otok)</h2>
+        <div class="ploca stupac">
+          <OdbrojavanjeGumb client:load sekundi={3552} />
+          <OdbrojavanjeGumb client:load sekundi={5} />
+          <OdbrojavanjeGumb salje />
+          <OdbrojavanjeGumb />
+          <Banner ton="wait">Previše pokušaja. Novi QR kodovi mogu se zatražiti za 60 min.</Banner>
+          <Banner ton="neutral">Sve ulaznice iz ove narudžbe su već iskorištene ili poništene.</Banner>
+          <Banner ton="error">Slanje nije uspjelo. Pokušajte kasnije ili se javite podršci.</Banner>
+        </div>
+      </div>
+    </section>
+
+    <section class="odjeljak">
+      <h2>Narudžba: zaglavlje po stanju</h2>
+      <div class="mreza-3">
+        <ZaglavljeNarudzbe stanje="pending">
+          <span>Rezervacija vrijedi do četvrtak, 19. 11. 2026. 15:10</span>
+        </ZaglavljeNarudzbe>
+        <ZaglavljeNarudzbe stanje="pending-placeno" />
+        <ZaglavljeNarudzbe stanje="paid" />
+        <ZaglavljeNarudzbe stanje="expired">
+          <Gumb href="#">Natrag na događaj</Gumb>
+        </ZaglavljeNarudzbe>
+        <ZaglavljeNarudzbe stanje="refunded" />
+        <ZaglavljeNarudzbe stanje="failed">
+          <Gumb href="#">Natrag na događaj</Gumb>
+        </ZaglavljeNarudzbe>
+      </div>
+      <div class="termin">
+        <DatumskaPlocica datum="2027-04-16T07:00:00Z" varijanta="boja" velicina="m" />
+        <div><b>Prilika za Susret 2027</b><span>petak, 16. 4. 2027. u 9:00 – nedjelja, 18. 4.</span></div>
+      </div>
+    </section>
+
+    <section class="mreza-2">
+      <div class="odjeljak">
+        <h2>Greške stranice</h2>
+        <StranicaGreske
+          kod="404"
+          naslov="Događaj nije pronađen."
+          opis="Možda ga je organizator uklonio ili je link nepotpun. Pogledajte događaje koji su trenutačno u prodaji."
+          razina={2}
+        >
+          <Gumb href="#" velik>Na popis događaja</Gumb>
+        </StranicaGreske>
+      </div>
+      <div class="odjeljak">
+        <h2 class="prazan-naslov" aria-hidden="true">&nbsp;</h2>
+        <StranicaGreske
+          kod="500 · greška servera ili mreže"
+          naslov="Nešto je pošlo po zlu."
+          opis="Pokušajte ponovno za trenutak. Ako se ponavlja, javite se na podrska@domovina.ai."
+          ikona="upozorenje"
+          ton="error"
+          razina={2}
+        >
+          <Gumb>Pokušaj ponovno</Gumb>
+        </StranicaGreske>
+      </div>
+    </section>
+  </div>
+
+  <ProdajnaTraka slot="dno" href="#" cijenaOdCenti={3500} />
+</Osnovni>
+
+<style>
+  .katalog {
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+  .uvod {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 760px;
+  }
+  .uvod h1 {
+    font-size: var(--font-size-display);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .uvod p {
+    font-size: 17px;
+    color: var(--color-text-muted);
+  }
+  .nadnaslov {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .odjeljak {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+  }
+  .podnaslov {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-md);
+  }
+  hr {
+    width: 100%;
+    border: 0;
+    border-top: 1px dashed var(--color-border-strong);
+  }
+  .mreza-2,
+  .mreza-3,
+  .mreza-4 {
+    display: grid;
+    gap: 14px;
+  }
+  .mreza-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 40px;
+    align-items: start;
+  }
+  .mreza-2.zbijeno {
+    gap: 14px;
+  }
+  .mreza-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .mreza-4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .mreza-2 > :global(*),
+  .mreza-3 > :global(*) {
+    min-width: 0;
+  }
+  .mreza-boja {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .boja {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    font-size: 13px;
+  }
+  .boja span {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .uzorak {
+    height: 72px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+  }
+  .stanje {
+    padding: var(--space-3) 14px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+  }
+  .ploca {
+    padding: var(--space-6);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .bez-paddinga {
+    padding: 0;
+    overflow: hidden;
+  }
+  .stupac {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+  .tipografija {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .tipografija > div {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-4);
+  }
+  .tipografija > div > span:first-child {
+    flex: none;
+    width: 130px;
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .t-display {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .t-h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+  }
+  .t-h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+  }
+  .t-lg {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+  }
+  .t-sm {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+  }
+  .t-xs {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .t-iznos {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .razmaci {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .niz-razmaka {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-3);
+  }
+  .razmak {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--color-text-muted);
+  }
+  .razmak div {
+    background: var(--color-ink);
+  }
+  .niz-radijusa {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+  .niz-radijusa div {
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 48px;
+    border: 1.5px solid var(--color-border-strong);
+    font-size: 11px;
+  }
+  .red-fokusa {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+  .red-fokusa :global(.prikaz-fokus) {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  .ikone {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .niz {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .napomena {
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+  .pravila {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 18px;
+    font-size: var(--font-size-sm);
+  }
+  .termin {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .termin > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .termin span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .naglasak {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: 14px;
+  }
+  .sitno {
+    font-size: var(--font-size-xs);
+    color: var(--color-text-muted);
+  }
+  .link-naglasak {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-accent-text);
+  }
+  .popis {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    max-width: 912px;
+  }
+  .okvir-trake {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+
+  @media (max-width: 719px) {
+    .katalog {
+      gap: 40px;
+    }
+    .prazan-naslov {
+      display: none;
+    }
+    .uvod h1 {
+      font-size: var(--font-size-2xl);
+    }
+    .mreza-2,
+    .mreza-3,
+    .mreza-4 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .mreza-boja {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .tipografija > div {
+      flex-direction: column;
+      gap: 2px;
+    }
+    .t-display {
+      font-size: var(--font-size-2xl);
+    }
+  }
+</style>

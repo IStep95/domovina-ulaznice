@@ -1,0 +1,29 @@
+---
+// Banner s ikonom i tekstom: ok / wait / error / neutral (Main.dc.html).
+// Uloga: error → role="alert" (javi odmah), ostalo → role="status"; „note” za
+// upozorenje koje stoji na stranici od početka (ponovna dostava, Narudzba-1280).
+// Slot "akcija" je za gumb ispod teksta („Pokušaj ponovno”, Popis-390).
+import Ikona from "./Ikona.astro";
+import { IKONA_TONA, type IkonaIme, type Ton } from "../lib/ikone.ts";
+import css from "./banner.module.css";
+
+interface Props {
+  ton?: Ton;
+  uloga?: "alert" | "status" | "note";
+  /** Druga ikona od zadane za ton (npr. „sat” za prekinuto plaćanje). */
+  ikona?: IkonaIme;
+  /** Obrub 2 px i veći tekst: ishod koji se ne smije previdjeti. */
+  istaknut?: boolean;
+  class?: string;
+}
+
+const { ton = "neutral", uloga, ikona, istaknut = false, class: klasa } = Astro.props;
+const role = uloga ?? (ton === "error" ? "alert" : "status");
+---
+<div role={role} class:list={[css.banner, css[ton], istaknut && css.istaknut, klasa]}>
+  <div class={css.redak}>
+    <Ikona ime={ikona ?? IKONA_TONA[ton]} velicina={20} />
+    <span class={css.tekst}><slot /></span>
+  </div>
+  {Astro.slots.has("akcija") && <div class={css.akcija}><slot name="akcija" /></div>}
+</div>

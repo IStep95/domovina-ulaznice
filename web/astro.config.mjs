@@ -7,6 +7,18 @@ import react from "@astrojs/react";
 // Lokalni mock API (mobile/mock-api.mjs, odluka 7). Koristi se samo u `astro dev`.
 const MOCK_API = "http://localhost:8797";
 
+// Katalog komponenti /_komponente (S2), samo u `astro dev`. Astro preskače
+// datoteke koje počinju s `_`, pa se ruta ubacuje ovdje; u buildu ne postoji.
+const komponenteSamoUDevu = {
+  name: "komponente-samo-u-devu",
+  hooks: {
+    "astro:config:setup": ({ command, injectRoute }) => {
+      if (command !== "dev") return;
+      injectRoute({ pattern: "/_komponente", entrypoint: "./src/dev/komponente.astro" });
+    },
+  },
+};
+
 export default defineConfig({
   output: "server",
   adapter: cloudflare({
@@ -18,7 +30,7 @@ export default defineConfig({
   }),
   // Adapter bi inače dodao KV binding SESSION; web/ nema KV (odluka 4).
   session: false,
-  integrations: [react()],
+  integrations: [react(), komponenteSamoUDevu],
   server: { port: 4321 },
   vite: {
     server: {

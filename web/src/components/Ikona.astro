@@ -1,0 +1,45 @@
+---
+// Ikona iz src/lib/ikone.ts. Uvijek aria-hidden: značenje nosi tekst uz nju
+// (pravilo 3). React otoci koriste Ikona.tsx s istim podacima.
+import { IKONE, type IkonaIme } from "../lib/ikone.ts";
+
+interface Props {
+  ime: IkonaIme;
+  /** px; zadano 20 */
+  velicina?: number;
+  class?: string;
+}
+
+const { ime, velicina = 20, class: klasa } = Astro.props;
+const oblik: { sadrzaj: string; crta?: number } = IKONE[ime];
+---
+<svg
+  class:list={["ikona", klasa, { vrti: ime === "vrtnja" }]}
+  width={velicina}
+  height={velicina}
+  viewBox="0 0 24 24"
+  fill="none"
+  stroke="currentColor"
+  stroke-width={oblik.crta ?? 2}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  aria-hidden="true"
+  focusable="false"
+  set:html={oblik.sadrzaj}
+/>
+
+<style>
+  .ikona {
+    flex: none;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .vrti {
+    animation: vrtnja 0.9s linear infinite;
+  }
+  @keyframes vrtnja {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>

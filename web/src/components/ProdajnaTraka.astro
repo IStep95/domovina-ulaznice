@@ -1,0 +1,68 @@
+---
+// Ljepljiva traka „od 35,00 € · Kupi ulaznice” na dnu ekrana (Dogadjaj-390).
+// Samo mobitel (< 720 px); na računalu je gumb u kartici „Ulaznice”.
+// Mjesto: slot "dno" u layoutu Osnovni.astro (zadnje dijete <body>).
+import Gumb from "./Gumb.astro";
+import { eurPrivremeno } from "../lib/prikaz.ts";
+
+interface Props {
+  href: string;
+  /** Najniža cijena dostupnog tiera, cijeli centi. */
+  cijenaOdCenti: number;
+  tekst?: string;
+  /** Samo za /_komponente: vidljiva i na širokom ekranu, bez lijepljenja. */
+  uvijekVidljiva?: boolean;
+}
+
+const { href, cijenaOdCenti, tekst = "Kupi ulaznice", uvijekVidljiva = false } = Astro.props;
+---
+<div class:list={["traka", { "uvijek-vidljiva": uvijekVidljiva }]}>
+  <div class="cijena">
+    <span class="od">od</span>
+    {/* PRIVREMENO: formater novca je S3. */}
+    <b>{eurPrivremeno(cijenaOdCenti)}</b>
+  </div>
+  <Gumb varijanta="naglasni" href={href} velik class="traka-gumb">{tekst}</Gumb>
+</div>
+
+<style>
+  .traka {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4) max(18px, env(safe-area-inset-bottom));
+    background: var(--color-surface);
+    border-top: 1px solid var(--color-border);
+    box-shadow: 0 -6px 20px rgba(19, 23, 20, 0.06);
+  }
+  .cijena {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+  .od {
+    font-size: 13px;
+    color: var(--color-text-muted);
+  }
+  .cijena b {
+    font-size: var(--font-size-lg);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .traka :global(.traka-gumb) {
+    flex: 1;
+    max-width: 220px;
+  }
+  @media (min-width: 720px) {
+    .traka:not(.uvijek-vidljiva) {
+      display: none;
+    }
+  }
+  .uvijek-vidljiva {
+    position: static;
+  }
+</style>

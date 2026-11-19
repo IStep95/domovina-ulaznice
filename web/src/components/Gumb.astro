@@ -1,0 +1,61 @@
+---
+// Gumb ili link koji izgleda kao gumb (Main.dc.html: šest varijanti).
+//   primarni   — platformski, --color-ink (popis, 404, narudžba)
+//   naglasni   — „Kupi ulaznice”, samo na stranicama događaja (--color-accent)
+//   sekundarni — obrub, bijela pozadina
+//   tanki      — podcrtani tekst
+//   greska     — „Pokušaj ponovno” u banneru greške
+//   + disabled (onemogućen) i ucitava (vrtnja + aria-busy, npr. „Otvaram plaćanje…”).
+// S `href` je <a>; onemogućeni link dobiva aria-disabled i gubi href.
+import Ikona from "./Ikona.astro";
+import css from "./gumb.module.css";
+
+interface Props {
+  varijanta?: "primarni" | "naglasni" | "sekundarni" | "tanki" | "greska";
+  href?: string;
+  type?: "button" | "submit" | "reset";
+  disabled?: boolean;
+  /** Slanje u tijeku: vrtnja, aria-busy, ne prima klik. */
+  ucitava?: boolean;
+  /** 48 px, 16/700 („Kupi ulaznice”). */
+  velik?: boolean;
+  /** Puna širina roditelja. */
+  blok?: boolean;
+  class?: string;
+  [atribut: `aria-${string}` | `data-${string}`]: string | boolean | undefined;
+}
+
+const {
+  varijanta = "primarni",
+  href,
+  type = "button",
+  disabled = false,
+  ucitava = false,
+  velik = false,
+  blok = false,
+  class: klasa,
+  ...ostalo
+} = Astro.props;
+
+const klase = [css.gumb, css[varijanta], velik && css.velik, blok && css.blok, klasa];
+const neaktivan = disabled || ucitava;
+---
+{
+  href !== undefined ? (
+    <a
+      class:list={klase}
+      href={neaktivan ? undefined : href}
+      aria-disabled={neaktivan ? "true" : undefined}
+      aria-busy={ucitava ? "true" : undefined}
+      {...ostalo}
+    >
+      {ucitava && <Ikona ime="vrtnja" velicina={16} />}
+      <slot />
+    </a>
+  ) : (
+    <button class:list={klase} type={type} disabled={neaktivan} aria-busy={ucitava ? "true" : undefined} {...ostalo}>
+      {ucitava && <Ikona ime="vrtnja" velicina={16} />}
+      <slot />
+    </button>
+  )
+}
