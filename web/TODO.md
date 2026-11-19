@@ -21,10 +21,18 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F1 — stranice za kupce
 
+- [ ] migracija u `domovina-api`: `venue_lat`, `venue_lon` (oba ili nijedno, raspon), `cover_image_alt`; idempotentna → S2b
+- [ ] `events-feed` vraća nova polja; Worker `publicEvent` ih prosljeđuje; `shared/api-tipovi.ts` i `mobile/mock-api.mjs` ih imaju → S2b
+- [ ] seedovi (`seeds/*.sql`) dobiju koordinate za postojeće događaje → S2b
+- [ ] (!) Matija primijeni migraciju i deploya `events-feed` → vrata nakon S2b
+
 - [ ] tokeni iz Claude Designa u `web/src/styles/tokens.css`, `brand.accent_color` nadjačava naglasnu boju → S2
 - [ ] osnovni layout, zaglavlje, podnožje (link na uvjete i privatnost), komponente iz dizajna → S2
 - [ ] `/` popis događaja, SSR → S3
 - [ ] `/dogadjaj/[slug]`: SSR, `og:*`, `twitter:*`, JSON-LD `Event`, stanja tierova (rasprodano, nije počelo, završilo, `kupovno: false`) → S3
+- [ ] karta i link na Google/Apple Maps iz `venue_lat`/`venue_lon`; `geo` u JSON-LD-u; bez koordinata samo adresa → S3
+- [ ] opis kao Markdown, iscrtan na serveru i sanitiziran → S3
+- [ ] „Dodaj u Google kalendar” i `/dogadjaj/[slug].ics` → S3
 - [ ] formatiranje novca iz centi (`6000` → `60,00 €`) i datuma (Europe/Zagreb) s testovima → S3
 - [ ] `/dogadjaj/[slug]/kupnja`: React otok (tier, količina, imena za `imenska`, e-mail, uvjeti), `POST /api/narudzba`, preusmjerenje na `checkout_url` → S4
 - [ ] svaki kod greške iz `POST /api/narudzba` ima poruku na hrvatskom, 429 poštuje `retry_after` → S4

@@ -43,7 +43,8 @@ flowchart LR
 2. **`web/` nikad ne zove `api.domovina.ai`.** Sve ide kroz `/api/*` postojećeg Workera,
    kao i mobilne aplikacije. Samo taj Worker smije držati Stripe ključeve, HMAC tajnu i
    service ključ (pravila 3 i 4).
-3. **Ugovor `/api/*` se u ovom lancu ne mijenja.** Ako stranici treba nešto novo, to je
+3. **Ugovor `/api/*` se mijenja samo u S2b, aditivno** (nova nullable polja događaja,
+   odluka 21). Inače se ne mijenja. Ako stranici treba nešto novo, to je
    zaseban, mali commit na `worker/` s testom, a `mobile/mock-api.mjs` se ažurira u istom
    commitu.
 4. **Novac u cijelim centima**, formatira se tek za prikaz.
@@ -57,15 +58,24 @@ flowchart LR
 | S1 | F0 | Astro kostur, zajednički tipovi, dev protiv mocka, mjerenje SSR-a na Workersu, design brief | 100 | `npm --prefix web run check` zelen; `curl` stranice događaja iz `wrangler dev` sadrži naslov u `<title>` i `og:title`; `npm test` i `npm run build` u korijenu zeleni |
 | — | vrata | (!) Ivan napravi dizajn u Claude Designu po `web/docs/design-brief.md` | — | export u `web/design/` commitan |
 | S2 | F1 | dizajnerski sustav: tokeni, layout, komponente | 200 | svaka komponenta iz exporta ima Astro ili React parnjaka; `check` zelen; snimke na 390 px i 1280 px u `docs/research/` |
-| S3 | F1 | popis i događaj (SSR, OG, JSON-LD, stanja tierova) | 300 | testovi za novac, datum i stanja tierova; `curl` na mock vraća OG i JSON-LD za oba događaja |
+| S2b | F1 | dorada sheme događaja: `venue_lat`, `venue_lon`, `cover_image_alt` (migracija u `domovina-api`, `events-feed`, Worker, tipovi, mock) | 250 | migracija idempotentna (drugi run no-op); `GET /api/dogadjaj/:slug` u mocku i lokalno vraća nova polja; korijenski `npm test` zelen |
+| — | vrata | (!) Matija primijeni migraciju i deploya `events-feed` | — | `api.domovina.ai` vraća nova polja |
+| S3 | F1 | popis i događaj (SSR, OG, JSON-LD s `geo`, karta, Markdown opis, „dodaj u kalendar”, stanja tierova) | 300 | testovi za novac, datum i stanja tierova; `curl` na mock vraća OG i JSON-LD za oba događaja |
 | S4 | F1 | kupnja (React otok, `POST /api/narudzba`, greške) | 400 | kupnja kroz mock završi na `/ulaznice/:id?placeno=1`; svaki kod greške iz `worker/api.ts` ima poruku i test |
 | S5 | F1 | narudžba, pravne stranice, 404 | 500 | pending → paid kroz mock; ponovna dostava i preuzimanje rade; pravne stranice prerenderirane (`dist/` sadrži HTML) |
 | S6 | F2 | service binding u Workeru, lokalna e2e kupnja, `deploy-dug.md` | 600 | test podjele putanja u `worker-tests/`; cijela kupnja lokalno (`scripts/lokalno/pokreni.sh`) prolazi kroz Astro; `npm test` zelen |
 | — | vrata | (!) Matija deploya oba Workera na staging | — | `ulaznice-staging.domovina.ai/dogadjaj/<slug>` dolazi iz Astra |
 | S7 | F2 | mjerenje na stagingu, uklanjanje kupačkih stranica iz `src/`, dokumentacija | 700 | Lighthouse brojke u `docs/research/`; `src/pages/` bez kupačkih stranica; `npm run build`, `npm test`, `check` zeleni |
 
-Procjena: **7 sesija**, dvoja vrata (dizajn, staging deploy). Ništa nije paralelno: S3–S5
+Procjena: **8 sesija**, troja vrata (dizajn, migracija jezgre, staging deploy). S2b ne
+mora čekati dizajn (može ići odmah nakon S1, paralelno s Ivanovim radom u Claude
+Designu); S3 ne čeka migraciju jer su nova polja nullable. Ostalo je redom: S3–S5
 dijele layout i API klijent, a S6 i S7 ovise o svemu prije.
+
+Prijedlog sheme iz Ivanove bilješke (2026-11-19): od deset stavki tri traže promjenu
+(koordinate, alt naslovne slike), dvije su gotove u shemi, dvije su odgođene (galerija,
+`city_id`), dvije odbijene (tagovi, „tko dolazi”), a Markdown opis i kalendar ne traže
+shemu. Detalji: odluke 14–21.
 
 Najrizičniji paketi:
 
@@ -93,4 +103,4 @@ odu svaki na svoju stranu.
 
 ## Gdje smo
 
-S0 (2026-11-19): plan, odluke i handoffi napisani. Koda u `web/` nema. Sljedeće: S1.
+S0 (2026-11-19): plan, odluke i handoffi napisani; dopunjeno Ivanovim prijedlogom sheme (S2b). Koda u `web/` nema. Sljedeće: S1.

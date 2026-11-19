@@ -1,4 +1,4 @@
-# Handoffi za sesije S1–S7 (web/)
+# Handoffi za sesije S1–S7 i S2b (web/)
 
 Plan je u [`../plan.md`](../plan.md), odluke u [`../decisions.md`](../decisions.md),
 radna lista u [`../../TODO.md`](../../TODO.md). Svaka sesija ima svoj handoff `SN.md`.
@@ -32,6 +32,8 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | S1 | Astro kostur, tipovi, mock, mjerenje SSR-a, design brief | otvoreno | | | |
 | — | (!) dizajn u Claude Designu | čeka | | | Ivan, po `web/docs/design-brief.md` |
 | S2 | dizajnerski sustav | otvoreno | | | |
+| S2b | dorada sheme događaja (Ivanov prijedlog) | otvoreno | | | može odmah nakon S1 |
+| — | (!) migracija jezgre i `events-feed` | čeka | | | Matija |
 | S3 | popis i događaj | otvoreno | | | |
 | S4 | kupnja | otvoreno | | | |
 | S5 | narudžba, pravno, 404 | otvoreno | | | |
@@ -45,7 +47,8 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
   `npm ci && npm test && npm run build`, a od S1 nadalje i `npm --prefix web ci && npm --prefix web run check`.
   Jedna rečenica da je zeleno. Ako nije, prvo to popravi.
 - **Opseg:** smije se dirati `web/`, `shared/`, a `src/lib/api.ts` samo radi uvoza
-  zajedničkih tipova. `worker/` samo u S6 (service binding) ili uz odluku 6.
+  zajedničkih tipova. `worker/` samo u S2b (prosljeđivanje novih polja) i S6 (service binding) ili uz odluku 6.
+  `../domovina-api` samo u S2b.
   `src/pages/` se briše tek u S7. Nikad: `migrations/`, `seeds/`, `mobile/` (osim
   `mobile/mock-api.mjs` po odluci 6), `wrangler.jsonc` u korijenu (osim S6).
 - **Tvrdi uvjeti iz `plan.md`:** `web/` bez baze i tajni, nikad izravno na

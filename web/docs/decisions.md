@@ -73,3 +73,52 @@ Revizija: kad Ivan dobije pravo pisanja u upstream.
 
 **13. Jezik.** UI, dokumentacija i commit poruke na hrvatskom; kod engleski. Commit:
 `feat(web): …`, `fix(web): …`, `docs(web): …`.
+
+## S0, dopuna: Ivanov prijedlog sheme (2026-11-19)
+
+Prijepis i usporedba: [research/2026-11-19-ivanov-prijedlog-sheme.md](research/2026-11-19-ivanov-prijedlog-sheme.md).
+
+**14. Koordinate mjesta: `venue_lat`, `venue_lon`.** `numeric(9,6)`, nullable, ili oba ili
+nijedno, raspon −90..90 i −180..180. Koriste se za kartu, link na Google/Apple Maps i
+`geo` u JSON-LD-u.
+Razlog: adresa je tekst; karta i navigacija trebaju koordinate.
+Revizija: nema.
+
+**15. Primarna slika već postoji (`cover_image_url`); dodaje se `cover_image_alt`.**
+Tekst ≤ 300, nullable.
+Razlog: pristupačnost i `og:image:alt`.
+Revizija: nema.
+
+**16. Galerija slika je odgođena.** Kad bude trebala: tablica
+`pinka_finance.event_images (campaign_id, position, url, alt)` uz isto ograničenje
+`https://` kao naslovna. Upload slika (R2) je zaseban posao.
+Razlog: nijedan postojeći događaj je nema, a traži upload i moderaciju.
+Revizija: kad je organizator zatraži.
+
+**17. Kategorija je postojeći `event_type`; `city_id` je odgođen.** UI prevodi
+`event_type` u oznaku (`konferencija` → „Konferencija”). Grad ostaje tekst
+`venue_city`.
+Razlog: tablica kategorija i gradova treba tek javnom katalogu s filtrima više
+organizatora, a to nije cilj (`docs/08`: ne natječemo se kao marketplace).
+Revizija: kad nastane javni katalog događaja.
+
+**18. Tagovi i „tko dolazi” se ne rade.** Ivan ih je prekrižio. Popis dolaznika bi
+otkrivao imena nositelja ulaznica (`holders`), a to su osobni podaci kupaca.
+Revizija: samo uz izričit pristanak kupca po ulaznici i pravnu provjeru.
+
+**19. `description_hr` / `description_en` su Markdown, bez nove kolone.** Astro ga
+iscrta na serveru uz sanitizaciju (bez sirovog HTML-a, linkovi `rel="nofollow noopener"`).
+Postojeći opisi (odlomci odvojeni praznim redom) već su valjan Markdown.
+Razlog: format je dogovor o sadržaju, ne o shemi.
+Revizija: ako organizatori počnu lijepiti HTML.
+
+**20. „Dodaj u kalendar” bez promjene sheme.** Link na Google Calendar
+(`calendar.google.com/calendar/render?action=TEMPLATE…`) i `.ics` datoteka koju Astro
+generira na `/dogadjaj/[slug].ics`. Bez `ends_at` kraj je `starts_at` + 2 h; bez
+`starts_at` gumba nema.
+Razlog: svi podaci već postoje.
+Revizija: nema.
+
+**21. Ugovor `/api/*` se mijenja samo u S2b, i samo aditivno.** Odluka 6 vrijedi za sve
+ostale sesije. Nova polja su nullable, pa stari klijenti (mobilne aplikacije) rade
+nepromijenjeno.
