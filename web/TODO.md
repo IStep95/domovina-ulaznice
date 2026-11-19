@@ -17,7 +17,7 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] mjerenje: SSR stranica događaja iz `wrangler dev` vraća `<title>` i `og:title` s naslovom događaja → S1
 - [x] `npm --prefix web run check` = `astro check` + testovi (`node:test`) + `astro build` → S1
 - [x] `web/docs/design-brief.md`: ekrani, stanja i podaci za Claude Design → S1
-- [ ] (!) Ivan u Claude Designu napravi dizajnerski sustav i 5 ekrana po briefu, export u `web/design/` → vrata prije S2
+- [x] (!) dizajnerski sustav i ekrani po briefu u Claude Designu, export u `web/design/` → vrata prije S2
 
 ## F1 — stranice za kupce
 

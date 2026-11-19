@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<title>Stanja narudžbe</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--color-bg:#f3f4f2;--color-surface:#ffffff;--color-surface-2:#f7f8f6;--color-border:#e3e6e2;--color-border-strong:#c9cec8;--color-text:#131714;--color-text-muted:#5b635d;--color-ink:#131714;--color-on-ink:#ffffff;--color-accent:#2f855a;--color-on-accent:#ffffff;--color-ok:#1e6b40;--color-ok-bg:#e5f3ea;--color-wait:#7a4f00;--color-wait-bg:#fcf1d8;--color-error:#a8231a;--color-error-bg:#fceae8;--color-neutral:#454c47;--color-neutral-bg:#eceeeb;--color-focus:#131714;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--shadow-card:0 1px 2px rgba(19,23,20,.05),0 4px 16px rgba(19,23,20,.04);--font:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;font-family:var(--font);color:var(--color-text);background:var(--color-bg)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+</style>
+</helmet>
+<div style="width: 1280px; min-height: 1000px; box-sizing: border-box; padding: 56px 64px; background: var(--color-bg); font-family: var(--font); color: var(--color-text); display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; flex-direction: column; gap: 8px; max-width: 720px">
+    <h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em">Stanja narudžbe</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: var(--color-text-muted)">Zaglavlje stranice <code>/ulaznice/:orderId</code> po <code>state</code>. Ispod zaglavlja uvijek isti sažetak događaja i narudžbe (v. „Narudžba plaćena”). Ton boje prati stanje, a naslov ga uvijek kaže i riječima.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px">
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--color-wait-bg); border-radius: var(--radius-lg); color: var(--color-wait)">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase">pending</span>
+      <div style="display: flex; align-items: center; gap: 10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><h2 style="margin: 0; font-size: 22px; font-weight: 800">Čeka plaćanje</h2></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--color-text)">Mjesta su rezervirana dok rezervacija ne istekne. Ulaznice izdajemo čim plaćanje bude potvrđeno.</p>
+      <span style="font-size: 14px; font-weight: 600">Rezervacija vrijedi do četvrtak, 19. 11. 2026. 15:10</span>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--color-wait-bg); border-radius: var(--radius-lg); color: var(--color-wait)">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase">pending + ?placeno=1</span>
+      <div style="display: flex; align-items: center; gap: 10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg><h2 style="margin: 0; font-size: 22px; font-weight: 800">Potvrđujemo plaćanje…</h2></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--color-text)">Plaćanje je zaprimljeno kod Stripea. Ulaznice izdajemo čim potvrda stigne — ova stranica se osvježava sama.</p>
+      <span style="font-size: 14px; font-weight: 600">osvježava se svake 2 s, do 20 s</span>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--color-ok-bg); border-radius: var(--radius-lg); color: var(--color-ok)">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase">paid</span>
+      <div style="display: flex; align-items: center; gap: 10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg><h2 style="margin: 0; font-size: 22px; font-weight: 800">Plaćeno</h2></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--color-text)">Ulaznice su izdane i poslane e-mailom. Na ulazu pokažite QR kod iz poruke.</p>
+      <span style="font-size: 14px; font-weight: 600">+ popis ulaznica, ponovna dostava, link u aplikaciju</span>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--color-error-bg); border-radius: var(--radius-lg); color: var(--color-error)">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase">expired</span>
+      <div style="display: flex; align-items: center; gap: 10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5M12 16h.01"/></svg><h2 style="margin: 0; font-size: 22px; font-weight: 800">Rezervacija je istekla</h2></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--color-text)">Plaćanje nije stiglo na vrijeme pa su mjesta vraćena u prodaju. Ništa nije naplaćeno.</p>
+      <a href="Dogadjaj-1280.dc.html" style="align-self: flex-start; text-decoration: none; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; font-size: 15px; font-weight: 600; border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-on-ink)">Natrag na događaj</a>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--color-neutral-bg); border-radius: var(--radius-lg); color: var(--color-neutral)">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase">refunded</span>
+      <div style="display: flex; align-items: center; gap: 10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg><h2 style="margin: 0; font-size: 22px; font-weight: 800">Vraćeno</h2></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--color-text)">Uplata je vraćena na karticu, a ulaznice su poništene.</p>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: var(--radius-md); background: var(--color-surface); color: var(--color-text)"><span style="font-size: 14px; font-weight: 600">Ana Horvat</span><span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); background: var(--color-error-bg); color: var(--color-error)">poništena</span></div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 22px; background: var(--color-error-bg); border-radius: var(--radius-lg); color: var(--color-error)">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase">failed</span>
+      <div style="display: flex; align-items: center; gap: 10px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg><h2 style="margin: 0; font-size: 22px; font-weight: 800">Plaćanje nije uspjelo</h2></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: var(--color-text)">Ništa nije naplaćeno. Možete pokušati ponovno sa stranice događaja.</p>
+      <a href="Dogadjaj-1280.dc.html" style="align-self: flex-start; text-decoration: none; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; font-size: 15px; font-weight: 600; border-radius: var(--radius-md); background: var(--color-ink); color: var(--color-on-ink)">Natrag na događaj</a>
+    </section>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+    <section style="display: flex; flex-direction: column; gap: 10px; padding: 20px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg)">
+      <b style="font-size: 16px">Ponovna dostava: ostali ishodi</b>
+      <div role="status" style="padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-ok-bg); color: var(--color-ok); font-size: 14px">Poslano na an••••@primjer.hr.</div>
+      <div role="status" style="padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-neutral-bg); color: var(--color-neutral); font-size: 14px">Sve ulaznice iz ove narudžbe su već iskorištene ili poništene.</div>
+      <div role="alert" style="padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-error-bg); color: var(--color-error); font-size: 14px">Slanje nije uspjelo. Pokušajte kasnije ili se javite podršci.</div>
+    </section>
+    <section style="display: flex; flex-direction: column; gap: 10px; padding: 20px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg)">
+      <b style="font-size: 16px">Gumb tijekom slanja i nakon 429</b>
+      <button type="button" disabled aria-busy="true" style="align-self: flex-start; font-family: inherit; min-height: 44px; font-size: 15px; font-weight: 600; padding: 0 18px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text); display: inline-flex; align-items: center; gap: 8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>Šaljem…</button>
+      <div role="alert" style="padding: 12px 14px; border-radius: var(--radius-md); background: var(--color-wait-bg); color: var(--color-wait); font-size: 14px">Previše pokušaja. Novi QR kodovi mogu se zatražiti za 60 min.</div>
+      <button type="button" disabled style="align-self: flex-start; font-family: inherit; min-height: 44px; font-size: 15px; font-weight: 600; padding: 0 18px; border-radius: var(--radius-md); border: 0; background: #d6dad5; color: #4a514c">Pošalji ponovno · 59:12</button>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
