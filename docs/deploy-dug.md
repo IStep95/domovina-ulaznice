@@ -25,10 +25,20 @@ koda koji je čita (isto pravilo kao u [2026-08-04 §8](2026-08-04-lokalna-verif
 Zamka uz #2: `npm run db:staging` i `npm run db:remote` primjenjuju **samo
 `0001_init.sql`**. Svaka nova D1 migracija mora se pustiti ručno, kao gore.
 
+## `web/` (korak 0, 2026-11-19)
+
+`domovina-ulaznice-web` (`ulaznice-web.domovina.ai`) i `domovina-ulaznice-web-staging`
+(`ulaznice-web-staging.domovina.ai`) su deployani sa stranicom „u izradi” iz
+`web/privremeno/`. Auto-deploya nema: nakon svakog mergea Ivanovog PR-a koji dira
+`web/` pokreni `npm --prefix web ci && npm --prefix web run deploy:staging`
+([web odluka 22](../web/docs/decisions.md)). Produkciju `web/` ne deployaj prije S6
+osim kao „u izradi” (odluka 24).
+
 ## Namjerno se ne deploya
 
 | Što | Zašto | Kada |
 | --- | --- | --- |
 | `seeds/*.sql` na produkcijsku jezgru | Stripe rail u seedovima ima izmišljen `acct_…`, a Safe je `0x1111…`. Na živom sustavu događaj bi izgledao kupovno, a naplata ne bi radila. | Kad Prilika za Susret završi pravi Stripe onboarding i potvrdi cjenik (TODO poslan Tomislavu Belaviću 26. 9. 2026.) |
 | Produkcijski Worker bez `NAJAVA=1` | `ulaznice.domovina.ai` je javna domena i ne smije izgledati kao da prodaja radi | Kad staging proda prvu pravu ulaznicu |
+| `seeds/staging-web-pregled.sql` na jezgru | Pripremljen `[TEST]` događaj bez Stripe raila (`kupovno: false`) za staging pregled `web/`; jezgra je zajednička, pa bi bio vidljiv i u javnom feedu | Kad Matija odluči ([web odluka 23](../web/docs/decisions.md)) |
 | Stripe/Resend tajne na staging | Odluka vlasnika, v. [implementacija P0/P1](2026-09-03-implementacija-p0-p1.md) | Nakon odluke Standard vs Express ([plan §3.1](2026-09-03-plan-do-produkcije.md)) |
