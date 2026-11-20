@@ -55,6 +55,55 @@ test("prekratka lozinka se odbija prije mreže", async () => {
   assert.equal(t.calls.filter((c) => c.url.includes("/auth/v1/token")).length, 0);
 });
 
+// -------------------------------------------------------------- prijava kodom
+
+test("slanje koda ide na GoTrue /otp s anon ključem i bez otvaranja računa", async () => {
+  t = testEnv();
+  const { status } = await callJson(t, "/api/organizator/kod", { body: { email: "org@test.hr" } });
+  assert.equal(status, 200);
+  const poziv = t.calls.find((c) => c.url.includes("/auth/v1/otp"));
+  assert.ok(poziv, "slanje koda mora zvati GoTrue");
+  assert.equal(poziv!.headers.apikey, ANON_KEY);
+  assert.equal(JSON.parse(poziv!.body).create_user, false);
+});
+
+test("nepoznat mail daje isti odgovor kao poznat (nema otkrivanja računa)", async () => {
+  t = testEnv();
+  t.api.otpStatus = 422;
+  const { status, body } = await callJson<{ ok: boolean }>(t, "/api/organizator/kod", { body: { email: "nitko@test.hr" } });
+  assert.equal(status, 200);
+  assert.equal(body.ok, true);
+});
+
+test("potvrda koda vraća token, a refresh token NE izlazi prema browseru", async () => {
+  t = testEnv();
+  const { status, body, text } = await callJson<{ access_token: string }>(t, "/api/organizator/potvrdi", {
+    body: { email: "org@test.hr", kod: "123 456" },
+  });
+  assert.equal(status, 200);
+  assert.equal(body.access_token, "jwt-organizatora");
+  assert.ok(!text.includes("refresh_token"));
+  const poziv = t.calls.find((c) => c.url.includes("/auth/v1/verify"));
+  assert.deepEqual(JSON.parse(poziv!.body), { type: "email", email: "org@test.hr", token: "123456" });
+});
+
+test("kriv ili istekao kod → 401 kod_neispravan", async () => {
+  t = testEnv();
+  t.api.kodOk = false;
+  const { status, body } = await callJson<{ error: string }>(t, "/api/organizator/potvrdi", {
+    body: { email: "org@test.hr", kod: "000000" },
+  });
+  assert.equal(status, 401);
+  assert.equal(body.error, "kod_neispravan");
+});
+
+test("kod koji nisu znamenke se odbija prije mreže", async () => {
+  t = testEnv();
+  const { status } = await callJson(t, "/api/organizator/potvrdi", { body: { email: "org@test.hr", kod: "abcdef" } });
+  assert.equal(status, 401);
+  assert.equal(t.calls.filter((c) => c.url.includes("/auth/v1/verify")).length, 0);
+});
+
 // -------------------------------------------------------------------- pregled
 
 test("pregled bez tokena → 401", async () => {

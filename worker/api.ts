@@ -402,6 +402,41 @@ export async function prijava(env: Env, email: string, lozinka: string): Promise
   return JSON.parse(text) as Prijava;
 }
 
+/**
+ * Prijava kodom na e-mail, korak 1: GoTrue šalje jednokratni kod (OTP).
+ *
+ * `create_user: false` — kod dobiva samo postojeći domovina.ai račun; ulaznice
+ * ne otvaraju nove račune. GoTrue za nepoznat mail vraća grešku, ali je Worker
+ * ne prosljeđuje (v. rutu), da se kroz nas ne može provjeravati tko ima račun.
+ *
+ * Ovo je odgovor na REVIEW(fable) iznad samo za organizatora za stolom; lozinka
+ * ostaje drugi put u istom obrascu, pa skener na ulazu radi kao i prije.
+ */
+export async function posaljiKod(env: Env, email: string): Promise<void> {
+  const res = await fetch(`${env.DOMOVINA_API_URL}/auth/v1/otp`, {
+    method: "POST",
+    headers: { apikey: anonKey(env), "content-type": "application/json" },
+    body: JSON.stringify({ email, create_user: false }),
+  });
+  await res.text();
+  // 429 = GoTrueov limit slanja maila; ostale 4xx (nepoznat mail) se gutaju.
+  if (res.status === 429) throw new HttpError(429, "previse_pokusaja");
+  if (res.status >= 500) throw new HttpError(502, "auth_greska");
+}
+
+/** Korak 2: kod iz maila → sesija, isti oblik kao password grant. */
+export async function potvrdiKod(env: Env, email: string, kod: string): Promise<Prijava> {
+  const res = await fetch(`${env.DOMOVINA_API_URL}/auth/v1/verify`, {
+    method: "POST",
+    headers: { apikey: anonKey(env), "content-type": "application/json" },
+    body: JSON.stringify({ type: "email", email, token: kod }),
+  });
+  const text = await res.text();
+  if (res.status === 429) throw new HttpError(429, "previse_pokusaja");
+  if (!res.ok) throw new HttpError(res.status < 500 ? 401 : 502, res.status < 500 ? "kod_neispravan" : "auth_greska");
+  return JSON.parse(text) as Prijava;
+}
+
 /** PostgREST RPC U IME korisnika — RLS i `has_role_on_account` i dalje vrijede. */
 export async function korisnickiRpc<T>(
   env: Env,

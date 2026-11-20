@@ -57,6 +57,9 @@ export interface ApiState {
   rotacije: number;
   /** GoTrue: prihvaća li prijavu i s kojim tokenom. */
   prijavaOk: boolean;
+  /** GoTrue OTP: status za slanje koda (`/otp`) i prihvaća li kod (`/verify`). */
+  otpStatus: number;
+  kodOk: boolean;
   jwt: string;
   /** Ishod `events-checkin`. */
   checkin: Record<string, unknown>;
@@ -94,6 +97,8 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     rotateStatus: "rotated",
     rotacije: 0,
     prijavaOk: true,
+    otpStatus: 200,
+    kodOk: true,
     jwt: "jwt-organizatora",
     checkin: { status: "checked_in", serial: "SUS-000004", holder_name: "Ana Anić", tier_title: "Redovna", checked_in_count: 1 },
     checkinStatus: 200,
@@ -287,6 +292,19 @@ function installFetchStub(state: ApiState) {
     // ---- GoTrue (prijava organizatora / skenera)
     if (url.includes("/auth/v1/token")) {
       if (!state.prijavaOk) return json({ error: "invalid_grant" }, 400);
+      return json({
+        access_token: state.jwt,
+        expires_in: 3600,
+        refresh_token: "refresh-koji-ne-smije-izaci",
+        user: { id: "u1", email: "org@test.hr" },
+      });
+    }
+
+    if (url.includes("/auth/v1/otp")) {
+      return json(state.otpStatus === 200 ? {} : { error: "otp" }, state.otpStatus);
+    }
+    if (url.includes("/auth/v1/verify")) {
+      if (!state.kodOk) return json({ error: "otp_expired" }, 403);
       return json({
         access_token: state.jwt,
         expires_in: 3600,

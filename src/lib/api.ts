@@ -152,6 +152,7 @@ export const PORUKE: Record<string, string> = {
   previse_pokusaja: "Previše pokušaja — pokušajte za koju minutu.",
   nije_prijavljen: "Prijava je istekla. Prijavite se ponovno.",
   prijava_neuspjela: "Neispravna e-mail adresa ili lozinka.",
+  kod_neispravan: "Kod nije ispravan ili je istekao. Zatraži novi.",
   neispravan_qr: "To nije ulaznica ovog sustava.",
   not_authorized: "Nemate ovlasti za ovaj događaj.",
   not_authenticated: "Prijava je istekla. Prijavite se ponovno.",
