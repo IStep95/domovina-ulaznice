@@ -21,9 +21,9 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F1 — stranice za kupce
 
-- [ ] migracija u `domovina-api`: `venue_lat`, `venue_lon` (oba ili nijedno, raspon), `cover_image_alt`; idempotentna → S2b
-- [ ] `events-feed` vraća nova polja; Worker `publicEvent` ih prosljeđuje; `shared/api-tipovi.ts` i `mobile/mock-api.mjs` ih imaju → S2b
-- [ ] seedovi (`seeds/*.sql`) dobiju koordinate za postojeće događaje → S2b
+- [x] migracija u `domovina-api`: `venue_lat`, `venue_lon` (oba ili nijedno, raspon), `cover_image_alt`; idempotentna → S2b
+- [x] `events-feed` vraća nova polja; Worker `publicEvent` ih prosljeđuje; `shared/api-tipovi.ts` i `mobile/mock-api.mjs` ih imaju → S2b
+- [x] seedovi (`seeds/*.sql`) dobiju koordinate za postojeće događaje → S2b (`seeds/koordinate-mjesta.sql`; Varaždin nije u OSM-u)
 - [ ] (!) Matija primijeni migraciju i deploya `events-feed` → vrata nakon S2b
 
 - [x] tokeni iz Claude Designa u `web/src/styles/tokens.css`, `brand.accent_color` nadjačava naglasnu boju → S2

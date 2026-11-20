@@ -1,19 +1,11 @@
 // Mjesto događaja: koordinate i linkovi na Google/Apple Maps (odluka 14).
 //
-// `venue_lat`/`venue_lon` dolaze tek s migracijom iz S2b; do tada ih API nema,
-// pa se čitaju opcionalno i tolerantno (broj ili numerički string iz Postgresa).
-// Bez valjanog para nema linkova, ostaje samo adresa. Ugrađene karte nema
+// `venue_lat`/`venue_lon` su iz S2b (migracija `events_venue_geo` u jezgri). Dok je
+// jezgra nema, API ih ne vraća, pa su opcionalni. PostgREST `numeric` šalje kao JSON
+// broj; numerički string se svejedno prihvaća. Bez valjanog para nema linkova, ostaje
+// samo adresa. Ugrađene karte nema
 // (odluka 300): pločice bi se dohvaćale s tuđeg poslužitelja.
 import type { EventDetails } from "../../../shared/api-tipovi.ts";
-
-/** Polja iz S2b; nullable i možda još nepostojeća (jezgra bez migracije). */
-export interface EventDetailsS2b {
-  venue_lat?: number | string | null;
-  venue_lon?: number | string | null;
-  cover_image_alt?: string | null;
-}
-
-export type DetaljiDogadjaja = EventDetails & EventDetailsS2b;
 
 export interface Koordinate {
   lat: number;
@@ -30,7 +22,7 @@ const broj = (v: unknown): number | null => {
 };
 
 /** Oba ili nijedno, u rasponu (isto ograničenje kao u bazi). */
-export function koordinate(d: EventDetailsS2b | null | undefined): Koordinate | null {
+export function koordinate(d: { venue_lat?: unknown; venue_lon?: unknown } | null | undefined): Koordinate | null {
   const lat = broj(d?.venue_lat);
   const lon = broj(d?.venue_lon);
   if (lat === null || lon === null) return null;

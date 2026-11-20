@@ -122,3 +122,5 @@ S1 (2026-11-19): Astro 7.4 kostur, zajednički tipovi, API klijent, `dev:mock`, 
 S2 (2026-11-19): tokeni, samohostan Figtree, `Osnovni.astro`, 20 komponenti (`.astro` + React), naglasna boja s pravilom kontrasta (`naglasak.ts`), dev stranica `/_komponente` i snimke na 390/1280 px. Sljedeće: S3 (S2b paralelno).
 
 S3 (2026-11-20): `/` i `/dogadjaj/[slug]` iz API-ja (SSR), `format.ts` (novac, datumi u zoni događaja, stanja tierova), Markdown opis, Maps linkovi, Google kalendar i `.ics`, OG, JSON-LD, `cache-control`. Sljedeće: S4 (S2b i dalje paralelno).
+
+S2b (2026-11-20): migracija `events_venue_geo` u `domovina-api` (dva runa, drugi bez promjene), `events-feed` vraća `venue_lat`, `venue_lon`, `cover_image_alt`; tipovi, mock, test Workera, `seeds/koordinate-mjesta.sql` iz OSM-a. Lokalno (`pokreni.sh`) `/api/dogadjaj/:slug` vraća koordinate. Sljedeće: vrata migracije (Matija), S4.

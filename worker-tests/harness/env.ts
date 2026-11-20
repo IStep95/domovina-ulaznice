@@ -70,6 +70,8 @@ export interface ApiState {
   refundStatus: string;
   emailFails: boolean;
   stripeFails: boolean;
+  /** Dodatna polja `event` objekta u events-feedu (npr. S2b koordinate). */
+  eventExtra: Record<string, unknown>;
   createdSessions: Array<{ body: string; account: string | null }>;
   refunds: Array<{ body: string; account: string | null }>;
   emails: Array<Record<string, unknown>>;
@@ -102,6 +104,7 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     refundStatus: "refunded",
     emailFails: false,
     stripeFails: false,
+    eventExtra: {},
     createdSessions: [],
     refunds: [],
     emails: [],
@@ -433,6 +436,7 @@ function feedPayload(state: ApiState) {
           organizer_name: "Test organizator",
           organizer_email: null,
           organizer_web: null,
+          ...state.eventExtra,
         },
         tiers: [
           {

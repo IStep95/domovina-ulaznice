@@ -29,7 +29,9 @@ const events = [
       event_type: "konferencija", venue_name: "Dom sportova", venue_address: "Trg Krešimira Ćosića 11", venue_city: "Zagreb",
       starts_at: "2027-04-16T07:00:00+00:00", ends_at: "2027-04-18T16:00:00+00:00", timezone: "Europe/Zagreb",
       description_hr: "Tri dana susreta, predavanja i radionica.\n\nUlaznica vrijedi za sva tri dana i uključuje ručak. Ulaznice glase na ime — na ulazu se provjerava QR kod.",
-      cover_image_url: null, organizer_name: "Udruga Prilika za Susret", organizer_email: "prijave@prilikazasusret.hr", organizer_web: null,
+      description_en: null, cover_image_url: null, cover_image_alt: null,
+      venue_lat: 45.807844, venue_lon: 15.9518, // Dom sportova, OSM way 30632510 (seeds/koordinate-mjesta.sql)
+      organizer_name: "Udruga Prilika za Susret", organizer_email: "prijave@prilikazasusret.hr", organizer_web: null,
     },
     tiers,
     stripe_connected: true,
@@ -42,7 +44,8 @@ const events = [
     event: {
       event_type: "koncert", venue_name: "KD Vatroslav Lisinski", venue_address: null, venue_city: "Zagreb",
       starts_at: "2026-11-20T23:00:00+00:00", ends_at: null, timezone: "Europe/Zagreb",
-      description_hr: "Termin objavljen, satnica još nije.", cover_image_url: null, organizer_name: "Demo organizator", organizer_email: null, organizer_web: null,
+      description_hr: "Termin objavljen, satnica još nije.", description_en: null, cover_image_url: null, cover_image_alt: null,
+      venue_lat: null, venue_lon: null, organizer_name: "Demo organizator", organizer_email: null, organizer_web: null,
     },
     tiers: [{ id: "00000000-0000-4000-8000-000000000d21", title: "Parter", description: null, price_cents: 2500, imenska: false, sale_start: "2026-10-01T08:00:00Z", sale_end: null, inventory_total: 300, inventory_claimed: 0 }],
     stripe_connected: false,

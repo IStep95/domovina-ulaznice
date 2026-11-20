@@ -53,7 +53,7 @@ test("opisTekst: bez oznaka, skraćeno na riječ", () => {
 
 // ── karta ────────────────────────────────────────────────────────────────────
 
-test("koordinate: oba ili nijedno, raspon, string iz Postgresa", () => {
+test("koordinate: oba ili nijedno, raspon, i numerički string", () => {
   assert.deepEqual(koordinate({ venue_lat: 45.807, venue_lon: 15.9515 }), { lat: 45.807, lon: 15.9515 });
   assert.deepEqual(koordinate({ venue_lat: "45.807000", venue_lon: "15.951500" }), { lat: 45.807, lon: 15.9515 });
   assert.equal(koordinate({ venue_lat: 45.8, venue_lon: null }), null);
@@ -165,6 +165,7 @@ const dogadjaj: EventView = {
     ends_at: "2027-04-18T15:00:00Z",
     timezone: "Europe/Zagreb",
     description_hr: "Tri dana.",
+    description_en: null,
     cover_image_url: null,
     organizer_name: "Udruga Prilika za Susret",
     organizer_email: null,

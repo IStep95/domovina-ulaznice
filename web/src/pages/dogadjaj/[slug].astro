@@ -36,7 +36,7 @@ import {
   vrstaDogadjaja,
 } from "../../lib/format.ts";
 import { googleKalendarUrl } from "../../lib/kalendar.ts";
-import { adresa, koordinate, linkoviKarte, punoMjesto, type DetaljiDogadjaja } from "../../lib/karta.ts";
+import { adresa, koordinate, linkoviKarte, punoMjesto } from "../../lib/karta.ts";
 import { opisHtml, opisTekst } from "../../lib/opis.ts";
 import { eventJsonLd, jsonLdSkripta } from "../../lib/seo.ts";
 import { CACHE_GRESKA, CACHE_STRANICA, ogZadanaSlika } from "../../lib/stranica.ts";
@@ -61,7 +61,7 @@ Astro.response.headers.set("cache-control", greska === "server" ? CACHE_GRESKA :
 const origin = Astro.url.origin;
 const canonical = new URL(Astro.url.pathname, origin).toString();
 
-const d = (dogadjaj?.event ?? null) as DetaljiDogadjaja | null;
+const d = dogadjaj?.event ?? null;
 const zona = d?.timezone || ZADANA_ZONA;
 const vrsta = vrstaDogadjaja(d?.event_type);
 const termin = terminDogadjaja(d?.starts_at, d?.ends_at, zona);
