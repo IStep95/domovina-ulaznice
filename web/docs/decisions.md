@@ -340,9 +340,9 @@ Najveći novi dio je markdown-it (odluka 302).
 Revizija: S7.
 
 **311. Gradijent naglasne boje na vrhu stranice, kao na Lumi** (Ivan, nakon S3). U
-`global.css` na `body`: dvije radijalne mrlje `--color-accent` (34 % lijevo, 20 % desno) koje
+`global.css` na `body`: dvije radijalne mrlje `--color-accent` (17 % lijevo, 10 % desno; Ivan je prvu verziju od 34 % i 20 % prepolovio) koje
 blijede do `--color-bg` oko 500 px. Na popisu je zadana zelena, na događaju boja
 organizatora. Izračunati kontrast `--color-text-muted` na najzelenijim mjestima s tekstom
-(„Uvjeti” u zaglavlju 4,71, podnaslov popisa 4,68) ostaje ≥ 4,5:1 za zadanu zelenu. Dizajn
+(„Uvjeti” u zaglavlju, podnaslov popisa) je ≥ 5,1:1 za zadanu zelenu. Dizajn
 iz Claude Designa ovo nema; ako se dizajn ponovno uvozi, dodati ga i tamo.
 Revizija: ako tamna naglasna boja organizatora spusti kontrast ispod 4,5:1.
