@@ -1,21 +1,408 @@
 ---
-// S1: mjerenje SSR-a na Workersu (web/docs/handoffs/S1.md, točka 6), bez dizajna
-// i bez gumba „Kupi” (odluka 24). Pravu stranicu događaja radi S3.
-// S2: samo prebačeno na layout (naglasna boja iz brand.accent_color).
+// Stranica događaja (S3; Dogadjaj-1280, Dogadjaj-390, Dogadjaj-bez-prodaje-390).
+// SSR iz GET /api/dogadjaj/:slug. Ponašanje prati src/pages/Dogadjaj.tsx:
+// stanja tierova, „Kupi” samo kad je `kupovno`, inače razlog zašto nije,
+// banner ?otkazano=1 nakon prekinutog plaćanja.
+//
+// Raspored: na računalu dva stupca (ploha, organizator, kalendar lijevo;
+// naslov, termin, cjenik, opis, lokacija desno). Na mobitelu jedan stupac
+// redoslijedom iz Dogadjaj-390; stupci su tada `display: contents`, pa im se
+// djeca slažu kroz `order` bez dupliciranja sadržaja.
 import { ApiError, type EventView } from "../../lib/api.ts";
 import { serverApi } from "../../lib/api-ssr.ts";
 import Osnovni from "../../layouts/Osnovni.astro";
+import Banner from "../../components/Banner.astro";
+import Cjenik from "../../components/Cjenik.astro";
+import DatumskaPlocica from "../../components/DatumskaPlocica.astro";
+import Gumb from "../../components/Gumb.astro";
+import NaslovnaPloha from "../../components/NaslovnaPloha.astro";
+import Odjeljak from "../../components/Odjeljak.astro";
+import Organizator from "../../components/Organizator.astro";
+import Oznaka from "../../components/Oznaka.astro";
+import ProdajnaTraka from "../../components/ProdajnaTraka.astro";
+import Proza from "../../components/Proza.astro";
+import RedInfo from "../../components/RedInfo.astro";
+import RedTiera from "../../components/RedTiera.astro";
+import StranicaGreske from "../../components/StranicaGreske.astro";
+import {
+  TERMIN_NEPOZNAT,
+  ZADANA_ZONA,
+  datumPlohe,
+  kratkiDatum,
+  najnizaCijena,
+  sigurniUrl,
+  stanjeTiera,
+  terminDogadjaja,
+  vrstaDogadjaja,
+} from "../../lib/format.ts";
+import { googleKalendarUrl } from "../../lib/kalendar.ts";
+import { adresa, koordinate, linkoviKarte, punoMjesto, type DetaljiDogadjaja } from "../../lib/karta.ts";
+import { opisHtml, opisTekst } from "../../lib/opis.ts";
+import { eventJsonLd, jsonLdSkripta } from "../../lib/seo.ts";
+import { CACHE_GRESKA, CACHE_STRANICA, ogZadanaSlika } from "../../lib/stranica.ts";
 
 const slug = Astro.params.slug ?? "";
 let dogadjaj: EventView | null = null;
+let greska: "nije-pronaden" | "server" | null = null;
 try {
   dogadjaj = await serverApi().dohvatiDogadjaj(slug);
 } catch (e) {
-  if (!(e instanceof ApiError && e.status === 404)) throw e;
-  Astro.response.status = 404;
+  if (e instanceof ApiError && e.status === 404) greska = "nije-pronaden";
+  else {
+    console.error("dohvatiDogadjaj", slug, e);
+    greska = "server";
+  }
 }
-const naslov = dogadjaj ? dogadjaj.title : "Događaj nije pronađen";
+
+if (greska === "nije-pronaden") Astro.response.status = 404;
+if (greska === "server") Astro.response.status = 503;
+Astro.response.headers.set("cache-control", greska === "server" ? CACHE_GRESKA : CACHE_STRANICA);
+
+const origin = Astro.url.origin;
+const canonical = new URL(Astro.url.pathname, origin).toString();
+
+const d = (dogadjaj?.event ?? null) as DetaljiDogadjaja | null;
+const zona = d?.timezone || ZADANA_ZONA;
+const vrsta = vrstaDogadjaja(d?.event_type);
+const termin = terminDogadjaja(d?.starts_at, d?.ends_at, zona);
+const ploha = datumPlohe(d?.starts_at, d?.ends_at, zona);
+const naslovnaUrl = sigurniUrl(d?.cover_image_url) ?? sigurniUrl(dogadjaj?.brand?.hero_url);
+const naslovnaAlt = d?.cover_image_alt?.trim() || null;
+const mjestoKratko = [d?.venue_name, d?.venue_city].filter(Boolean).join(" · ");
+const adresaMjesta = adresa(d);
+const k = koordinate(d);
+const karta = k ? linkoviKarte(k, d?.venue_name) : null;
+const opis = opisHtml(d?.description_hr);
+const opisKratko = opisTekst(d?.description_hr, 200);
+const organizatorWeb = sigurniUrl(d?.organizer_web);
+const uvjeti = sigurniUrl(dogadjaj?.brand?.terms_url);
+const tiers = dogadjaj?.tiers ?? [];
+const cijenaOd = najnizaCijena(tiers);
+const kupnja = dogadjaj ? `/dogadjaj/${encodeURIComponent(dogadjaj.slug)}/kupnja` : "";
+const otkazano = Astro.url.searchParams.get("otkazano") === "1";
+
+const kalendar = dogadjaj
+  ? {
+      google: googleKalendarUrl({
+        uid: `${dogadjaj.campaign_id}@ulaznice.domovina.ai`,
+        naslov: dogadjaj.title,
+        startsAt: d?.starts_at,
+        endsAt: d?.ends_at,
+        timeZone: zona,
+        mjesto: punoMjesto(d),
+        opis: opisKratko,
+        url: canonical,
+      }),
+      ics: `/dogadjaj/${encodeURIComponent(dogadjaj.slug)}.ics`,
+    }
+  : null;
+
+const jsonLd = dogadjaj
+  ? eventJsonLd({
+      dogadjaj,
+      url: canonical,
+      urlKupnje: new URL(kupnja, origin).toString(),
+      opis: opisKratko || null,
+      slika: naslovnaUrl,
+      organizatorWeb,
+    })
+  : null;
+
+const metaOpis =
+  opisKratko ||
+  [termin?.datum, mjestoKratko].filter(Boolean).join(" · ") ||
+  "Ulaznice izravno od organizatora, bez naknade posrednika.";
 ---
-<Osnovni title={naslov} naglasak={dogadjaj ? (dogadjaj.brand?.accent_color ?? null) : undefined}>
-  <h1>{naslov}</h1>
-</Osnovni>
+{
+  !dogadjaj ? (
+    <Osnovni title={greska === "server" ? "Greška · Ulaznice" : "Događaj nije pronađen · Ulaznice"} sirina="srednja">
+      {greska === "server" ? (
+        <StranicaGreske
+          kod="500"
+          naslov="Nešto je pošlo po zlu."
+          opis="Pokušajte ponovno za trenutak. Ako se ponavlja, javite se na podrska@domovina.ai."
+          ikona="upozorenje"
+          ton="error"
+        >
+          <Gumb href={Astro.url.pathname + Astro.url.search}>Pokušaj ponovno</Gumb>
+        </StranicaGreske>
+      ) : (
+        <StranicaGreske
+          kod="404"
+          naslov="Događaj nije pronađen."
+          opis="Možda ga je organizator uklonio ili je link nepotpun. Pogledajte događaje koji su trenutačno u prodaji."
+        >
+          <Gumb href="/">Na popis događaja</Gumb>
+        </StranicaGreske>
+      )}
+    </Osnovni>
+  ) : (
+    <Osnovni
+      title={`${dogadjaj.title} · Ulaznice`}
+      opis={metaOpis}
+      ogSlika={naslovnaUrl ?? ogZadanaSlika(origin)}
+      ogSlikaAlt={naslovnaUrl ? naslovnaAlt : null}
+      canonical={canonical}
+      naglasak={dogadjaj.brand?.accent_color ?? null}
+    >
+      {jsonLd && <script slot="head" type="application/ld+json" set:html={jsonLdSkripta(jsonLd)} />}
+
+      <div class="dogadjaj">
+        {otkazano && (
+          <Banner ton="wait" ikona="sat" class="otkazano">
+            <b>Plaćanje je prekinuto.</b> Ulaznice nisu naplaćene — možete pokušati ponovno.
+          </Banner>
+        )}
+
+        <div class="stupac lijevi">
+          <div class="ploha">
+            <NaslovnaPloha
+              vrsta={vrsta}
+              datumVeliki={ploha?.veliki}
+              datumMali={ploha?.mali ?? TERMIN_NEPOZNAT}
+              mjesto={mjestoKratko}
+              slika={naslovnaUrl ? { url: naslovnaUrl, alt: naslovnaAlt } : null}
+            />
+          </div>
+
+          <Odjeljak naslov="Organizator" id="organizator" class="o-organizator">
+            <Organizator ime={d?.organizer_name ?? "Organizator"} email={d?.organizer_email} web={organizatorWeb} uvjeti={uvjeti} />
+          </Odjeljak>
+
+          {kalendar?.google && (
+            <Odjeljak naslov="Dodaj u kalendar" id="kalendar" class="o-kalendar">
+              <div class="dva-gumba">
+                <Gumb varijanta="sekundarni" href={kalendar.google} rel="noopener">Google Kalendar</Gumb>
+                <Gumb varijanta="sekundarni" href={kalendar.ics} download>.ics (Apple, Outlook)</Gumb>
+              </div>
+            </Odjeljak>
+          )}
+        </div>
+
+        <div class="stupac desni">
+          <div class="naslov">
+            {vrsta && <Oznaka ton="obrub" class="vrsta">{vrsta}</Oznaka>}
+            <h1>{dogadjaj.title}</h1>
+            {d?.organizer_name && <span class="organizator-mobitel">{d.organizer_name}</span>}
+          </div>
+
+          <div class="info">
+            {termin ? (
+              <RedInfo glavno={termin.datum} sporedno={termin.satnica}>
+                <DatumskaPlocica slot="znak" datum={d?.starts_at} timeZone={zona} ukras />
+              </RedInfo>
+            ) : (
+              <RedInfo glavno={TERMIN_NEPOZNAT} ikona="sat" />
+            )}
+            {d?.venue_name && <RedInfo glavno={d.venue_name} sporedno={adresaMjesta} ikona="mjesto" />}
+          </div>
+
+          <div class="cjenik">
+            <Cjenik>
+              {tiers.length === 0 ? (
+                <p class="bez-cjenika">Organizator još nije objavio cjenik.</p>
+              ) : (
+                tiers.map((t) => (
+                  <RedTiera
+                    naziv={t.title}
+                    opis={t.description}
+                    cijenaCenti={t.price_cents}
+                    imenska={t.imenska}
+                    stanje={stanjeTiera(t)}
+                    preostalo={t.available}
+                    prodajaOd={kratkiDatum(t.sale_start, zona) ?? undefined}
+                  />
+                ))
+              )}
+              <Fragment slot="dno">
+                {dogadjaj.kupovno ? (
+                  <>
+                    <Gumb varijanta="naglasni" href={kupnja} velik blok>Kupi ulaznice</Gumb>
+                    <span>Kupujete izravno od organizatora — bez naknade posrednika.</span>
+                  </>
+                ) : (
+                  <Banner ton="neutral" class="bez-prodaje">
+                    {dogadjaj.stripe_connected
+                      ? "Online prodaja za ovaj događaj trenutačno nije aktivna."
+                      : "Organizator još nije aktivirao online prodaju za ovaj događaj."}
+                  </Banner>
+                )}
+              </Fragment>
+            </Cjenik>
+          </div>
+
+          {opis && (
+            <Odjeljak naslov="O događaju" id="o-dogadjaju" class="o-opis">
+              <Proza html={opis} />
+            </Odjeljak>
+          )}
+
+          {d?.venue_name && (
+            <Odjeljak naslov="Lokacija" id="lokacija" class="o-lokacija">
+              <div class="mjesto">
+                <b>{d.venue_name}</b>
+                {adresaMjesta && <span>{adresaMjesta}</span>}
+              </div>
+              {karta && (
+                <div class="dva-gumba">
+                  <Gumb varijanta="sekundarni" href={karta.google} rel="noopener">Otvori u Google Maps</Gumb>
+                  <Gumb varijanta="sekundarni" href={karta.apple} rel="noopener">Apple Maps</Gumb>
+                </div>
+              )}
+            </Odjeljak>
+          )}
+        </div>
+      </div>
+
+      {dogadjaj.kupovno && cijenaOd !== null && <ProdajnaTraka slot="dno" href={kupnja} cijenaOdCenti={cijenaOd} />}
+    </Osnovni>
+  )
+}
+
+<style>
+  .dogadjaj {
+    display: grid;
+    grid-template-columns: 340px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+  .otkazano {
+    grid-column: 1 / -1;
+  }
+  .stupac {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .lijevi {
+    gap: 22px;
+  }
+  .desni {
+    gap: 26px;
+  }
+  .naslov {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  h1 {
+    font-size: var(--font-size-display);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    overflow-wrap: anywhere;
+  }
+  .organizator-mobitel {
+    display: none;
+    font-size: 15px;
+    color: var(--color-text-muted);
+  }
+  .info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .bez-cjenika {
+    padding: var(--space-4) 18px;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .bez-prodaje {
+    text-align: left;
+  }
+  .dva-gumba {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  /* Odjeljak je komponenta, pa klasa s ove stranice na njoj nema Astro scope: :global. */
+  .dogadjaj :global(.o-kalendar) .dva-gumba {
+    flex-wrap: nowrap;
+  }
+  .dogadjaj :global(.o-kalendar) .dva-gumba > :global(*) {
+    flex: 1;
+    padding: 0 var(--space-2);
+    font-size: var(--font-size-sm);
+    white-space: normal;
+  }
+  .dogadjaj :global(.o-lokacija) .dva-gumba > :global(*) {
+    font-size: var(--font-size-sm);
+  }
+  .mjesto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mjesto span {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+
+  /* Mobitel (Dogadjaj-390): jedan stupac, redoslijed ploha → naslov → termin →
+     cjenik → opis → lokacija → kalendar → organizator. Gumb „Kupi” je u traci. */
+  @media (max-width: 719px) {
+    .dogadjaj {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 22px;
+    }
+    .stupac {
+      display: contents;
+    }
+    .otkazano {
+      order: 0;
+    }
+    .ploha {
+      order: 1;
+    }
+    .naslov {
+      order: 2;
+      gap: var(--space-2);
+    }
+    .info {
+      order: 3;
+    }
+    .cjenik {
+      order: 4;
+    }
+    .dogadjaj :global(.o-opis) {
+      order: 5;
+    }
+    .dogadjaj :global(.o-lokacija) {
+      order: 6;
+    }
+    .dogadjaj :global(.o-kalendar) {
+      order: 7;
+    }
+    .dogadjaj :global(.o-organizator) {
+      order: 8;
+    }
+    .naslov :global(.vrsta) {
+      display: none;
+    }
+    .organizator-mobitel {
+      display: block;
+    }
+    h1 {
+      font-size: 30px;
+      line-height: 1.12;
+      letter-spacing: -0.02em;
+    }
+    .info {
+      gap: 14px;
+    }
+    .dva-gumba {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .dva-gumba > :global(*) {
+      white-space: normal;
+    }
+    /* Na mobitelu je „Kupi” u ljepljivoj traci (ProdajnaTraka). */
+    .cjenik :global(.dno:has(> a)) {
+      display: none;
+    }
+  }
+</style>

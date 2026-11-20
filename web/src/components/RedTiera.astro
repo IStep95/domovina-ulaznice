@@ -7,11 +7,9 @@
 //   nije-pocelo — prigušeno, „prodaja od …” (wait) s datumom početka
 //   zavrseno    — prigušeno, „prodaja zatvorena” (neutral)
 // Prigušeni red mijenja pozadinu i boju teksta, nikad opacity (pravilo 3).
-// Stanje iz TierView računa S3 (sold_out / not_started / ended / available).
+// Stanje iz TierView računa stanjeTiera() u src/lib/format.ts.
 import Oznaka from "./Oznaka.astro";
-import { eurPrivremeno } from "../lib/prikaz.ts";
-
-export type StanjeTiera = "dostupno" | "malo" | "rasprodano" | "nije-pocelo" | "zavrseno";
+import { eur, type StanjeTiera } from "../lib/format.ts";
 
 interface Props {
   naziv: string;
@@ -22,7 +20,7 @@ interface Props {
   stanje?: StanjeTiera;
   /** Za „malo”: broj preostalih (`available`). */
   preostalo?: number | null;
-  /** Za „nije-pocelo”: gotov tekst, npr. „1. 3. 2027. u 10:00” (formater je S3). */
+  /** Za „nije-pocelo”: gotov tekst, npr. „1. 3. 2027. u 10:00” (kratkiDatum). */
   prodajaOd?: string;
 }
 
@@ -39,14 +37,13 @@ const punOpis = [opis, imenska ? "glasi na ime" : null].filter(Boolean).join(" �
     {stanje === "nije-pocelo" && <Oznaka ton="wait">{prodajaOd ? `prodaja od ${prodajaOd}` : "prodaja još nije počela"}</Oznaka>}
     {stanje === "zavrseno" && <Oznaka ton="neutral">prodaja zatvorena</Oznaka>}
   </div>
-  {/* PRIVREMENO: formater novca je S3. */}
   {
     stanje === "rasprodano" ? (
       <span class="cijena">
-        <del>{eurPrivremeno(cijenaCenti)}</del>
+        <del>{eur(cijenaCenti)}</del>
       </span>
     ) : (
-      <span class="cijena">{eurPrivremeno(cijenaCenti)}</span>
+      <span class="cijena">{eur(cijenaCenti)}</span>
     )
   }
 </div>

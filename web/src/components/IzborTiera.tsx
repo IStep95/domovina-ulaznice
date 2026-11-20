@@ -2,7 +2,7 @@
 // strelice, Tab i čitači zaslona rade bez dodatnog koda. Nedostupna vrsta je
 // disabled i nosi razlog u napomeni (pravilo 3: ne samo boja).
 import { useState } from "react";
-import { eurPrivremeno } from "../lib/prikaz.ts";
+import { eur } from "../lib/format.ts";
 import css from "./izbor-tiera.module.css";
 
 export interface OpcijaTiera {
@@ -56,8 +56,7 @@ export default function IzborTiera({
               {o.napomena && <span className={css.napomena}>{o.napomena}</span>}
             </span>
           </span>
-          {/* PRIVREMENO: formater novca je S3. */}
-          <span className={css.cijena}>{eurPrivremeno(o.cijenaCenti)}</span>
+          <span className={css.cijena}>{eur(o.cijenaCenti)}</span>
         </label>
       ))}
     </fieldset>

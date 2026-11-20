@@ -120,3 +120,5 @@ Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, deploy ruč
 S1 (2026-11-19): Astro 7.4 kostur, zajednički tipovi, API klijent, `dev:mock`, stranica događaja; SSR na Workersu izmjeren i radi (`research/2026-11-19-ssr-na-workersu.md`); design brief napisan. Sljedeće: vrata dizajna (Ivan), paralelno S2b.
 
 S2 (2026-11-19): tokeni, samohostan Figtree, `Osnovni.astro`, 20 komponenti (`.astro` + React), naglasna boja s pravilom kontrasta (`naglasak.ts`), dev stranica `/_komponente` i snimke na 390/1280 px. Sljedeće: S3 (S2b paralelno).
+
+S3 (2026-11-20): `/` i `/dogadjaj/[slug]` iz API-ja (SSR), `format.ts` (novac, datumi u zoni događaja, stanja tierova), Markdown opis, Maps linkovi, Google kalendar i `.ics`, OG, JSON-LD, `cache-control`. Sljedeće: S4 (S2b i dalje paralelno).

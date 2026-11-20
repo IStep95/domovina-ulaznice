@@ -3,7 +3,7 @@
 // Samo mobitel (< 720 px); na računalu je gumb u kartici „Ulaznice”.
 // Mjesto: slot "dno" u layoutu Osnovni.astro (zadnje dijete <body>).
 import Gumb from "./Gumb.astro";
-import { eurPrivremeno } from "../lib/prikaz.ts";
+import { eur } from "../lib/format.ts";
 
 interface Props {
   href: string;
@@ -19,8 +19,7 @@ const { href, cijenaOdCenti, tekst = "Kupi ulaznice", uvijekVidljiva = false } =
 <div class:list={["traka", { "uvijek-vidljiva": uvijekVidljiva }]}>
   <div class="cijena">
     <span class="od">od</span>
-    {/* PRIVREMENO: formater novca je S3. */}
-    <b>{eurPrivremeno(cijenaOdCenti)}</b>
+    <b>{eur(cijenaOdCenti)}</b>
   </div>
   <Gumb varijanta="naglasni" href={href} velik class="traka-gumb">{tekst}</Gumb>
 </div>
