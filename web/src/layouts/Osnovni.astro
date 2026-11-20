@@ -18,6 +18,8 @@ interface Props {
   opis?: string;
   /** Apsolutni URL slike za og:image (naslovna slika događaja). */
   ogSlika?: string | null;
+  /** `cover_image_alt` za og:image:alt (odluka 15). */
+  ogSlikaAlt?: string | null;
   /** Apsolutni kanonski URL; ide i u og:url. */
   canonical?: string | null;
   /** `brand.accent_color`; undefined = platformske boje iz tokens.css. */
@@ -35,6 +37,7 @@ const {
   title,
   opis = "Ulaznice za događaje izravno od organizatora, bez naknade posrednika.",
   ogSlika,
+  ogSlikaAlt,
   canonical,
   naglasak,
   sirina = "siroka",
@@ -63,6 +66,7 @@ const stil = naglasak !== undefined ? naglasakStil(naglasak) : undefined;
     <meta property="og:description" content={opis} />
     {canonical && <meta property="og:url" content={canonical} />}
     {ogSlika && <meta property="og:image" content={ogSlika} />}
+    {ogSlika && ogSlikaAlt && <meta property="og:image:alt" content={ogSlikaAlt} />}
     <meta name="twitter:card" content={ogSlika ? "summary_large_image" : "summary"} />
     <slot name="head" />
   </head>

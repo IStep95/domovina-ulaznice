@@ -254,3 +254,87 @@ još nemaju otoka; u `astro dev` sva četiri otoka na `/_komponente` se hidriraj
 upozorenja. Provjera se seli u S4. Worker bundle: 1 266 755 B sirovo (≈ 298 KB gzip), +12 KB
 prema S1 (zbroj `dist/server/**/*.js` bez `.map`).
 Revizija: S4.
+
+## S3 (2026-11-20)
+
+Snimke: [research/2026-11-20-dogadjaj-1280.png](research/2026-11-20-dogadjaj-1280.png),
+[research/2026-11-20-dogadjaj-mobitel.png](research/2026-11-20-dogadjaj-mobitel.png) (500 px, s
+`?otkazano=1`), [research/2026-11-20-popis-1280.png](research/2026-11-20-popis-1280.png);
+`astro dev` protiv mocka, headless Chrome.
+
+**300. Bez ugrađene karte; samo linkovi na Google i Apple Maps.** Iz `venue_lat`/`venue_lon`
+(`src/lib/karta.ts`); bez valjanog para (oba, u rasponu) nema ni gumba, ostaje adresa. Dizajn
+ima ilustraciju karte, ali prava karta (OSM iframe ili pločice) znači da kupčev preglednik
+pri otvaranju stranice javlja IP tuđem poslužitelju, protivno duhu odluke 200; statična
+karta traži API ključ, a `web/` nema tajni (odluka 4).
+Revizija: ako organizatori zatraže kartu; tada samohostane pločice ili slika generirana pri
+objavi događaja.
+
+**301. Tekst datuma prati dizajn, ne `terminHr` iz SPA-a** (pravilo 4 u README-u dizajna).
+`src/lib/format.ts`: „petak, 16. travnja 2027.” + „9:00 – nedjelja, 18. travnja”; na kartici
+popisa samo drugi redak (datum je u zaglavlju grupe); ploha „16.–18.” / „travnja 2027.”;
+početak prodaje tiera „1. 3. 2027. u 10:00”. Ponoć u zoni događaja = satnica nije objavljena
+(isti dogovor kao SPA). Nazivi mjeseci i dana su tablice, Intl samo za pretvorbu zone, pa
+izlaz ne ovisi o ICU-u runtimea. Godina kraja i zaglavlja grupe piše se samo kad se razlikuje.
+Kraj prije početka tretira se kao da kraja nema.
+Revizija: nema.
+
+**302. Markdown opis: `markdown-it` s `html: false`, bez slika.** Sanitizacija po konstrukciji
+(`src/lib/opis.ts`): sirovi HTML se escapea, `validateLink` odbija `javascript:`/`data:`,
+pravilo `image` je isključeno (odluka 300, isti razlog), naslovi se spuštaju na h3+, svaki
+link dobiva `rel="nofollow noopener"`, `breaks: true` jer organizatori pišu redak po redak.
+Odabran umjesto sanitizera HTML-a jer ne treba DOM na Workersu. Cijena: +208 KB sirovog
+bundlea (markdown-it, entities, punycode).
+Revizija: ako bundle postane problem (S7 mjeri) ili organizatori zatraže slike u opisu.
+
+**303. `cache-control: public, max-age=60` za popis i događaj, `no-store` za greške,
+300 s za `.ics`** (`src/lib/stranica.ts`). Raspoloživost („još 4”, „rasprodano”) mora biti
+svježa, a kupnju ionako presuđuje `POST /api/narudzba`. Cloudflare odgovore Workera ne
+kešira sam, pa je ovo samo preglednik; `s-maxage` i Cache API svjesno nisu uvedeni.
+404 se kešira kao i stranica (60 s).
+Revizija: S7, ako Lighthouse ili promet pokažu da treba CDN keš.
+
+**304. `.ics` i Google kalendar u UTC-u, bez VTIMEZONE.** `DTSTART:…Z` je točan u svakoj
+zoni i ne treba tablicu prijelaza na ljetno vrijeme. Događaj bez satnice je cjelodnevni
+(`VALUE=DATE`, kraj isključiv, +1 dan); bez `ends_at` kraj je početak + 2 h (odluka 20);
+bez `starts_at` ruta vraća 404 i gumba nema. Ruta `/dogadjaj/[slug].ics.ts` ima prednost
+pred `[slug].astro` zbog statičnog sufiksa. Retci se preklapaju na 75 okteta bez rezanja
+UTF-8 znaka.
+Revizija: nema.
+
+**305. JSON-LD `Event` samo kad postoji `starts_at`** (Google ga traži). `offers` po tieru,
+cijena „60.00” cjelobrojno iz centi, valuta EUR (ugovor nema valutu tiera); `availability`:
+rasprodano → SoldOut, nije počelo → PreSale, završeno → Discontinued, „još N” →
+LimitedAvailability, inače InStock. `geo` samo s koordinatama. `<` u JSON-u se escapea.
+Revizija: kad ugovor dobije valutu po tieru.
+
+**306. Zadana OG slika je statična `public/og-zadana.png` (1200×630)**, za događaje bez
+naslovne i za popis. Snimljena headless Chromeom iz `docs/research/og-zadana.izvor.html`
+(Figtree iz `node_modules`). Nije po događaju jer generiranje slike na Workersu traži
+dodatnu biblioteku i fontove u bundleu.
+Revizija: S7, ako pregled linka u WhatsAppu treba naslov događaja na slici.
+
+**307. Raspored stranice događaja: jedan DOM, dva rasporeda.** Na ≥ 720 px grid 340 px +
+ostatak (Dogadjaj-1280); ispod toga stupci su `display: contents` i djeca se slažu `order`om
+redoslijedom iz Dogadjaj-390, bez dupliciranja sadržaja. Na mobitelu „Kupi” živi samo u
+`ProdajnaTraka`, dno cjenika se skriva. Klase koje stranica daje komponenti (`Odjeljak`)
+nemaju Astro scope, pa se ciljaju s `:global(.o-…)`.
+Revizija: nema.
+
+**308. URL-ovi iz API-ja prolaze `sigurniUrl`** (samo http/https; `organizer_web` bez sheme
+dobiva `https://`). `brand.intro_html` se i dalje ne iscrtava (sirovi HTML, odluka 19);
+`cover_image_url`, pa `brand.hero_url` su naslovna slika. `venue_lat`, `venue_lon` i
+`cover_image_alt` čitaju se opcionalno (`EventDetailsS2b` u `karta.ts`) jer S2b još nije
+napravljen; S2b ih treba dodati u `shared/api-tipovi.ts` i maknuti taj tip.
+Revizija: S2b.
+
+**309. Odluka 203 ostaje: crvene srednje zasićenosti prihvaćaju se na gumbu** („Kupi
+ulaznice” je 16/700, velik tekst, ≥ 3:1). Pozadina se ne potamnjuje, jer bi organizator
+dobio drukčiju boju od one koju je odabrao, a tekst naglaska (`--color-accent-text`) već
+se potamni do 4,5:1. Nijedan postojeći događaj nema takvu boju.
+Revizija: kad organizator s takvom bojom krene u prodaju.
+
+**310. Bundle Workera nakon S3:** 1 526 616 B sirovo (≈ 367 KB gzip), zbroj
+`dist/server/**/*.{mjs,js}` bez `.map` (S2 je zbrajao samo `.js`; usporedba je približna).
+Najveći novi dio je markdown-it (odluka 302).
+Revizija: S7.

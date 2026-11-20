@@ -22,6 +22,10 @@ interface Props {
   /** Puna širina roditelja. */
   blok?: boolean;
   class?: string;
+  /** Samo uz `href`: npr. „noopener” za vanjske linkove. */
+  rel?: string;
+  /** Samo uz `href`: preuzimanje datoteke (.ics). */
+  download?: boolean | string;
   [atribut: `aria-${string}` | `data-${string}`]: string | boolean | undefined;
 }
 

@@ -1,9 +1,164 @@
 ---
-// Privremena naslovnica dok S3 ne napravi popis događaja. Odluka 24:
-// produkcija ne smije izgledati kao prodaja, pa ovdje nema ni popisa ni gumba.
+// Popis događaja (S3; Popis-1280, Popis-390). SSR iz GET /api/dogadjaji,
+// grupirano po danu početka u zoni događaja. Odluka 24: na produkciji API
+// vraća 404 (najava), pa se tamo vidi stanje greške, nikad prodaja.
+import { serverApi } from "../lib/api-ssr.ts";
+import type { EventView } from "../lib/api.ts";
 import Osnovni from "../layouts/Osnovni.astro";
+import Banner from "../components/Banner.astro";
+import GrupaPoDatumu from "../components/GrupaPoDatumu.astro";
+import Gumb from "../components/Gumb.astro";
+import Ikona from "../components/Ikona.astro";
+import KarticaDogadjaja from "../components/KarticaDogadjaja.astro";
+import PraznoStanje from "../components/PraznoStanje.astro";
+import { ZADANA_ZONA, najnizaCijena, sigurniUrl, terminKartice, vrstaDogadjaja, zaglavljeGrupe, type ZaglavljeGrupe } from "../lib/format.ts";
+import { CACHE_GRESKA, CACHE_STRANICA, ogZadanaSlika } from "../lib/stranica.ts";
+
+let dogadjaji: EventView[] | null = null;
+try {
+  dogadjaji = (await serverApi().dohvatiDogadjaje()).events;
+} catch (e) {
+  console.error("dohvatiDogadjaje", e);
+}
+Astro.response.headers.set("cache-control", dogadjaji ? CACHE_STRANICA : CACHE_GRESKA);
+if (!dogadjaji) Astro.response.status = 503;
+
+// Po početku; događaji bez termina na kraju, redom kojim ih vraća API.
+const poredani = [...(dogadjaji ?? [])].sort((a, b) => {
+  const x = a.event?.starts_at ? Date.parse(a.event.starts_at) : Infinity;
+  const y = b.event?.starts_at ? Date.parse(b.event.starts_at) : Infinity;
+  return x === y ? 0 : x < y ? -1 : 1;
+});
+const grupe: { zaglavlje: ZaglavljeGrupe; dogadjaji: EventView[] }[] = [];
+for (const ev of poredani) {
+  const z = zaglavljeGrupe(ev.event?.starts_at, ev.event?.timezone || ZADANA_ZONA);
+  const zadnja = grupe.at(-1);
+  if (zadnja && zadnja.zaglavlje.kljuc === z.kljuc) zadnja.dogadjaji.push(ev);
+  else grupe.push({ zaglavlje: z, dogadjaji: [ev] });
+}
+
+const canonical = new URL("/", Astro.url.origin).toString();
 ---
-<Osnovni title="Ulaznice · u izradi" sirina="srednja">
-  <h1>Ulaznice · u izradi</h1>
-  <p>Nova stranica za kupnju ulaznica još se gradi. Prodaja ovdje ne radi.</p>
+<Osnovni title="Događaji · Ulaznice" sirina="srednja" canonical={canonical} ogSlika={ogZadanaSlika(Astro.url.origin)}>
+  <div class="popis">
+    <div class="glavno">
+      <header class="uvod">
+        <h1>Događaji</h1>
+        <p>Ulaznice kupujete izravno od organizatora. Bez naknade posrednika.</p>
+      </header>
+
+      {
+        dogadjaji === null ? (
+          <Banner ton="error">
+            Događaje trenutačno ne možemo učitati.
+            <Gumb slot="akcija" varijanta="greska" href="/">Pokušaj ponovno</Gumb>
+          </Banner>
+        ) : grupe.length === 0 ? (
+          <PraznoStanje naslov="Trenutačno nema objavljenih događaja." opis="Kad organizator objavi događaj, pojavit će se ovdje." />
+        ) : (
+          grupe.map((g) => (
+            <GrupaPoDatumu datum={g.zaglavlje.datum} danUTjednu={g.zaglavlje.danUTjednu} godina={g.zaglavlje.godina}>
+              {g.dogadjaji.map((ev) => {
+                const d = ev.event;
+                return (
+                  <KarticaDogadjaja
+                    href={`/dogadjaj/${encodeURIComponent(ev.slug)}`}
+                    naslov={ev.title}
+                    termin={terminKartice(d?.starts_at, d?.ends_at, d?.timezone || ZADANA_ZONA)}
+                    organizator={d?.organizer_name}
+                    mjesto={[d?.venue_name, d?.venue_city].filter(Boolean).join(", ") || null}
+                    vrsta={vrstaDogadjaja(d?.event_type)}
+                    datum={d?.starts_at ?? null}
+                    timeZone={d?.timezone || ZADANA_ZONA}
+                    naglasak={ev.brand?.accent_color ?? null}
+                    slika={sigurniUrl(d?.cover_image_url)}
+                    kupovno={ev.kupovno}
+                    cijenaOdCenti={najnizaCijena(ev.tiers)}
+                  />
+                );
+              })}
+            </GrupaPoDatumu>
+          ))
+        )
+      }
+    </div>
+
+    <aside class="bez-posrednika" aria-labelledby="bez-posrednika">
+      <Ikona ime="lokot" velicina={24} />
+      <h2 id="bez-posrednika">Bez posrednika</h2>
+      <p>Plaćate karticom izravno organizatoru preko Stripea. Platforma ne naplaćuje naknadu i ne drži vaš novac.</p>
+      <p>Ulaznica je QR kod koji stiže e-mailom i skenira se na ulazu.</p>
+    </aside>
+  </div>
 </Osnovni>
+
+<style>
+  .popis {
+    display: flex;
+    gap: 48px;
+    align-items: flex-start;
+    padding-top: var(--space-4);
+  }
+  .glavno {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+  .uvod {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  h1 {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .uvod p {
+    font-size: 17px;
+    line-height: 1.5;
+    color: var(--color-text-muted);
+  }
+  .bez-posrednika {
+    flex: none;
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 20px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .bez-posrednika h2 {
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .bez-posrednika p {
+    font-size: var(--font-size-sm);
+    line-height: 1.55;
+    color: var(--color-text-muted);
+  }
+  @media (max-width: 719px) {
+    .popis {
+      flex-direction: column;
+      gap: var(--space-8);
+      padding-top: 0;
+    }
+    .glavno {
+      gap: 22px;
+    }
+    h1 {
+      font-size: var(--font-size-2xl);
+    }
+    .uvod p {
+      font-size: 15px;
+    }
+    .bez-posrednika {
+      width: auto;
+    }
+  }
+</style>
