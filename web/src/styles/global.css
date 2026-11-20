@@ -25,8 +25,8 @@ body {
      organizatora na događaju (--color-accent s <html>). Blijedi do --color-bg
      prije sadržaja, pa kontrast teksta ostaje kao na ravnoj podlozi. */
   background:
-    radial-gradient(75% 300px at 15% -60px, color-mix(in srgb, var(--color-accent) 14%, transparent), transparent),
-    radial-gradient(60% 260px at 85% -50px, color-mix(in srgb, var(--color-accent) 8%, transparent), transparent),
+    radial-gradient(75% 300px at 15% -60px, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent),
+    radial-gradient(60% 260px at 85% -50px, color-mix(in srgb, var(--color-accent) 12%, transparent), transparent),
     var(--color-bg);
   background-repeat: no-repeat;
   -webkit-font-smoothing: antialiased;
