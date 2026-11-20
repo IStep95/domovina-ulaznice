@@ -34,8 +34,8 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] opis kao Markdown, iscrtan na serveru i sanitiziran → S3
 - [x] „Dodaj u Google kalendar” i `/dogadjaj/[slug].ics` → S3
 - [x] formatiranje novca iz centi (`6000` → `60,00 €`) i datuma (Europe/Zagreb) s testovima → S3
-- [ ] `/dogadjaj/[slug]/kupnja`: React otok (tier, količina, imena za `imenska`, e-mail, uvjeti), `POST /api/narudzba`, preusmjerenje na `checkout_url` → S4
-- [ ] svaki kod greške iz `POST /api/narudzba` ima poruku na hrvatskom, 429 poštuje `retry_after` → S4
+- [x] `/dogadjaj/[slug]/kupnja`: React otok (tier, količina, imena za `imenska`, e-mail, uvjeti), `POST /api/narudzba`, preusmjerenje na `checkout_url` → S4
+- [x] svaki kod greške iz `POST /api/narudzba` ima poruku na hrvatskom, 429 poštuje `retry_after` → S4
 - [ ] `/ulaznice/[orderId]`: isto ponašanje kao `src/pages/Narudzba.tsx` (pending → paid, QR, ponovna dostava, preuzimanje u aplikaciju) → S5
 - [ ] `/uvjeti`, `/privatnost` prerenderirane; 404 stranica → S5
 

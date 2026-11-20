@@ -373,3 +373,82 @@ Revizija: nema.
 feeda cijeli, pa se mijenja samo tip `FeedEvent`; test (`worker-tests/dogadjaj-s2b.test.ts`)
 čuva da polja prolaze, da `null` ostaje `null` i da feed bez njih ne dobiva izmišljena polja.
 Revizija: nema.
+
+## S4 (2026-11-20)
+
+**400. Stranica kupnje je `no-store`** (`CACHE_KUPNJA` u `stranica.ts`), i forma i greške.
+Raspoloživost mora biti svježa, a povratak sa Stripea tipkom „natrag” ne smije pokazati
+staru stranicu ni zaključan gumb iz bfcachea (otok za to ima i `pageshow`). Stranica nije za
+dijeljenje ni tražilice; cijena je jedan SSR poziv po otvaranju.
+Revizija: S7, ako mjerenje pokaže da je SSR spor.
+
+**401. Validacija je u `src/lib/kupnja.ts` i zrcali Worker:** `EMAIL_RE`, e-mail ≤ 200,
+ime nakon trim 2–120, količina 1…min(10, `available`). Test čita `worker/index.ts` i ruši
+se ako se pravila razilaze. Gumb je zaključan dok forma nije valjana, a ispod njega piše
+„Za nastavak: …” (aria-describedby). Inline greške polja pojave se nakon blura ili odmah
+kad poslužitelj vrati `holders_incomplete`/`invalid_holder`/`invalid_buyer_email`.
+Revizija: nema.
+
+**402. Dvostruko slanje sprječava ref, ne samo stanje.** Nakon uspjeha gumb ostaje
+„Otvaram plaćanje…” do odlaska. `checkout_url` mora biti apsolutni http(s) URL, inače
+greška `neispravan_odgovor`.
+Revizija: nema.
+
+**403. Poruka ovisi o kodu, ne o statusu** (`src/lib/poruke.ts`). `http_5xx` ima svoju
+poruku, ostali `http_*` i nepoznati kodovi generičku; `greska_servera` je namjerno
+generička. Tehnički kod se kupcu nikad ne prikazuje. Test `kodovi-gresaka.test.ts` grepa
+`fail(...)` iz handlera narudžbe (i ternarne grane), `app.onError`, 404 fallback i
+`HttpError` iz `worker/api.ts` i `worker/stripe.ts` (27 kodova); novi kod bez poruke ruši
+test. Šest `HttpError` kodova izvan puta narudžbe je u `IZVAN_KUPNJE` s razlogom.
+Revizija: kad Worker dobije novi put narudžbe.
+
+**404. Nakon odbijanja raspoloživost se ponovno učita** (`GET /api/dogadjaj/:slug`) za
+`tier_sold_out`, `sale_*`, `tier_not_found`/`tier_not_ticket`/`tier_price_missing`. Ako
+odabrani tier više nije kupiv, izbor se poništava i kupac bira sam. Ako je i dalje kupiv,
+`tier_sold_out` je značio „traženo više nego što je ostalo” i prikazuje se klijentski kod
+`nedovoljno_ulaznica` (Worker vraća isti kod za oba slučaja).
+Revizija: ako Worker počne razlikovati ta dva slučaja.
+
+**405. Konačne greške zaključaju formu** s linkom „Natrag na događaj”:
+`organizer_not_connected`, `organizer_charges_disabled`, `event_not_found`,
+`campaign_not_found`, `campaign_not_tickets`, `campaign_not_active`.
+Revizija: nema.
+
+**406. 429 prikazuje zaokruženo vrijeme u banneru i točno odbrojavanje u gumbu**
+(„Pokušajte ponovno za 2 min.”, „Nastavi na plaćanje · 1:28”), kao Kupnja-390. Bez
+`retry_after` (ili s 0) čeka se 60 s; Worker ionako šalje ≥ 1. `OdbrojavanjeGumb` je
+proširen, nova komponenta nije uvedena.
+Revizija: nema.
+
+**407. `Banner.tsx` je React parnjak `Banner.astro`** i dijeli isti CSS modul (odluka 205).
+Revizija: nema.
+
+**408. Linkovi na uvjete u kvačici otvaraju se u novoj kartici**, da se forma ne izgubi.
+Uvjeti organizatora prikazuju se samo uz `brand.terms_url` koji prođe `sigurniUrl`.
+`/uvjeti` dolazi u S5.
+Revizija: S5.
+
+**409. Bundle nakon S4:** server 1 580 744 B sirovo (≈ 390 KB gzip), zbroj
+`dist/server/**/*.{mjs,js}` bez `.map` (S3: 1 526 616 B). Klijent: `client.js` (react-dom)
+212 836 B, `KupnjaForma.js` 21 937 B, `react.js` 7 909 B.
+Revizija: S7.
+
+**410. Odluka 103 vrijedi i za prvi otok.** U `wrangler dev` nad buildom stranica kupnje
+vraća 200 i otok se hidrira bez grešaka, pa `nodejs_compat` nije potreban; `node:stream`
+je u bundleu samo kao lijeni `import()`.
+Revizija: S6 (service binding).
+
+**411. Kartica na popisu: bez naslovne slike ostaje datumska pločica** (Ivan, 2026-11-20).
+Sa `cover_image_url` kartica prikazuje kvadratni izrez slike (već od S2/S3), bez nje
+pločicu s datumom, iako datum piše i u lijevom stupcu. Zamjena plohom s ikonom vrste ili
+karticom bez desnog dijela razmotrena je i odbijena.
+Revizija: nema.
+
+**412. Mock se za e2e pokreće na zasebnom portu, ne izmjenom `web/.dev.vars`.**
+`web/.dev.vars` (Ivanov, izvan gita) šalje SSR na lokalni stack `:8788`; izmjena te
+datoteke prebaci i Ivanov `astro dev` na mock. S4 ju je za e2e privremeno zakomentirao i vratio
+(isti shasum), a Ivanova stranica je za to vrijeme na kratko pokazivala podatke iz mocka.
+`dev:mock` ima i port 4321 tvrdo upisan, pa je S4 ručno pokrenuo mock
+(`PUBLIC_BASE_URL=http://localhost:4331`) i `astro dev --port 4331`. Za S5: `dev-mock.mjs`
+dobiva port kroz env i adresu mocka koja ne ovisi o `.dev.vars`.
+Revizija: S5.

@@ -36,7 +36,7 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | S2b | dorada sheme događaja (Ivanov prijedlog) | gotovo | (ovaj commit) | web 58, korijen 99 | Ivan, 2026-11-20; odluke 250–253; `domovina-api` zaseban PR |
 | — | (!) migracija jezgre i `events-feed` | čeka | | | Matija; `docs/deploy-dug.md` #5, migracija prije `events-feed` |
 | S3 | popis i događaj | gotovo | f81f559 | web 58, korijen 97 | Ivan, 2026-11-20; odluke 300–311; S2b i dalje otvoren |
-| S4 | kupnja | otvoreno | | | |
+| S4 | kupnja | gotovo | 6820547 | web 106, korijen 99 | Ivan, 2026-11-20; odluke 400–412; e2e kroz mock |
 | S5 | narudžba, pravno, 404 | otvoreno | | | |
 | S6 | service binding, lokalna e2e | otvoreno | | | |
 | — | (!) staging deploy | čeka | | | Matija |
