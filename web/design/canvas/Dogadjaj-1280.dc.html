@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<title>Događaj</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--color-bg:#f3f4f2;--color-surface:#ffffff;--color-surface-2:#f7f8f6;--color-border:#e3e6e2;--color-border-strong:#c9cec8;--color-text:#131714;--color-text-muted:#5b635d;--color-ink:#131714;--color-on-ink:#ffffff;--color-accent:#2f855a;--color-on-accent:#ffffff;--color-ok:#1e6b40;--color-ok-bg:#e5f3ea;--color-wait:#7a4f00;--color-wait-bg:#fcf1d8;--color-error:#a8231a;--color-error-bg:#fceae8;--color-neutral:#454c47;--color-neutral-bg:#eceeeb;--color-focus:#131714;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--shadow-card:0 1px 2px rgba(19,23,20,.05),0 4px 16px rgba(19,23,20,.04);--font:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;font-family:var(--font);color:var(--color-text);background:var(--color-bg)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+</style>
+</helmet>
+<div style="width: 1280px; min-height: 1700px; box-sizing: border-box; background: var(--color-bg); font-family: var(--font); color: var(--color-text); display: flex; flex-direction: column; --color-accent: {{accent}}; --color-on-accent: {{onAccent}}">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--color-border)">
+    <a href="Popis-1280.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4V8z"/></svg>Ulaznice</a>
+    <nav style="display: flex; gap: 20px; font-size: 14px; font-weight: 500"><a href="Popis-1280.dc.html" style="text-decoration: none">Događaji</a></nav>
+  </header>
+
+  <main style="width: 100%; max-width: 1040px; margin: 0 auto; box-sizing: border-box; padding: 40px 24px 72px; display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 48px; align-items: start">
+    <aside style="display: flex; flex-direction: column; gap: 22px">
+      <div role="img" aria-label="Naslovna slika nije objavljena" style="aspect-ratio: 1 / 1; max-width: 100%; border-radius: var(--radius-xl); background: var(--color-accent); color: var(--color-on-accent); display: flex; flex-direction: column; justify-content: space-between; padding: 26px; box-sizing: border-box">
+        <span style="font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase">Konferencija</span>
+        <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 72px; font-weight: 800; line-height: .95; letter-spacing: -0.03em">16.–18.</span><span style="font-size: 28px; font-weight: 700">travnja 2027.</span></div>
+        <span style="font-size: 15px; font-weight: 600">Dom sportova · Zagreb</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 4px">
+        <span style="font-size: 13px; font-weight: 600; color: var(--color-text-muted); padding-bottom: 8px; border-bottom: 1px solid var(--color-border)">Organizator</span>
+        <div style="display: flex; align-items: center; gap: 10px"><div style="width: 32px; height: 32px; border-radius: 50%; background: var(--color-accent); color: var(--color-on-accent); display: grid; place-items: center; font-size: 13px; font-weight: 700">PS</div><b style="font-size: 15px">Udruga Prilika za Susret</b></div>
+        <a href="#" style="font-size: 14px; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; min-height: 32px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>prijave@prilikazasusret.hr</a>
+        <a href="#" style="font-size: 14px; color: var(--color-text-muted); display: flex; align-items: center; gap: 8px; min-height: 32px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></svg>Uvjeti organizatora</a>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="font-size: 13px; font-weight: 600; color: var(--color-text-muted); padding-bottom: 8px; border-bottom: 1px solid var(--color-border)">Dodaj u kalendar</span>
+        <div style="display: flex; gap: 8px"><a href="#" style="flex: 1; text-decoration: none; text-align: center; min-height: 44px; display: grid; place-items: center; font-size: 14px; font-weight: 600; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface)">Google Kalendar</a><a href="#" style="flex: 1; text-decoration: none; text-align: center; min-height: 44px; display: grid; place-items: center; font-size: 14px; font-weight: 600; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface)">.ics (Apple, Outlook)</a></div>
+      </div>
+    </aside>
+
+    <div style="display: flex; flex-direction: column; gap: 26px; min-width: 0">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <span style="align-self: flex-start; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); border: 1px solid var(--color-border-strong)">Konferencija</span>
+        <h1 style="margin: 0; font-size: 44px; line-height: 1.08; font-weight: 800; letter-spacing: -0.025em">Prilika za Susret 2027</h1>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; gap: 14px; align-items: center">
+          <div style="flex: none; width: 48px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden; text-align: center; background: var(--color-surface)"><div style="font-size: 11px; font-weight: 700; padding: 3px 0; background: var(--color-surface-2); color: var(--color-text-muted); letter-spacing: .06em">TRA</div><div style="font-size: 20px; font-weight: 700; padding: 3px 0 5px">16</div></div>
+          <div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 16px">petak, 16. travnja 2027.</b><span style="font-size: 14px; color: var(--color-text-muted)">9:00 – nedjelja, 18. travnja</span></div>
+        </div>
+        <div style="display: flex; gap: 14px; align-items: center">
+          <div style="flex: none; width: 48px; height: 48px; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); display: grid; place-items: center; background: var(--color-surface)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 21s7-6.1 7-11.5A7 7 0 0 0 5 9.5C5 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></div>
+          <div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 16px">Dom sportova</b><span style="font-size: 14px; color: var(--color-text-muted)">Trg Krešimira Ćosića 11, Zagreb</span></div>
+        </div>
+      </div>
+
+      <section aria-labelledby="ulaznice" style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden">
+        <h2 id="ulaznice" style="margin: 0; padding: 12px 18px; font-size: 14px; font-weight: 600; color: var(--color-text-muted); background: var(--color-surface-2); border-bottom: 1px solid var(--color-border)">Ulaznice</h2>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--color-border)"><div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 16px; font-weight: 600">Redovna ulaznica</span><span style="font-size: 14px; color: var(--color-text-muted)">Sva tri dana, uključen ručak · glasi na ime</span></div><span style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">60,00 €</span></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--color-border)"><div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start"><span style="font-size: 16px; font-weight: 600">Studentska</span><span style="font-size: 14px; color: var(--color-text-muted)">Uz predočenje indeksa na ulazu · glasi na ime</span><span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); background: var(--color-ok-bg); color: var(--color-ok)">još 4</span></div><span style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">35,00 €</span></div>
+        <div style="display: flex; justify-content: space-between; gap: 16px; padding: 16px 18px; border-bottom: 1px solid var(--color-border); background: var(--color-surface-2)"><div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start"><span style="font-size: 16px; font-weight: 600; color: var(--color-text-muted)">Rani upis</span><span style="font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: var(--radius-pill); background: var(--color-error-bg); color: var(--color-error)">rasprodano</span></div><span style="font-size: 16px; font-weight: 600; color: var(--color-text-muted); text-decoration: line-through; font-variant-numeric: tabular-nums">50,00 €</span></div>
+        <div style="display: flex; flex-direction: column; gap: 10px; padding: 18px">
+          <a href="Kupnja-1280.dc.html" style="text-decoration: none; min-height: 48px; display: grid; place-items: center; font-size: 16px; font-weight: 700; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent)">Kupi ulaznice</a>
+          <span style="font-size: 13px; text-align: center; color: var(--color-text-muted)">Kupujete izravno od organizatora — bez naknade posrednika.</span>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text-muted); padding-bottom: 8px; border-bottom: 1px solid var(--color-border)">O događaju</h2>
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.6; max-width: 640px">
+          <p style="margin: 0">Tri dana susreta, predavanja i radionica.</p>
+          <p style="margin: 0">Ulaznica vrijedi za sva tri dana i uključuje ručak. <b>Imenske ulaznice</b> — na ulazu se može tražiti osobna iskaznica.</p>
+          <h3 style="margin: 6px 0 0; font-size: 18px; font-weight: 700">Program</h3>
+          <ul style="margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px"><li>petak: otvaranje i predavanja</li><li>subota: radionice u manjim skupinama</li><li>nedjelja: misa i zatvaranje</li></ul>
+          <p style="margin: 0">Više na <a href="#" style="color: var(--color-text); text-underline-offset: 3px">prilikazasusret.hr</a>.</p>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px">
+        <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-text-muted); padding-bottom: 8px; border-bottom: 1px solid var(--color-border)">Lokacija</h2>
+        <b style="font-size: 16px">Dom sportova</b>
+        <span style="font-size: 14px; color: var(--color-text-muted); margin-top: -6px">Trg Krešimira Ćosića 11, Zagreb</span>
+        <div role="img" aria-label="Karta: Dom sportova, Zagreb" style="position: relative; height: 200px; border-radius: var(--radius-lg); border: 1px solid var(--color-border); background: #e9ece6; overflow: hidden">
+          <div style="position: absolute; left: 0; right: 0; top: 46%; height: 14px; background: #ffffff"></div>
+          <div style="position: absolute; top: 0; bottom: 0; left: 38%; width: 12px; background: #ffffff"></div>
+          <div style="position: absolute; top: 0; bottom: 0; left: 72%; width: 8px; background: #ffffff"></div>
+          <div style="position: absolute; left: 8%; top: 12%; width: 22%; height: 26%; border-radius: 8px; background: #d8e6d2"></div>
+          <div style="position: absolute; left: calc(38% - 14px); top: calc(46% - 34px); width: 40px; height: 40px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--color-accent); border: 3px solid #ffffff"></div>
+        </div>
+        <div style="display: flex; gap: 8px"><a href="#" style="text-decoration: none; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface)">Otvori u Google Maps</a><a href="#" style="text-decoration: none; min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); background: var(--color-surface)">Apple Maps</a></div>
+        <span style="font-size: 13px; color: var(--color-text-muted)">Bez <code>venue_lat</code>/<code>venue_lon</code> nema karte ni gumba: ostaje samo adresa.</span>
+      </section>
+    </div>
+  </main>
+
+  <footer style="margin-top: auto; border-top: 1px solid var(--color-border)"><div style="max-width: 1040px; margin: 0 auto; padding: 22px 24px; display: flex; justify-content: space-between; gap: 16px; font-size: 14px; color: var(--color-text-muted)"><span>Ulaznice · prodaja bez posrednika</span><span style="display: flex; gap: 18px"><a href="Pravno-1280.dc.html" style="color: var(--color-text-muted)">Uvjeti</a><a href="#" style="color: var(--color-text-muted)">Privatnost</a><a href="Popis-1280.dc.html" style="color: var(--color-text-muted)">Popis događaja</a></span></div></footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2f855a","options":["#2f855a","#1a365d","#f6e05e","#7b2d43"]},"$preview":{"width":1280,"height":1700}}'>
+class Component extends DCLogic {
+  lum(hex) {
+    const h = String(hex || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) return 0.2;
+    const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#2f855a';
+    const L = this.lum(accent);
+    const onWhite = 1.05 / (L + 0.05);
+    const onBlack = (L + 0.05) / 0.05;
+    return { accent, onAccent: onWhite >= onBlack ? '#ffffff' : '#131714' };
+  }
+}
+</script>
+</body>
+</html>

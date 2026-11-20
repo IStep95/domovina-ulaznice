@@ -2,67 +2,29 @@
 // izravno — sve ide kroz /api/*, jer samo Worker smije držati service ključ,
 // HMAC tajnu i Stripe ključeve (docs/handoffs/u2 §Sigurnost 3).
 
-export interface TierView {
-  id: string;
-  title: string;
-  description: string | null;
-  price_cents: number;
-  imenska: boolean;
-  sale_start: string | null;
-  sale_end: string | null;
-  sold_out: boolean;
-  not_started: boolean;
-  ended: boolean;
-  available: number | null;
-  buyable: boolean;
-}
+import type {
+  CreateOrderRequest,
+  CreateOrderResponse,
+  EventDetails,
+  EventListResponse,
+  EventView,
+  OrderView,
+  ResendResponse,
+  TicketView,
+  TierView,
+} from "../../shared/api-tipovi";
 
-export interface EventDetails {
-  event_type: string;
-  venue_name: string;
-  venue_address: string | null;
-  venue_city: string;
-  starts_at: string | null;
-  ends_at: string | null;
-  timezone: string;
-  description_hr: string | null;
-  cover_image_url: string | null;
-  organizer_name: string;
-  organizer_email: string | null;
-  organizer_web: string | null;
-}
-
-export interface EventView {
-  campaign_id: string;
-  slug: string;
-  title: string;
-  event: EventDetails | null;
-  tiers: TierView[];
-  stripe_connected: boolean;
-  kupovno: boolean;
-  brand?: { accent_color?: string; hero_url?: string; intro_html?: string; terms_url?: string } | null;
-}
-
-export interface TicketView {
-  serial: string;
-  holder_name: string | null;
-  state: string;
-  checked_in_at: string | null;
-}
-
-export interface OrderView {
-  order_id: string;
-  state: "pending" | "paid" | "expired" | "refunded" | "failed";
-  quantity: number;
-  amount_cents: number;
-  currency: string;
-  expires_at: string | null;
-  paid_at: string | null;
-  buyer_email: string | null;
-  event: ({ title: string; slug: string } & Partial<EventDetails>) | null;
-  tickets: TicketView[];
-  dostava: { status: string; at: string } | null;
-}
+export type {
+  CreateOrderRequest,
+  CreateOrderResponse,
+  EventDetails,
+  EventListResponse,
+  EventView,
+  OrderView,
+  ResendResponse,
+  TicketView,
+  TierView,
+};
 
 export class ApiError extends Error {
   code: string;
@@ -92,29 +54,18 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const dohvatiDogadjaj = (slug: string) => req<EventView>(`/api/dogadjaj/${encodeURIComponent(slug)}`);
 
-export const dohvatiDogadjaje = () => req<{ events: EventView[] }>("/api/dogadjaji");
+export const dohvatiDogadjaje = () => req<EventListResponse>("/api/dogadjaji");
 
 export const dohvatiNarudzbu = (orderId: string) => req<OrderView>(`/api/ulaznice/${encodeURIComponent(orderId)}`);
 
 export const posaljiPonovno = (orderId: string) =>
-  req<{
-    status: "poslano" | "neuspjelo" | "nema_vazecih_ulaznica";
-    recipient: string | null;
-    /** true = izdani su NOVI QR kodovi, stari više ne vrijede */
-    stari_qr_ponisten?: boolean;
-    error?: string;
-  }>(`/api/ulaznice/${encodeURIComponent(orderId)}/ponovna-dostava`, { method: "POST" });
+  req<ResendResponse>(`/api/ulaznice/${encodeURIComponent(orderId)}/ponovna-dostava`, { method: "POST" });
 
-export const kreirajNarudzbu = (p: {
-  campaign_id: string;
-  tier_id: string;
-  quantity: number;
-  buyer_email: string;
-  holders: Array<{ full_name: string; email?: string }>;
-}) => req<{ order_id: string; checkout_url: string; amount_cents: number }>("/api/narudzba", {
-  method: "POST",
-  body: JSON.stringify(p),
-});
+export const kreirajNarudzbu = (p: CreateOrderRequest) =>
+  req<CreateOrderResponse>("/api/narudzba", {
+    method: "POST",
+    body: JSON.stringify(p),
+  });
 
 // ------------------------------------------------------------------ formati
 

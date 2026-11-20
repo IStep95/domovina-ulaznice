@@ -10,14 +10,14 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F0 — temelj i mjerenje
 
-- [ ] `web/` kao Astro projekt: `astro`, `@astrojs/cloudflare`, `@astrojs/react`, TypeScript strict → S1
-- [ ] `web/wrangler.jsonc` bez D1, KV i tajni; jedini var `API_BASE_URL` → S1
-- [ ] zajednički tipovi API-ja u `shared/api-tipovi.ts`; `src/lib/api.ts` i `web/` ih uvoze → S1
-- [ ] dev proxy `/api/*` → `node mobile/mock-api.mjs` (port 8797, `PUBLIC_BASE_URL=http://localhost:4321`) → S1
-- [ ] mjerenje: SSR stranica događaja iz `wrangler dev` vraća `<title>` i `og:title` s naslovom događaja → S1
-- [ ] `npm --prefix web run check` = `astro check` + testovi (`node:test`) + `astro build` → S1
-- [ ] `web/docs/design-brief.md`: ekrani, stanja i podaci za Claude Design → S1
-- [ ] (!) Ivan u Claude Designu napravi dizajnerski sustav i 5 ekrana po briefu, export u `web/design/` → vrata prije S2
+- [x] `web/` kao Astro projekt: `astro`, `@astrojs/cloudflare`, `@astrojs/react`, TypeScript strict → S1
+- [x] `web/wrangler.jsonc` bez D1, KV i tajni; jedini var `API_BASE_URL` → S1
+- [x] zajednički tipovi API-ja u `shared/api-tipovi.ts`; `src/lib/api.ts` i `web/` ih uvoze → S1
+- [x] dev proxy `/api/*` → `node mobile/mock-api.mjs` (port 8797, `PUBLIC_BASE_URL=http://localhost:4321`) → S1
+- [x] mjerenje: SSR stranica događaja iz `wrangler dev` vraća `<title>` i `og:title` s naslovom događaja → S1
+- [x] `npm --prefix web run check` = `astro check` + testovi (`node:test`) + `astro build` → S1
+- [x] `web/docs/design-brief.md`: ekrani, stanja i podaci za Claude Design → S1
+- [x] (!) dizajnerski sustav i ekrani po briefu u Claude Designu, export u `web/design/` → vrata prije S2
 
 ## F1 — stranice za kupce
 
@@ -26,8 +26,8 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [ ] seedovi (`seeds/*.sql`) dobiju koordinate za postojeće događaje → S2b
 - [ ] (!) Matija primijeni migraciju i deploya `events-feed` → vrata nakon S2b
 
-- [ ] tokeni iz Claude Designa u `web/src/styles/tokens.css`, `brand.accent_color` nadjačava naglasnu boju → S2
-- [ ] osnovni layout, zaglavlje, podnožje (link na uvjete i privatnost), komponente iz dizajna → S2
+- [x] tokeni iz Claude Designa u `web/src/styles/tokens.css`, `brand.accent_color` nadjačava naglasnu boju → S2
+- [x] osnovni layout, zaglavlje, podnožje (link na uvjete i privatnost), komponente iz dizajna → S2
 - [ ] `/` popis događaja, SSR → S3
 - [ ] `/dogadjaj/[slug]`: SSR, `og:*`, `twitter:*`, JSON-LD `Event`, stanja tierova (rasprodano, nije počelo, završilo, `kupovno: false`) → S3
 - [ ] karta i link na Google/Apple Maps iz `venue_lat`/`venue_lon`; `geo` u JSON-LD-u; bez koordinata samo adresa → S3

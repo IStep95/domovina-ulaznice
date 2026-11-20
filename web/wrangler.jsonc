@@ -1,29 +1,37 @@
 {
   // web/ — Astro frontend za kupce (lanac web/docs/handoffs/).
   //
-  // KORAK 0 (2026-11-19): još nema Astra; Worker servira samo statičnu stranicu
-  // „u izradi” iz ./privremeno. S1 ovo zamjenjuje Astro buildom i dodaje `main`,
-  // a imena Workera, domene i skripte `build` / `deploy:*` u package.json ostaju
-  // iste (na njih se oslanja ručni deploy i budući auto-deploy).
+  // Astro (@astrojs/cloudflare) gradi Worker iz ovog configa: `astro build` piše
+  // dist/server/wrangler.json (+ .wrangler/deploy/config.json), a `wrangler deploy`
+  // deploya taj generirani config, ne ovaj direktno. Okruženje se zato bira U
+  // BUILDU (CLOUDFLARE_ENV=staging). Pazi: gol `wrangler deploy --env staging` nad
+  // produkcijskim buildom TIHO deploya produkcijski config (provjereno --dry-run),
+  // a gol `wrangler deploy` nad staging buildom deploya staging. Uvijek kroz
+  // skripte u package.json, koje svaki put grade za pravo okruženje:
+  //   npm --prefix web run deploy:staging   |   npm --prefix web run deploy:prod
+  // Imena Workera, domene i skripte `build` / `deploy:*` ostaju iste (odluka 22).
   //
-  // Bez D1, KV i tajni — namjerno (web/docs/decisions.md, odluka 4).
+  // Bez D1, KV i tajni — namjerno (web/docs/decisions.md, odluka 4); zato su u
+  // astro.config.mjs isključeni sessions (KV) i Cloudflare Images.
   //
   //   vrh datoteke  → PRODUKCIJA  ulaznice-web.domovina.ai           ručni deploy (Matija)
   //   env.staging   → STAGING     ulaznice-web-staging.domovina.ai   ručni deploy (Matija) nakon mergea
   "name": "domovina-ulaznice-web",
   "account_id": "7dc7167b7e2e00923bfa7cd697df14e4", // D.O.M.
   "compatibility_date": "2025-11-01",
+  "main": "@astrojs/cloudflare/entrypoints/server",
   "routes": [{ "pattern": "ulaznice-web.domovina.ai", "custom_domain": true }],
   "workers_dev": false,
-  "assets": { "directory": "./privremeno" },
+  "assets": { "binding": "ASSETS", "directory": "./dist" },
   "vars": { "API_BASE_URL": "https://ulaznice.domovina.ai" },
 
   "env": {
     "staging": {
       "name": "domovina-ulaznice-web-staging",
+      "main": "@astrojs/cloudflare/entrypoints/server",
       "routes": [{ "pattern": "ulaznice-web-staging.domovina.ai", "custom_domain": true }],
       "workers_dev": true,
-      "assets": { "directory": "./privremeno" },
+      "assets": { "binding": "ASSETS", "directory": "./dist" },
       "vars": { "API_BASE_URL": "https://ulaznice-staging.domovina.ai" }
     }
   }

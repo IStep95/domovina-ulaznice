@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<title>Kupnja s greškom, mobitel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--color-bg:#f3f4f2;--color-surface:#ffffff;--color-surface-2:#f7f8f6;--color-border:#e3e6e2;--color-border-strong:#c9cec8;--color-text:#131714;--color-text-muted:#5b635d;--color-ink:#131714;--color-on-ink:#ffffff;--color-accent:#2f855a;--color-on-accent:#ffffff;--color-ok:#1e6b40;--color-ok-bg:#e5f3ea;--color-wait:#7a4f00;--color-wait-bg:#fcf1d8;--color-error:#a8231a;--color-error-bg:#fceae8;--color-neutral:#454c47;--color-neutral-bg:#eceeeb;--color-focus:#131714;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--shadow-card:0 1px 2px rgba(19,23,20,.05),0 4px 16px rgba(19,23,20,.04);--font:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;font-family:var(--font);color:var(--color-text);background:var(--color-bg)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1900px; box-sizing: border-box; background: var(--color-bg); font-family: var(--font); color: var(--color-text); display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--color-border)">
+    <a href="Dogadjaj-390.dc.html" aria-label="Natrag na događaj" style="width: 44px; height: 44px; display: grid; place-items: center; margin-left: -10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></a>
+    <div style="display: flex; flex-direction: column; min-width: 0"><b style="font-size: 16px">Kupnja ulaznica</b><span style="font-size: 13px; color: var(--color-text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Prilika za Susret 2027</span></div>
+  </header>
+
+  <main style="padding: 16px; display: flex; flex-direction: column; gap: 16px">
+    <div role="alert" style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: var(--radius-md); background: var(--color-error-bg); color: var(--color-error); font-size: 14px; line-height: 1.45">
+      <div style="display: flex; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex: none" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg><b>Za imenske ulaznice upišite ime i prezime za svaku ulaznicu.</b></div>
+      <span style="padding-left: 30px">Ispravite označeno polje i pokušajte ponovno.</span>
+    </div>
+
+    <form style="display: flex; flex-direction: column; gap: 18px; padding: 18px 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg)">
+      <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+        <legend style="font-size: 16px; font-weight: 700; margin-bottom: 8px">Vrsta ulaznice</legend>
+        <button type="button" aria-pressed="false" style="font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 13px 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text)"><span style="display: flex; align-items: center; gap: 10px"><span style="width: 18px; height: 18px; border-radius: 50%; border: 2px solid #8a918c; box-sizing: border-box"></span><span style="font-size: 15px; font-weight: 600">Redovna</span></span><b style="font-size: 15px; font-variant-numeric: tabular-nums">60,00 €</b></button>
+        <button type="button" aria-pressed="true" style="font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 12px 13px; border-radius: var(--radius-md); border: 2px solid var(--color-ink); background: var(--color-surface); color: var(--color-text)"><span style="display: flex; align-items: center; gap: 10px; text-align: left"><span style="flex: none; width: 18px; height: 18px; border-radius: 50%; border: 6px solid var(--color-ink); box-sizing: border-box"></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 600">Studentska</span><span style="font-size: 13px; color: var(--color-text-muted)">još 4</span></span></span><b style="font-size: 15px; font-variant-numeric: tabular-nums">35,00 €</b></button>
+        <button type="button" disabled style="font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 13px 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border); background: var(--color-surface-2); color: var(--color-text-muted)"><span style="display: flex; align-items: center; gap: 10px; text-align: left"><span style="flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--color-border-strong); box-sizing: border-box"></span><span style="display: flex; flex-direction: column"><span style="font-size: 15px; font-weight: 600">Rani upis</span><span style="font-size: 13px; color: var(--color-error); font-weight: 600">rasprodano</span></span></span><span style="font-size: 15px; text-decoration: line-through; font-variant-numeric: tabular-nums">50,00 €</span></button>
+      </fieldset>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 16px; border-top: 1px solid var(--color-border)">
+        <div style="display: flex; flex-direction: column"><b style="font-size: 16px">Broj ulaznica</b><span style="font-size: 13px; color: var(--color-text-muted)">najviše 4</span></div>
+        <div style="display: inline-flex; align-items: center; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden"><button type="button" aria-label="Manje ulaznica" style="font-family: inherit; width: 44px; height: 44px; border: 0; background: var(--color-surface); font-size: 20px; color: var(--color-text)">−</button><span style="min-width: 36px; text-align: center; font-size: 17px; font-weight: 700">2</span><button type="button" aria-label="Više ulaznica" style="font-family: inherit; width: 44px; height: 44px; border: 0; background: var(--color-surface); font-size: 20px; color: var(--color-text)">+</button></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid var(--color-border)">
+        <b style="font-size: 16px">Imena posjetitelja</b>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="m-ime-1" style="font-size: 14px; font-weight: 600">1. ulaznica — ime i prezime</label><input id="m-ime-1" type="text" value="Ana Horvat" style="font-family: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text)"></div>
+        <div style="display: flex; flex-direction: column; gap: 6px"><label for="m-ime-2" style="font-size: 14px; font-weight: 600">2. ulaznica — ime i prezime</label><input id="m-ime-2" type="text" value="" aria-invalid="true" aria-describedby="m-ime-2-g" style="font-family: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: var(--radius-md); border: 1.5px solid var(--color-error); background: var(--color-surface); color: var(--color-text)"><span id="m-ime-2-g" style="font-size: 13px; font-weight: 500; color: var(--color-error)">Upišite ime i prezime (najmanje 2 znaka).</span></div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 16px; border-top: 1px solid var(--color-border)">
+        <label for="m-email" style="font-size: 16px; font-weight: 700">Vaša e-mail adresa</label>
+        <input id="m-email" type="email" value="ana.horvat@primjer.hr" style="font-family: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text)">
+        <span style="font-size: 13px; color: var(--color-text-muted)">Ulaznice s QR kodom šaljemo na ovu adresu.</span>
+      </div>
+
+      <label for="m-uvjeti" style="display: flex; gap: 12px; align-items: flex-start; font-size: 14px; line-height: 1.5"><input id="m-uvjeti" type="checkbox" checked style="width: 20px; height: 20px; margin: 1px 0 0; accent-color: #131714"><span>Prihvaćam <a href="#">uvjete korištenja</a> i <a href="#">uvjete organizatora</a>.</span></label>
+    </form>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); font-variant-numeric: tabular-nums">
+      <div style="display: flex; justify-content: space-between; font-size: 15px"><span>Studentska × 2</span><span>70,00 €</span></div>
+      <div style="display: flex; justify-content: space-between; font-size: 15px; color: var(--color-text-muted)"><span>Naknada platforme</span><span>0,00 €</span></div>
+      <div style="height: 1px; background: var(--color-border)"></div>
+      <div style="display: flex; justify-content: space-between; font-size: 19px; font-weight: 800"><span>Ukupno</span><span>70,00 €</span></div>
+      <button type="button" style="font-family: inherit; margin-top: 6px; min-height: 50px; font-size: 16px; font-weight: 700; border: 0; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent)">Nastavi na plaćanje</button>
+      <span style="font-size: 13px; line-height: 1.5; color: var(--color-text-muted)">Plaćanje karticom obrađuje Stripe za organizatora. Mjesta su rezervirana 20 minuta.</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 12px; border-top: 1px dashed var(--color-border-strong)">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-muted)">Stanje: slanje u tijeku</span>
+      <button type="button" disabled aria-busy="true" style="font-family: inherit; min-height: 50px; font-size: 16px; font-weight: 700; border: 0; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); display: flex; align-items: center; justify-content: center; gap: 10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>Otvaram plaćanje…</button>
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-muted)">Stanje: previše pokušaja (429)</span>
+      <div role="alert" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius-md); background: var(--color-wait-bg); color: var(--color-wait); font-size: 14px; line-height: 1.45">
+        <div style="display: flex; gap: 10px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex: none" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span><b>Previše pokušaja.</b> Pokušajte ponovno za 2 min.</span></div>
+      </div>
+      <button type="button" disabled style="font-family: inherit; min-height: 50px; font-size: 16px; font-weight: 700; border: 0; border-radius: var(--radius-md); background: #d6dad5; color: #4a514c">Nastavi na plaćanje · 1:58</button>
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-muted)">Stanje: rasprodano u međuvremenu</span>
+      <div role="alert" style="display: flex; gap: 10px; padding: 14px; border-radius: var(--radius-md); background: var(--color-error-bg); color: var(--color-error); font-size: 14px; line-height: 1.45"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex: none" aria-hidden="true"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/></svg><span>Ulaznice te vrste su rasprodane. Odaberite drugu vrstu.</span></div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

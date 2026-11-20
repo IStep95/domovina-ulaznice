@@ -1,0 +1,16 @@
+---
+// Oznaka stanja ili vrste (Main.dc.html): „još 4”, „rasprodano”, „prodaja od …”,
+// „prodaja zatvorena”, „Konferencija”, „vrijedi”, „ušlo”, „poništena”.
+// Tekst je obavezan (slot): boja nikad sama ne nosi značenje (pravilo 3).
+import css from "./oznaka.module.css";
+
+interface Props {
+  ton?: "ok" | "wait" | "error" | "neutral" | "obrub";
+  /** 13 px umjesto 12 px (samostalno, izvan redova). */
+  vece?: boolean;
+  class?: string;
+}
+
+const { ton = "neutral", vece = false, class: klasa } = Astro.props;
+---
+<span class:list={[css.oznaka, css[ton], vece && css.vece, klasa]}><slot /></span>

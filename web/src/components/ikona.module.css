@@ -1,0 +1,16 @@
+/* Za Ikona.tsx (React otoci); isto ponašanje kao <style> u Ikona.astro. */
+.ikona {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.vrti {
+  animation: vrtnja 0.9s linear infinite;
+}
+
+@keyframes vrtnja {
+  to {
+    transform: rotate(360deg);
+  }
+}

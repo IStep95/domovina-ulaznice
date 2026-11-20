@@ -1,0 +1,109 @@
+---
+// Naslovna ploha događaja (Dogadjaj-1280/390, pravilo 2). Bez naslovne slike
+// (danas svi događaji) to je ploha u naglasnoj boji s vrstom, datumom i mjestom;
+// sa slikom (`cover_image_url` / `brand.hero_url`) je izrez slike istog oblika.
+// Kvadrat na ≥ 720 px (lijevi stupac), 16:10 na mobitelu (bez mjesta).
+// Datumski tekst dolazi gotov (S3 odlučuje o formateru, pravilo 4).
+interface Props {
+  /** `event_type`, npr. „Konferencija”. */
+  vrsta?: string | null;
+  /** Veliki redak, npr. „16.–18.”. */
+  datumVeliki?: string;
+  /** Mali redak, npr. „travnja 2027.”. */
+  datumMali?: string;
+  /** Npr. „Dom sportova · Zagreb”. */
+  mjesto?: string;
+  slika?: { url: string; alt?: string | null } | null;
+  /** Nadjačava naglasak stranice (inače nasljeđuje --color-accent iz layouta). */
+  stil?: string;
+}
+
+const { vrsta, datumVeliki, datumMali, mjesto, slika, stil } = Astro.props;
+---
+{
+  slika ? (
+    <img class="ploha slika" src={slika.url} alt={slika.alt ?? ""} decoding="async" />
+  ) : (
+    <div class="ploha boja" role="img" aria-label="Naslovna slika nije objavljena" style={stil}>
+      <span class="vrsta">{vrsta}</span>
+      <div class="datum">
+        {datumVeliki && <span class="veliki">{datumVeliki}</span>}
+        {datumMali && <span class="mali">{datumMali}</span>}
+      </div>
+      {mjesto ? <span class="mjesto">{mjesto}</span> : <span />}
+    </div>
+  )
+}
+
+<style>
+  .ploha {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    border-radius: var(--radius-xl);
+  }
+  .slika {
+    object-fit: cover;
+    background: var(--color-neutral-bg);
+  }
+  /* Veličine teksta prate širinu plohe (cqi), da veliki datum stane i u
+     uži stupac; 72/28 px su gornje granice iz dizajna (ploha 340 px, sadržaj 288 px; cqi je od sadržaja). */
+  .boja {
+    container-type: inline-size;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 26px;
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+  }
+  .vrsta {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .datum {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+  .veliki {
+    font-size: min(72px, 25cqi);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+  }
+  .mali {
+    font-size: min(var(--font-size-2xl), 9.7cqi);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .mjesto {
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  @media (max-width: 719px) {
+    .ploha {
+      aspect-ratio: 16 / 10;
+    }
+    .boja {
+      padding: 20px;
+    }
+    .vrsta {
+      font-size: var(--font-size-xs);
+    }
+    .datum {
+      gap: 2px;
+    }
+    .veliki {
+      font-size: min(52px, 16.3cqi);
+    }
+    .mali {
+      font-size: min(20px, 6.3cqi);
+    }
+    .mjesto {
+      display: none;
+    }
+  }
+</style>

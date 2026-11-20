@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<title>Kupnja ulaznica</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--color-bg:#f3f4f2;--color-surface:#ffffff;--color-surface-2:#f7f8f6;--color-border:#e3e6e2;--color-border-strong:#c9cec8;--color-text:#131714;--color-text-muted:#5b635d;--color-ink:#131714;--color-on-ink:#ffffff;--color-accent:#2f855a;--color-on-accent:#ffffff;--color-ok:#1e6b40;--color-ok-bg:#e5f3ea;--color-wait:#7a4f00;--color-wait-bg:#fcf1d8;--color-error:#a8231a;--color-error-bg:#fceae8;--color-neutral:#454c47;--color-neutral-bg:#eceeeb;--color-focus:#131714;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--shadow-card:0 1px 2px rgba(19,23,20,.05),0 4px 16px rgba(19,23,20,.04);--font:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;font-family:var(--font);color:var(--color-text);background:var(--color-bg)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--color-focus);outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 1280px; min-height: 1250px; box-sizing: border-box; background: var(--color-bg); font-family: var(--font); color: var(--color-text); display: flex; flex-direction: column; --color-accent: {{accent}}; --color-on-accent: {{onAccent}}">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 14px 24px; border-bottom: 1px solid var(--color-border)">
+    <a href="Popis-1280.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 17px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4V8z"/></svg>Ulaznice</a>
+  </header>
+
+  <main style="width: 100%; max-width: 1040px; margin: 0 auto; box-sizing: border-box; padding: 36px 24px 72px; display: flex; flex-direction: column; gap: 24px">
+    <a href="Dogadjaj-1280.dc.html" style="align-self: flex-start; font-size: 14px; font-weight: 500; color: var(--color-text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; min-height: 32px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>Natrag na događaj</a>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-size: 34px; font-weight: 800; letter-spacing: -0.02em">Kupnja ulaznica</h1>
+      <span style="font-size: 16px; color: var(--color-text-muted)">Prilika za Susret 2027 · pet, 16. 4. 2027. u 9:00 · Dom sportova, Zagreb</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 32px; align-items: start">
+      <form style="display: flex; flex-direction: column; gap: 22px; padding: 28px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg)">
+        <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px">
+          <legend style="font-size: 16px; font-weight: 700; margin-bottom: 10px">Vrsta ulaznice</legend>
+          <sc-for list="{{tiers}}" as="t" hint-placeholder-count="3">
+            <button type="button" onClick="{{t.pick}}" disabled="{{t.disabled}}" aria-pressed="{{t.selected}}" style="{{t.style}}">
+              <span style="display: flex; align-items: center; gap: 12px; text-align: left"><span style="{{t.dot}}"></span><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 600">{{t.title}}</span><span style="font-size: 14px; color: var(--color-text-muted)">{{t.note}}</span></span></span>
+              <span style="font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums">{{t.price}}</span>
+            </button>
+          </sc-for>
+        </fieldset>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 18px; border-top: 1px solid var(--color-border)">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">Broj ulaznica</span><span style="font-size: 14px; color: var(--color-text-muted)">{{qtyHint}}</span></div>
+          <div style="display: inline-flex; align-items: center; border: 1px solid var(--color-border-strong); border-radius: var(--radius-md); overflow: hidden; background: var(--color-surface)"><button type="button" aria-label="Manje ulaznica" onClick="{{dec}}" style="font-family: inherit; width: 46px; height: 46px; border: 0; background: var(--color-surface); font-size: 20px; color: var(--color-text); cursor: pointer">−</button><span aria-live="polite" style="min-width: 40px; text-align: center; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums">{{qty}}</span><button type="button" aria-label="Više ulaznica" onClick="{{inc}}" style="font-family: inherit; width: 46px; height: 46px; border: 0; background: var(--color-surface); font-size: 20px; color: var(--color-text); cursor: pointer">+</button></div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; padding-top: 18px; border-top: 1px solid var(--color-border)">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">Imena posjetitelja</span><span style="font-size: 14px; color: var(--color-text-muted)">Ulaznica glasi na ime; na ulazu se može tražiti osobna iskaznica.</span></div>
+          <sc-for list="{{holders}}" as="h" hint-placeholder-count="2">
+            <div style="display: flex; flex-direction: column; gap: 6px"><label for="{{h.id}}" style="font-size: 14px; font-weight: 600">{{h.label}}</label><input id="{{h.id}}" type="text" autocomplete="name" placeholder="Ime i prezime" style="font-family: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text)"></div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 18px; border-top: 1px solid var(--color-border)">
+          <label for="kupac-email" style="font-size: 16px; font-weight: 700">Vaša e-mail adresa</label>
+          <input id="kupac-email" type="email" autocomplete="email" placeholder="ime@primjer.hr" style="font-family: inherit; font-size: 16px; min-height: 46px; padding: 0 14px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text)">
+          <span style="font-size: 14px; color: var(--color-text-muted)">Ulaznice s QR kodom šaljemo na ovu adresu.</span>
+        </div>
+
+        <label for="uvjeti" style="display: flex; gap: 12px; align-items: flex-start; font-size: 15px; line-height: 1.5; cursor: pointer"><input id="uvjeti" type="checkbox" onChange="{{toggleAgree}}" style="width: 20px; height: 20px; margin: 2px 0 0; accent-color: #131714"><span>Prihvaćam <a href="Pravno-1280.dc.html">uvjete korištenja</a> i <a href="#">uvjete organizatora</a>.</span></label>
+      </form>
+
+      <aside style="display: flex; flex-direction: column; gap: 16px; padding: 22px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card)">
+        <b style="font-size: 16px">Sažetak</b>
+        <div style="display: flex; flex-direction: column; gap: 10px; font-variant-numeric: tabular-nums">
+          <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px"><span>{{lineLabel}}</span><span>{{lineTotal}}</span></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 15px; color: var(--color-text-muted)"><span>Naknada platforme</span><span>0,00 €</span></div>
+          <div style="height: 1px; background: var(--color-border)"></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 20px; font-weight: 800"><span>Ukupno</span><span>{{lineTotal}}</span></div>
+        </div>
+        <button type="button" disabled="{{payDisabled}}" style="{{payStyle}}">Nastavi na plaćanje</button>
+        <span style="font-size: 13px; line-height: 1.5; color: var(--color-text-muted)">Plaćanje karticom obrađuje Stripe za organizatora. Mjesta su rezervirana 20 minuta.</span>
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--color-text-muted); padding-top: 12px; border-top: 1px solid var(--color-border)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Kupujete izravno od organizatora.</span>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2f855a","options":["#2f855a","#1a365d","#f6e05e","#7b2d43"]},"$preview":{"width":1280,"height":1250}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { tier: 'redovna', qty: 2, agreed: false };
+  }
+  lum(hex) {
+    const h = String(hex || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(h)) return 0.2;
+    const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+  eur(cents) {
+    return (cents / 100).toLocaleString('hr-HR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+  }
+  renderVals() {
+    const accent = this.props.accent ?? '#2f855a';
+    const L = this.lum(accent);
+    const onAccent = 1.05 / (L + 0.05) >= (L + 0.05) / 0.05 ? '#ffffff' : '#131714';
+    const all = [
+      { id: 'redovna', title: 'Redovna ulaznica', note: 'Sva tri dana, uključen ručak', cents: 6000, max: 10, ok: true },
+      { id: 'studentska', title: 'Studentska', note: 'Uz predočenje indeksa · još 4', cents: 3500, max: 4, ok: true },
+      { id: 'rani', title: 'Rani upis', note: 'Rasprodano', cents: 5000, max: 0, ok: false },
+    ];
+    const cur = all.find((t) => t.id === this.state.tier) || all[0];
+    const qty = Math.min(this.state.qty, cur.max);
+    const base = 'font-family: inherit; display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; padding: 14px 16px; border-radius: 10px; color: #131714; cursor: pointer;';
+    const tiers = all.map((t) => {
+      const selected = t.id === cur.id;
+      const style = !t.ok
+        ? base + ' border: 1px solid #e3e6e2; background: #f7f8f6; cursor: not-allowed; color: #5b635d'
+        : selected
+          ? base + ' border: 2px solid #131714; background: #ffffff; padding: 13px 15px'
+          : base + ' border: 1px solid #c9cec8; background: #ffffff';
+      const dot = selected
+        ? 'flex: none; width: 18px; height: 18px; border-radius: 50%; border: 6px solid #131714; box-sizing: border-box'
+        : 'flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid ' + (t.ok ? '#8a918c' : '#c9cec8') + '; box-sizing: border-box';
+      return { ...t, selected: selected ? 'true' : 'false', disabled: !t.ok, style, dot, price: this.eur(t.cents), pick: () => t.ok && this.setState({ tier: t.id, qty: Math.min(this.state.qty, t.max) }) };
+    });
+    const holders = Array.from({ length: qty }, (_, i) => ({ id: 'ime-' + (i + 1), label: (i + 1) + '. ulaznica — ime i prezime' }));
+    const payBase = 'font-family: inherit; min-height: 50px; font-size: 16px; font-weight: 700; border: 0; border-radius: 10px;';
+    return {
+      accent, onAccent, tiers, holders, qty,
+      qtyHint: 'najviše ' + cur.max + ' za ovu vrstu',
+      dec: () => this.setState({ qty: Math.max(1, qty - 1) }),
+      inc: () => this.setState({ qty: Math.min(cur.max, qty + 1) }),
+      toggleAgree: () => this.setState({ agreed: !this.state.agreed }),
+      lineLabel: cur.title + ' × ' + qty,
+      lineTotal: this.eur(cur.cents * qty),
+      payDisabled: !this.state.agreed,
+      payStyle: this.state.agreed ? payBase + ' background: var(--color-accent); color: var(--color-on-accent); cursor: pointer' : payBase + ' background: #d6dad5; color: #4a514c; cursor: not-allowed',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -150,3 +150,107 @@ Revizija: kad je pušten, upiši datum ovdje.
 Isto načelo kao `NAJAVA=1` na `ulaznice.domovina.ai`. Ručni deploy produkcije prije
 S6 servira samo stranicu „u izradi” ili Astro build bez gumba „Kupi”.
 Revizija: kad krene prodaja.
+
+## S1 (2026-11-19)
+
+Mjerenje: [research/2026-11-19-ssr-na-workersu.md](research/2026-11-19-ssr-na-workersu.md).
+
+**100. Verzije.** `astro` 7.4.1, `@astrojs/cloudflare` 14.4.9, `@astrojs/react` 7.1.0,
+`react`/`react-dom` 19.3.1, `wrangler` 4.165.0, `@astrojs/check` 0.9.12, `typescript` 6.0.3,
+`@types/node` ^22 (Node 22).
+Revizija: pri nadogradnji Astra ili adaptera.
+
+**101. Zadani bindingi adaptera su isključeni.** U `astro.config.mjs`: `session: false`
+(inače adapter sam dodaje `SESSION` KV), `imageService: "passthrough"` (inače Cloudflare
+Images binding), `remoteBindings: false`. Jedini bindingi su `ASSETS` i `API_BASE_URL`.
+Razlog: odluka 4.
+Revizija: ako zatreba optimizacija slika; tada nova odluka o Images bindingu.
+
+**102. Okruženje se bira pri buildu, ne pri deployu.** Wrangler deploya generirani
+`dist/server/wrangler.json`, pa `deploy:staging` = `CLOUDFLARE_ENV=staging npm run build &&
+wrangler deploy --env staging`, a `deploy:prod` gradi bez `CLOUDFLARE_ENV`. Dry-run je
+pokazao da goli `wrangler deploy --env staging` nad produkcijskim buildom tiho deploya
+produkciju. Deploy samo kroz skripte. Upisano u `docs/deploy-dug.md`.
+Revizija: ako adapter vrati čitanje `--env` pri deployu.
+
+**103. `compatibility_date` ostaje `2025-11-01`, bez `nodejs_compat`.** Build, `astro dev`,
+`wrangler dev` i dry-run rade. `@astrojs/react` lijeno uvozi `node:stream` samo izvan edge
+puta; izgrađeni Worker nema `node:` uvoza.
+Revizija: prvi React otok (S2–S4) se provjerava u `wrangler dev`; ako padne, dodaje se
+`compatibility_flags: ["nodejs_compat"]`.
+
+**104. `web/` uvozi zajedničke tipove relativnom putanjom, samo `import type`.**
+`../../../shared/api-tipovi.ts`, bez aliasa; u runtimeu nestaje. Testovi idu kroz Nodeovo
+skidanje TS tipova (Node ≥ 22.18), bez loadera i bez nove ovisnosti.
+Revizija: ako `shared/` dobije runtime kod.
+
+**105. SSR u `astro dev` ide izravno na mock `:8797`.** Nadjačava se s `API_BASE_URL_DEV` u
+`web/.dev.vars` (npr. na `:8788` u S6). Preglednik koristi relativni `/api` kroz Vite proxy
+(i `/mock-checkout`). Razlog: isti oblik kao produkcija, gdje SSR zove Worker izravno.
+Revizija: S6.
+
+**106. Astro telemetrija je isključena u skriptama** (`ASTRO_TELEMETRY_DISABLED=1` u `check`).
+Prvi build u S1 vjerojatno je poslao jedan anonimni ping prije nego što je isključena.
+Revizija: nema.
+
+**107. Odluka 2 potvrđena mjerenjem.** SSR na Workersu (`wrangler dev --local`) vraća
+naslov u `<title>` i `og:title`; nepostojeći slug 404; topli medijan 8,0 ms, hladni prvi
+36–42 ms (lokalni workerd, ne produkcijski edge).
+Revizija: S7 mjeri na stagingu.
+
+## S2 (2026-11-19)
+
+Snimke: [research/2026-11-19-komponente-390.png](research/2026-11-19-komponente-390.png),
+[research/2026-11-19-komponente-1280.png](research/2026-11-19-komponente-1280.png)
+(`/_komponente` u `astro dev`, snimljeno kroz Chrome DevTools protokol, bez dev toolbara).
+
+**200. Figtree je samohostan** (`@fontsource-variable/figtree`, `wght.css`, latin + latin-ext,
+samo uspravni rez), ne s Google Fonts CDN-a. Kupčev preglednik ne šalje ništa Googleu.
+`--font` počinje s `"Figtree Variable"`.
+Revizija: ako zatreba kurziv.
+
+**201. Kontrast naglaska se računa prema `--color-bg` (#f3f4f2)**, kako kaže pravilo 2 u
+`Main.dc.html` (opis događaja stoji na podlozi); što prođe tu, prolazi i na bijelom.
+Zato je zadani `--color-accent-text` `#2c7d55` (zadana #2f855a kao tekst ima 4,1:1).
+Konstanta `ZADANA_PODLOGA` u `src/lib/naglasak.ts`.
+Revizija: nema.
+
+**202. Potamnjivanje je najmanje potrebno**: HSL svjetlina pada po 0,5 % do 4,5:1, nijansa i
+zasićenje ostaju. `#f6e05e` → `#816f07` (README dizajna navodi tamniji `#6e5a00`, 6,7:1).
+Revizija: nema.
+
+**203. `onAccent` bira između stvarnih `#ffffff` i `#131714`**, ne čiste crne kao
+`renderVals()` u dizajnu; formula dizajna bi za zadanu zelenu izabrala tamni tekst, a token
+traži bijeli. Otvoreno: srednje zasićene boje (npr. `#e53e3e`, najviše 4,39:1) ne daju AA ni
+s jednim; zasad se prihvaća (gumb je 16/700, „velik tekst” ≥ 3:1). Odluka u S3 ako smeta.
+Revizija: S3.
+
+**204. `brand.accent_color` prihvaća se samo kao `#rgb`/`#rrggbb`**, inače zadana boja; ide u
+inline `style`, pa kroz nju ne može ući CSS.
+Revizija: nema.
+
+**205. Stil komponenti**: Gumb, Oznaka i Banner su `.astro` sa stilom u `*.module.css` da ih
+React otoci (S4, S5) dijele; dijelovi forme (Polje, PotvrdniOkvir, Stepper, IzborTiera,
+SazetakNarudzbe, OdbrojavanjeGumb) su `.tsx` + CSS modul i bez `client:` se iscrtavaju kao
+HTML; ostalo `.astro` sa scoped `<style>`. Jedan prijelom: 720 px.
+Revizija: nema.
+
+**206. Datumi i novac u komponentama su privremeni.** Komponente primaju gotov tekst datuma;
+novac ide kroz `eurPrivremeno` u `src/lib/prikaz.ts`, svako mjesto označeno „PRIVREMENO … S3”.
+Datumska pločica sama računa dan i mjesec u zoni događaja.
+Revizija: S3 (`format.ts`) zamjenjuje.
+
+**207. Layout `Osnovni.astro`**: `noindex` zadano uključen (odluka 24); širine 760/960/1040 px;
+link „Preskoči na sadržaj”; slot `dno` za ljepljivu traku; naglasak samo kad je prop zadan.
+Revizija: kad produkcija krene u prodaju (odluka 24).
+
+**208. `/_komponente` postoji samo u `astro dev`**: Astro ignorira stranice s `_`, pa je ruta
+ubačena integracijom u `astro.config.mjs` (`injectRoute` kad je `command === 'dev'`) prema
+`src/dev/komponente.astro`. U produkcijskom `dist/` je nema.
+Revizija: nema.
+
+**209. React otok u `wrangler dev` (odluka 103) nije provjeren** jer produkcijske stranice
+još nemaju otoka; u `astro dev` sva četiri otoka na `/_komponente` se hidriraju bez
+upozorenja. Provjera se seli u S4. Worker bundle: 1 266 755 B sirovo (≈ 298 KB gzip), +12 KB
+prema S1 (zbroj `dist/server/**/*.js` bez `.map`).
+Revizija: S4.

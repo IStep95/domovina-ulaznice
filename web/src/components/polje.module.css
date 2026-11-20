@@ -1,0 +1,84 @@
+/* Polja forme (Main.dc.html, „Polja forme”): zadano, fokus, greška, onemogućeno. */
+.polje {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.oznaka {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+/* Kupnja: naslovi skupina polja su 16/700 („Vaša e-mail adresa”). */
+.oznakaVeca {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.unos {
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-md); /* 16 px: iOS ne zumira */
+}
+
+.unos::placeholder {
+  color: var(--color-text-muted);
+}
+
+.unos:focus-visible,
+.fokus {
+  border-color: var(--color-ink);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.unos[aria-invalid="true"] {
+  border: 1.5px solid var(--color-error);
+}
+
+.unos:disabled {
+  border-color: var(--color-border);
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.onemoguceno .oznaka {
+  color: var(--color-text-muted);
+}
+
+.pomoc {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.greska {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-error);
+}
+
+/* Potvrdni okvir („Prihvaćam uvjete”, Kupnja-1280). */
+.kvacica {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  font-size: 15px;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.kvacica input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--color-ink);
+}

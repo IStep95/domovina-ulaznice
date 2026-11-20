@@ -1,0 +1,72 @@
+---
+// Učitavanje popisa (Popis-390 „Stanje: učitavanje”): kostur kartica.
+// Kostur je aria-hidden; čitač zaslona čuje samo „Učitavanje…” (role=status).
+interface Props {
+  /** Broj kartica; zadano 2. */
+  broj?: number;
+  tekst?: string;
+}
+
+const { broj = 2, tekst = "Učitavanje događaja…" } = Astro.props;
+---
+<div class="kostur" role="status">
+  <span class="vizualno-skriveno">{tekst}</span>
+  {
+    Array.from({ length: broj }, () => (
+      <div class="kartica" aria-hidden="true">
+        <div class="crte">
+          <div class="crta" style="width: 50%" />
+          <div class="crta visa" style="width: 90%" />
+          <div class="crta" style="width: 70%" />
+        </div>
+        <div class="plocica" />
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .kostur {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .kartica {
+    display: flex;
+    gap: var(--space-3);
+    padding: 14px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+  }
+  .crte {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+  .crta {
+    height: 12px;
+    border-radius: var(--radius-sm);
+    background: var(--color-neutral-bg);
+  }
+  .visa {
+    height: 16px;
+  }
+  .plocica {
+    flex: none;
+    width: 76px;
+    height: 76px;
+    border-radius: var(--radius-md);
+    background: var(--color-neutral-bg);
+  }
+  .crta,
+  .plocica {
+    animation: puls 1.4s ease-in-out infinite;
+  }
+  @keyframes puls {
+    50% {
+      background: var(--color-surface-2);
+    }
+  }
+</style>

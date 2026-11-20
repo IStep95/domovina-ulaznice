@@ -1,0 +1,182 @@
+---
+// Datumska pločica (Main.dc.html „Kartica događaja i datumska pločica”).
+//   obrub — 48 px, bijela s trakom mjeseca (termin na stranici događaja)
+//   boja  — ploha u naglasnoj boji: s 76 px (popis na mobitelu), m 84 px
+//           (narudžba), l 112 px s godinom (popis na računalu),
+//           prilagodljiva = l na ≥ 720 px, s ispod.
+// Mjesec je kratica (SIJ VELJ OŽU TRA SVI LIP SRP KOL RUJ LIS STU PRO, pravilo 2).
+// Bez datuma (starts_at null) pokazuje ikonu ulaznice i tekst za čitače zaslona.
+import Ikona from "./Ikona.astro";
+import { datumDijelovi } from "../lib/prikaz.ts";
+import { naglasakStil } from "../lib/naglasak.ts";
+
+interface Props {
+  /** ISO trenutak početka (`starts_at`). */
+  datum: string | null | undefined;
+  /** `event.timezone`; zadano Europe/Zagreb. */
+  timeZone?: string;
+  varijanta?: "obrub" | "boja";
+  velicina?: "s" | "m" | "l" | "prilagodljiva";
+  /** `brand.accent_color` ako se razlikuje od stranice (kartice na popisu). */
+  naglasak?: string | null;
+  /** Ukras: datum je već napisan uz pločicu (aria-hidden). */
+  ukras?: boolean;
+}
+
+const { datum, timeZone, varijanta = "obrub", velicina = "l", naglasak, ukras = false } = Astro.props;
+const d = datumDijelovi(datum, timeZone);
+const isoDan = d ? `${d.godina}-${String(d.mjesec).padStart(2, "0")}-${String(d.dan).padStart(2, "0")}` : undefined;
+const stil = naglasak !== undefined ? naglasakStil(naglasak) : undefined;
+---
+{
+  varijanta === "obrub" ? (
+    <time class="obrub" datetime={isoDan} aria-hidden={ukras ? "true" : undefined}>
+      {d ? (
+        <>
+          <span class="obrub-mjesec">{d.mjesecKratica}</span>
+          <span class="obrub-dan">{d.dan}</span>
+        </>
+      ) : (
+        <span class="obrub-dan">?</span>
+      )}
+      {!d && <span class="vizualno-skriveno">Datum još nije objavljen</span>}
+    </time>
+  ) : (
+    <time class:list={["boja", `boja-${velicina}`]} datetime={isoDan} style={stil} aria-hidden={ukras ? "true" : undefined}>
+      {d ? (
+        <>
+          <span class="boja-mjesec">{d.mjesecKratica}</span>
+          <span class="boja-dan">{d.dan}</span>
+          <span class="boja-godina">{d.godina}.</span>
+        </>
+      ) : (
+        <>
+          <Ikona ime="ulaznica" velicina={28} />
+          <span class="vizualno-skriveno">Datum još nije objavljen</span>
+        </>
+      )}
+    </time>
+  )
+}
+
+<style>
+  .obrub {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    width: 48px;
+    overflow: hidden;
+    text-align: center;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+  }
+  .obrub-mjesec {
+    padding: 3px 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+  }
+  .obrub-dan {
+    padding: 3px 0 5px;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  @media (max-width: 719px) {
+    .obrub {
+      width: 44px;
+    }
+    .obrub-mjesec {
+      padding: 2px 0;
+      font-size: 10px;
+    }
+    .obrub-dan {
+      padding: 2px 0 4px;
+      font-size: 18px;
+    }
+  }
+
+  .boja {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: var(--radius-md);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    line-height: 1;
+  }
+  .boja-mjesec {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+  .boja-dan {
+    font-weight: 800;
+  }
+  .boja-godina {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+  }
+
+  .boja-l,
+  .boja-prilagodljiva {
+    width: 112px;
+    height: 112px;
+  }
+  .boja-l .boja-mjesec,
+  .boja-prilagodljiva .boja-mjesec {
+    font-size: 13px;
+  }
+  .boja-l .boja-dan,
+  .boja-prilagodljiva .boja-dan {
+    font-size: 40px;
+  }
+
+  .boja-m {
+    width: 84px;
+    height: 84px;
+  }
+  .boja-m .boja-mjesec {
+    font-size: var(--font-size-xs);
+  }
+  .boja-m .boja-dan {
+    font-size: 32px;
+  }
+
+  .boja-s {
+    width: 76px;
+    height: 76px;
+  }
+  .boja-s .boja-mjesec {
+    font-size: 11px;
+  }
+  .boja-s .boja-dan {
+    font-size: var(--font-size-2xl);
+  }
+
+  .boja-m .boja-godina,
+  .boja-s .boja-godina {
+    display: none;
+  }
+
+  @media (max-width: 719px) {
+    .boja-prilagodljiva {
+      width: 76px;
+      height: 76px;
+    }
+    .boja-prilagodljiva .boja-mjesec {
+      font-size: 11px;
+    }
+    .boja-prilagodljiva .boja-dan {
+      font-size: var(--font-size-2xl);
+    }
+    .boja-prilagodljiva .boja-godina {
+      display: none;
+    }
+  }
+</style>

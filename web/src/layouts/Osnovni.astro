@@ -1,0 +1,111 @@
+---
+// Osnovni layout za sve stranice kupaca: <head> (meta, OG, favicon), zaglavlje,
+// <main> zadane širine, podnožje s pravnim linkovima. Font Figtree je samohostan
+// (@fontsource-variable/figtree, latin + latin-ext), bez zahtjeva prema Googleu.
+//
+// `naglasak` = `brand.accent_color` događaja: na <html> postavlja --color-accent,
+// --color-on-accent i --color-accent-text (src/lib/naglasak.ts). Samo stranice
+// događaja, kupnje i narudžbe; popis, 404 i pravne ostaju platformske (pravilo 1).
+import "@fontsource-variable/figtree/wght.css";
+import "../styles/tokens.css";
+import "../styles/global.css";
+import Podnozje from "../components/Podnozje.astro";
+import Zaglavlje from "../components/Zaglavlje.astro";
+import { naglasakStil } from "../lib/naglasak.ts";
+
+interface Props {
+  title: string;
+  opis?: string;
+  /** Apsolutni URL slike za og:image (naslovna slika događaja). */
+  ogSlika?: string | null;
+  /** Apsolutni kanonski URL; ide i u og:url. */
+  canonical?: string | null;
+  /** `brand.accent_color`; undefined = platformske boje iz tokens.css. */
+  naglasak?: string | null;
+  /** Najveća širina sadržaja: uska 760 (narudžba), srednja 960 (popis), siroka 1040 (događaj, kupnja). */
+  sirina?: "uska" | "srednja" | "siroka";
+  /**
+   * noindex dok produkcija ne smije izgledati kao prodaja (odluka 24); obje
+   * postojeće stranice ga imaju od S1. Ukida ga zasebna odluka, ne S2.
+   */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  opis = "Ulaznice za događaje izravno od organizatora, bez naknade posrednika.",
+  ogSlika,
+  canonical,
+  naglasak,
+  sirina = "siroka",
+  noindex = true,
+} = Astro.props;
+
+const SIRINE = { uska: "760px", srednja: "960px", siroka: "1040px" } as const;
+const maxSirina = SIRINE[sirina];
+const stil = naglasak !== undefined ? naglasakStil(naglasak) : undefined;
+---
+<!doctype html>
+<html lang="hr" style={stil}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <title>{title}</title>
+    <meta name="description" content={opis} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#f3f4f2" />
+    {canonical && <link rel="canonical" href={canonical} />}
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="hr_HR" />
+    <meta property="og:site_name" content="Ulaznice" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={opis} />
+    {canonical && <meta property="og:url" content={canonical} />}
+    {ogSlika && <meta property="og:image" content={ogSlika} />}
+    <meta name="twitter:card" content={ogSlika ? "summary_large_image" : "summary"} />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="preskoci" href="#sadrzaj">Preskoči na sadržaj</a>
+    <Zaglavlje />
+    <main id="sadrzaj" class="sadrzaj" style={`max-width: ${maxSirina}`}>
+      <slot />
+    </main>
+    <Podnozje sirina={maxSirina} />
+    <slot name="dno" />
+  </body>
+</html>
+
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  .sadrzaj {
+    flex: 1 0 auto;
+    width: 100%;
+    margin: 0 auto;
+    padding: 40px var(--space-6) 72px;
+  }
+  @media (max-width: 719px) {
+    .sadrzaj {
+      padding: var(--space-4) var(--space-4) var(--space-8);
+    }
+  }
+  .preskoci {
+    position: absolute;
+    left: var(--space-2);
+    top: -100px;
+    z-index: 100;
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--color-ink);
+    color: var(--color-on-ink);
+    font-weight: 600;
+  }
+  .preskoci:focus {
+    top: var(--space-2);
+    color: var(--color-on-ink);
+  }
+</style>

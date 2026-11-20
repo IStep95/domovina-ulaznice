@@ -1,0 +1,76 @@
+/* Tokeni dizajna za kupce. Kopija web/design/tokens.css (Claude Design, 2026-11-19;
+ * izvor web/design/canvas/Main.dc.html, odluka 9), uvedena u S2. Promjena tokena ide
+ * ovdje; web/design/ ostaje zapis izvoza.
+ * Razlike od izvoza: --color-accent-text (novo) i "Figtree Variable" u --font
+ * (samohostani @fontsource-variable/figtree, bez Google Fonts).
+ * --color-accent, --color-on-accent i --color-accent-text nadjačava događaj iz
+ * brand.accent_color: src/lib/naglasak.ts (pravilo kontrasta: web/design/README.md).
+ * Tamni način još nije dizajniran. */
+:root {
+  /* podloga i površine */
+  --color-bg: #f3f4f2;
+  --color-surface: #ffffff;
+  --color-surface-2: #f7f8f6; /* zaglavlja kartica, prigušeni redovi */
+  --color-border: #e3e6e2;
+  --color-border-strong: #c9cec8; /* polja, sekundarni gumbi */
+
+  /* tekst i platformski gumb */
+  --color-text: #131714;
+  --color-text-muted: #5b635d; /* 6,2:1 na bijelom, 5,6:1 na surface-2 */
+  --color-ink: #131714;
+  --color-on-ink: #ffffff;
+  --color-disabled-bg: #d6dad5;
+  --color-disabled-text: #4a514c;
+
+  /* naglasna boja organizatora (zadano) */
+  --color-accent: #2f855a;
+  --color-on-accent: #ffffff;
+  /* naglasak kao tekst (linkovi, hover): ≥ 4,5:1 na --color-bg, inače potamnjen.
+     Zadana #2f855a ima 4,1:1 na #f3f4f2, pa je ovdje potamnjena (4,6:1). */
+  --color-accent-text: #2c7d55;
+
+  /* stanja: tekst na pripadnoj pozadini, svi ≥ 4,5:1 */
+  --color-ok: #1e6b40;
+  --color-ok-bg: #e5f3ea;
+  --color-wait: #7a4f00;
+  --color-wait-bg: #fcf1d8;
+  --color-error: #a8231a;
+  --color-error-bg: #fceae8;
+  --color-neutral: #454c47;
+  --color-neutral-bg: #eceeeb;
+
+  --color-focus: #131714; /* outline 2px, offset 2px */
+
+  /* tipografija */
+  --font: "Figtree Variable", "Figtree", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-size-xs: 12px;  /* oznake, uppercase, letter-spacing .06em */
+  --font-size-sm: 14px;  /* pomoćni tekst, meta */
+  --font-size-md: 16px;  /* tijelo, line-height 1.55–1.65 */
+  --font-size-lg: 18px;  /* naslov kartice */
+  --font-size-xl: 22px;  /* h2 */
+  --font-size-2xl: 28px; /* h1 mobitel */
+  --font-size-3xl: 36px; /* h1 popisa */
+  --font-size-display: 44px; /* naslov događaja, 800, -0.025em */
+
+  /* razmaci (4 px korak) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* radijusi */
+  --radius-sm: 6px;
+  --radius-md: 10px;  /* gumbi, polja, pločice */
+  --radius-lg: 14px;  /* kartice */
+  --radius-xl: 20px;  /* naslovna slika */
+  --radius-pill: 999px; /* oznake */
+
+  --shadow-card: 0 1px 2px rgba(19, 23, 20, .05), 0 4px 16px rgba(19, 23, 20, .04);
+
+  /* dodir */
+  --tap-min: 44px;
+}

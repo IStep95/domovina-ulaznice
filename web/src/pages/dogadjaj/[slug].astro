@@ -1,0 +1,21 @@
+---
+// S1: mjerenje SSR-a na Workersu (web/docs/handoffs/S1.md, točka 6), bez dizajna
+// i bez gumba „Kupi” (odluka 24). Pravu stranicu događaja radi S3.
+// S2: samo prebačeno na layout (naglasna boja iz brand.accent_color).
+import { ApiError, type EventView } from "../../lib/api.ts";
+import { serverApi } from "../../lib/api-ssr.ts";
+import Osnovni from "../../layouts/Osnovni.astro";
+
+const slug = Astro.params.slug ?? "";
+let dogadjaj: EventView | null = null;
+try {
+  dogadjaj = await serverApi().dohvatiDogadjaj(slug);
+} catch (e) {
+  if (!(e instanceof ApiError && e.status === 404)) throw e;
+  Astro.response.status = 404;
+}
+const naslov = dogadjaj ? dogadjaj.title : "Događaj nije pronađen";
+---
+<Osnovni title={naslov} naglasak={dogadjaj ? (dogadjaj.brand?.accent_color ?? null) : undefined}>
+  <h1>{naslov}</h1>
+</Osnovni>

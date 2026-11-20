@@ -1,0 +1,125 @@
+---
+// Blok greške cijele stranice (Nije-pronadeno-1280, Greske-390): 404 putanje,
+// event_not_found, order_not_found, 500. Kod je mala oznaka iznad naslova, nikad
+// tehnički kod iz API-ja (pravilo iz briefa §8). Akcija u slotu: platformski
+// gumb (--color-ink), npr. „Na popis događaja” ili „Pokušaj ponovno”.
+import Ikona from "./Ikona.astro";
+import type { IkonaIme } from "../lib/ikone.ts";
+
+interface Props {
+  /** Npr. „404”. */
+  kod?: string;
+  naslov: string;
+  opis?: string;
+  ikona?: IkonaIme | null;
+  ton?: "neutral" | "error";
+  /** h1 kad je to cijela stranica (zadano), h2 unutar veće stranice. */
+  razina?: 1 | 2;
+}
+
+const { kod, naslov, opis, ikona = "ulaznica-x", ton = "neutral", razina = 1 } = Astro.props;
+const Naslov = razina === 1 ? "h1" : "h2";
+---
+<div class="greska">
+  {
+    ikona && (
+      <div class:list={["ikona", ton]} aria-hidden="true">
+        <Ikona ime={ikona} velicina={36} />
+      </div>
+    )
+  }
+  {kod && <span class="kod">{kod}</span>}
+  <Naslov class="naslov">{naslov}</Naslov>
+  {opis && <p class="opis">{opis}</p>}
+  {Astro.slots.has("default") && <div class="akcija"><slot /></div>}
+</div>
+
+<style>
+  .greska {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-4);
+    max-width: 460px;
+    margin: 0 auto;
+    padding: var(--space-16) 0;
+    text-align: center;
+  }
+  .ikona {
+    display: grid;
+    place-items: center;
+    width: 88px;
+    height: 88px;
+    border-radius: var(--radius-xl);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
+  }
+  .ikona.error {
+    color: var(--color-error);
+  }
+  .kod {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .naslov {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .opis {
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+  }
+  .akcija {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+    margin-top: 6px;
+  }
+
+  /* Mobitel: bijela kartica, poravnano lijevo (Greske-390). */
+  @media (max-width: 719px) {
+    .greska {
+      align-items: flex-start;
+      gap: 14px;
+      max-width: none;
+      padding: 28px 20px;
+      text-align: left;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+    }
+    .ikona {
+      width: 64px;
+      height: 64px;
+      border: 0;
+      border-radius: var(--radius-lg);
+      box-shadow: none;
+      background: var(--color-neutral-bg);
+    }
+    .ikona.error {
+      background: var(--color-error-bg);
+    }
+    .kod {
+      font-size: var(--font-size-xs);
+    }
+    .naslov {
+      font-size: 26px;
+      letter-spacing: -0.01em;
+    }
+    .opis {
+      font-size: 15px;
+    }
+    .akcija {
+      justify-content: flex-start;
+      margin-top: 0;
+    }
+  }
+</style>

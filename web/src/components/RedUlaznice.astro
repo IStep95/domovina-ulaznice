@@ -1,0 +1,63 @@
+---
+// Red ulaznice u narudžbi (Main.dc.html „Red ulaznice”, Narudzba-1280).
+// QR se ovdje namjerno ne prikazuje (stiže e-mailom i u aplikaciji).
+// Stanje: vrijedi (ok), ušlo (neutral), poništena (error) — uvijek tekstom.
+// Mapiranje TicketView.state → stanje radi S5.
+import Oznaka from "./Oznaka.astro";
+
+export type StanjeUlaznice = "vrijedi" | "uslo" | "ponistena";
+
+interface Props {
+  /** `holder_name`; null → „Ulaznica”. */
+  ime?: string | null;
+  serijski: string;
+  /** Naziv vrste, npr. „Redovna ulaznica”. */
+  vrsta?: string;
+  stanje: StanjeUlaznice;
+}
+
+const { ime, serijski, vrsta, stanje } = Astro.props;
+const oznaka = {
+  vrijedi: { ton: "ok", tekst: "vrijedi" },
+  uslo: { ton: "neutral", tekst: "ušlo" },
+  ponistena: { ton: "error", tekst: "poništena" },
+} as const;
+---
+<div class="red">
+  <div class="tekst">
+    <b class="ime">{ime || "Ulaznica"}</b>
+    <span class="meta">{[vrsta, serijski].filter(Boolean).join(" · ")}</span>
+  </div>
+  <Oznaka ton={oznaka[stanje].ton}>{oznaka[stanje].tekst}</Oznaka>
+</div>
+
+<style>
+  .red {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .red:last-child {
+    border-bottom: 0;
+  }
+  .red > :global(:last-child) {
+    align-self: center;
+  }
+  .tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .ime {
+    font-size: 15px;
+  }
+  .meta {
+    font-size: 13px;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+</style>

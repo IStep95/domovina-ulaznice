@@ -1,0 +1,61 @@
+/* Stepper količine (Main.dc.html „Broj ulaznica”, Kupnja-1280). */
+.redak {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.tekst {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.oznaka {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.opis {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.kontrola {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.gumb {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  min-height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.gumb:disabled {
+  color: var(--color-disabled-text);
+  background: var(--color-surface-2);
+  cursor: not-allowed;
+}
+
+.vrijednost {
+  min-width: 40px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

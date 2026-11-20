@@ -1,0 +1,43 @@
+/* Banneri (Main.dc.html, Greske-390, Narudzba-1280). Ikona + tekst uvijek
+ * (pravilo 3). CSS modul jer bannere prikazuju i React otoci (kupnja S4,
+ * ponovna dostava S5). */
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: 1.45;
+}
+
+.redak {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.redak > svg {
+  margin-top: 1px;
+}
+
+.ok { background: var(--color-ok-bg); color: var(--color-ok); }
+.wait { background: var(--color-wait-bg); color: var(--color-wait); }
+.error { background: var(--color-error-bg); color: var(--color-error); }
+.neutral { background: var(--color-neutral-bg); color: var(--color-neutral); }
+
+/* Ishod koji se ne smije previdjeti („stari QR više ne rade”, Narudzba-1280). */
+.istaknut {
+  border: 2px solid currentColor;
+  font-size: 15px;
+}
+
+.akcija {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.tekst :global(a) {
+  color: inherit;
+}

@@ -1,0 +1,58 @@
+---
+// Podnožje svih stranica (Popis-1280/390): pravni linkovi i popis događaja.
+interface Props {
+  /** Ista najveća širina kao <main> (layout). */
+  sirina: string;
+}
+
+const { sirina } = Astro.props;
+---
+<footer class="podnozje">
+  <div class="unutra" style={`max-width: ${sirina}`}>
+    <span>Ulaznice · prodaja bez posrednika</span>
+    <nav class="linkovi" aria-label="Podnožje">
+      <a href="/uvjeti">Uvjeti</a>
+      <a href="/privatnost">Privatnost</a>
+      <a href="/">Popis događaja</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .podnozje {
+    margin-top: auto;
+    border-top: 1px solid var(--color-border);
+  }
+  .unutra {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    margin: 0 auto;
+    padding: 22px var(--space-6);
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+  .linkovi {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .linkovi a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-min);
+    color: var(--color-text-muted);
+  }
+  .linkovi a:hover {
+    color: var(--color-text);
+  }
+  @media (max-width: 719px) {
+    .unutra {
+      flex-direction: column-reverse;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 18px var(--space-4) 28px;
+    }
+  }
+</style>

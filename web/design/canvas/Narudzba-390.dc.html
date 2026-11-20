@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<title>Potvrđujemo plaćanje, mobitel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
+<style>
+:root{--color-bg:#f3f4f2;--color-surface:#ffffff;--color-surface-2:#f7f8f6;--color-border:#e3e6e2;--color-border-strong:#c9cec8;--color-text:#131714;--color-text-muted:#5b635d;--color-ink:#131714;--color-on-ink:#ffffff;--color-accent:#2f855a;--color-on-accent:#ffffff;--color-ok:#1e6b40;--color-ok-bg:#e5f3ea;--color-wait:#7a4f00;--color-wait-bg:#fcf1d8;--color-error:#a8231a;--color-error-bg:#fceae8;--color-neutral:#454c47;--color-neutral-bg:#eceeeb;--color-focus:#131714;--radius-sm:6px;--radius-md:10px;--radius-lg:14px;--radius-xl:20px;--radius-pill:999px;--shadow-card:0 1px 2px rgba(19,23,20,.05),0 4px 16px rgba(19,23,20,.04);--font:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+body{margin:0;font-family:var(--font);color:var(--color-text);background:var(--color-bg)}
+a{color:var(--color-text)}a:hover{color:var(--color-accent)}
+@keyframes vrti{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){.vrti{animation:none!important}}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1300px; box-sizing: border-box; background: var(--color-bg); font-family: var(--font); color: var(--color-text); display: flex; flex-direction: column">
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--color-border)">
+    <a href="Popis-390.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 16px; min-height: 44px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4V8z"/></svg>Ulaznice</a>
+  </header>
+
+  <main style="padding: 20px 16px 32px; display: flex; flex-direction: column; gap: 16px">
+    <section role="status" aria-live="polite" style="display: flex; flex-direction: column; gap: 12px; padding: 20px; background: var(--color-wait-bg); border-radius: var(--radius-lg); color: var(--color-wait)">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <svg class="vrti" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true" style="animation: vrti 1s linear infinite"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.01em">Potvrđujemo plaćanje…</h1>
+      </div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.55; color: var(--color-text)">Plaćanje je zaprimljeno kod Stripea. Ulaznice izdajemo čim potvrda stigne — ova stranica se osvježava sama.</p>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg)">
+      <div style="display: flex; gap: 12px">
+        <div style="flex: none; width: 60px; height: 60px; border-radius: var(--radius-md); background: var(--color-accent); color: var(--color-on-accent); display: flex; flex-direction: column; align-items: center; justify-content: center"><span style="font-size: 10px; font-weight: 700; letter-spacing: .08em">TRA</span><span style="font-size: 24px; font-weight: 800; line-height: 1">16</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><b style="font-size: 16px">Prilika za Susret 2027</b><span style="font-size: 14px; color: var(--color-text-muted)">pet, 16. 4. 2027. u 9:00</span><span style="font-size: 14px; color: var(--color-text-muted)">Dom sportova, Zagreb</span></div>
+      </div>
+      <dl style="margin: 0; padding-top: 12px; border-top: 1px solid var(--color-border); display: grid; grid-template-columns: 1fr auto; gap: 8px; font-size: 14px; font-variant-numeric: tabular-nums">
+        <dt style="color: var(--color-text-muted)">Studentska × 2</dt><dd style="margin: 0; font-weight: 600">70,00 €</dd>
+        <dt style="color: var(--color-text-muted)">E-mail</dt><dd style="margin: 0; font-weight: 600">an••••••••@primjer.hr</dd>
+        <dt style="color: var(--color-text-muted)">Rezervacija vrijedi do</dt><dd style="margin: 0; font-weight: 600">15:10</dd>
+      </dl>
+    </section>
+
+    <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px dashed var(--color-border-strong); border-radius: var(--radius-lg)"><b style="font-size: 14px">Sačuvajte ovaj link</b><span style="font-size: 14px; color: var(--color-text-muted)">Njime pristupate narudžbi bez prijave.</span></div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--color-border-strong)">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--color-text-muted)">Nakon 20 s bez potvrde</span>
+      <div role="status" style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: var(--radius-md); background: var(--color-neutral-bg); color: var(--color-neutral); font-size: 14px; line-height: 1.5">
+        <span>Potvrda još nije stigla. Ulaznice će svejedno stići e-mailom čim se plaćanje potvrdi.</span>
+        <button type="button" style="align-self: flex-start; font-family: inherit; min-height: 44px; font-size: 15px; font-weight: 600; padding: 0 16px; border-radius: var(--radius-md); border: 1px solid var(--color-border-strong); background: var(--color-surface); color: var(--color-text)">Osvježi</button>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

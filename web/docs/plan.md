@@ -73,7 +73,7 @@ događaj za staging je pripremljen u `seeds/staging-web-pregled.sql` i čeka Mat
 | S2b | F1 | dorada sheme događaja: `venue_lat`, `venue_lon`, `cover_image_alt` (migracija u `domovina-api`, `events-feed`, Worker, tipovi, mock) | 250 | migracija idempotentna (drugi run no-op); `GET /api/dogadjaj/:slug` u mocku i lokalno vraća nova polja; korijenski `npm test` zelen |
 | — | vrata | (!) Matija primijeni migraciju i deploya `events-feed` | — | `api.domovina.ai` vraća nova polja |
 | S3 | F1 | popis i događaj (SSR, OG, JSON-LD s `geo`, karta, Markdown opis, „dodaj u kalendar”, stanja tierova) | 300 | testovi za novac, datum i stanja tierova; `curl` na mock vraća OG i JSON-LD za oba događaja |
-| S4 | F1 | kupnja (React otok, `POST /api/narudzba`, greške) | 400 | kupnja kroz mock završi na `/ulaznice/:id?placeno=1`; svaki kod greške iz `worker/api.ts` ima poruku i test |
+| S4 | F1 | kupnja (React otok, `POST /api/narudzba`, greške) | 400 | kupnja kroz mock završi na `/ulaznice/:id?placeno=1`; svaki kod greške iz `worker/index.ts` ima poruku i test |
 | S5 | F1 | narudžba, pravne stranice, 404 | 500 | pending → paid kroz mock; ponovna dostava i preuzimanje rade; pravne stranice prerenderirane (`dist/` sadrži HTML) |
 | S6 | F2 | service binding u Workeru, lokalna e2e kupnja, `deploy-dug.md` | 600 | test podjele putanja u `worker-tests/`; cijela kupnja lokalno (`scripts/lokalno/pokreni.sh`) prolazi kroz Astro; `npm test` zelen |
 | — | vrata | (!) Matija deploya oba Workera na staging | — | `ulaznice-staging.domovina.ai/dogadjaj/<slug>` dolazi iz Astra |
@@ -116,4 +116,7 @@ odu svaki na svoju stranu.
 ## Gdje smo
 
 S0 (2026-11-19): plan, odluke i handoffi napisani; dopunjeno Ivanovim prijedlogom sheme (S2b).
-Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, deploy ručno (auto-deploy odgođen, odluka 22). Koda u `web/` nema. Sljedeće: S1.
+Korak 0 (2026-11-19): oba Workera živa sa stranicom „u izradi”, deploy ručno (auto-deploy odgođen, odluka 22). 
+S1 (2026-11-19): Astro 7.4 kostur, zajednički tipovi, API klijent, `dev:mock`, stranica događaja; SSR na Workersu izmjeren i radi (`research/2026-11-19-ssr-na-workersu.md`); design brief napisan. Sljedeće: vrata dizajna (Ivan), paralelno S2b.
+
+S2 (2026-11-19): tokeni, samohostan Figtree, `Osnovni.astro`, 20 komponenti (`.astro` + React), naglasna boja s pravilom kontrasta (`naglasak.ts`), dev stranica `/_komponente` i snimke na 390/1280 px. Sljedeće: S3 (S2b paralelno).

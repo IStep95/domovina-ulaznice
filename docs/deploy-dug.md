@@ -34,6 +34,13 @@ Zamka uz #2: `npm run db:staging` i `npm run db:remote` primjenjuju **samo
 ([web odluka 22](../web/docs/decisions.md)). Produkciju `web/` ne deployaj prije S6
 osim kao „u izradi” (odluka 24).
 
+S1 (2026-11-19): `web/` je sad Astro build (`dist/`), `privremeno/` je obrisan. Okruženje
+se bira **pri buildu** (`CLOUDFLARE_ENV`), ne s `--env` pri deployu, pa uvijek preko
+skripti: `npm --prefix web run deploy:staging`, odnosno `deploy:prod`. Goli
+`wrangler deploy --env staging` nad produkcijskim buildom deploya produkcijsku
+konfiguraciju. Provjera nakon deploya: `/` vraća „u izradi” (`noindex`), a
+`/dogadjaj/<slug>` naslov događaja (na stagingu tek kad je pušten test događaj, odluka 23).
+
 ## Namjerno se ne deploya
 
 | Što | Zašto | Kada |
