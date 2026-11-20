@@ -27,6 +27,9 @@ erDiagram
     uuid campaign_id PK
     text venue_name
     text venue_city
+    numeric venue_lat "S2b, WGS84, oba ili nijedno"
+    numeric venue_lon "S2b"
+    text cover_image_alt "S2b, ≤ 300"
     timestamptz starts_at
     timestamptz ends_at
     text description_hr
@@ -79,6 +82,17 @@ Postojeći RPC-ovi (svi `security definer set search_path = ''`):
 
 Postojeće edge funkcije: `events-feed`, `events-order`, `events-confirm`,
 `events-tickets`, `events-checkin`, `events-organizer`.
+
+**Mjesto i naslovna slika (S2b lanca `web/`, 2026-11-20).** Migracija
+`domovina-api/supabase/migrations/20261120120000_events_venue_geo.sql` dodaje na
+`events` `venue_lat`, `venue_lon` (`numeric(9,6)`) i `cover_image_alt` (tekst ≤ 300).
+Sva tri su nullable; ograničenja `events_venue_geo_pair` (oba ili nijedno),
+`events_venue_geo_range` (−90..90, −180..180) i `events_cover_image_alt_len`.
+`events-feed` ih vraća u `event`, Worker ih prosljeđuje nepromijenjene u
+`/api/dogadjaji` i `/api/dogadjaj/:slug` (PostgREST `numeric` šalje kao JSON broj).
+`create_event` / `update_event` ih **ne** primaju: koordinate postavlja
+`seeds/koordinate-mjesta.sql` izravnim `update`om (izvor OpenStreetMap).
+Razlozi: [`web/docs/decisions.md`](../web/docs/decisions.md) odluke 14, 15 i 250–253.
 
 ## 2. Novo za Stripe rail
 

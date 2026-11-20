@@ -147,7 +147,12 @@ export interface FeedEvent {
     ends_at: string | null;
     timezone: string;
     description_hr: string | null;
+    description_en: string | null;
     cover_image_url: string | null;
+    // S2b: nullable; undefined dok jezgra nema migraciju events_venue_geo
+    cover_image_alt?: string | null;
+    venue_lat?: number | null;
+    venue_lon?: number | null;
     organizer_name: string;
     organizer_email: string | null;
     organizer_web: string | null;

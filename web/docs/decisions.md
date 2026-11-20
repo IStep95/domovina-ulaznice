@@ -347,3 +347,29 @@ organizatora. Izračunati kontrast `--color-text-muted` na najzelenijim mjestima
 („Uvjeti” u zaglavlju, podnaslov popisa) je ≥ 5,1:1 za zadanu zelenu. Dizajn
 iz Claude Designa ovo nema; ako se dizajn ponovno uvozi, dodati ga i tamo.
 Revizija: ako tamna naglasna boja organizatora spusti kontrast ispod 4,5:1.
+
+## S2b (2026-11-20)
+
+**250. `create_event` / `update_event` ne dobivaju nove parametre.** Koordinate i alt tekst
+postavljaju se izravnim `update pinka_finance.events` u `seeds/koordinate-mjesta.sql`.
+Razlog: novi parametar mijenja potpis funkcije (drop, novi `grant`, `events-organizer`), a
+događaje danas unosi agent kroz seed jer je editor odgođen. Zaseban `update` radi i nad
+događajima koji su već u bazi, što seed događaja (idempotentan po `p_id`) ne može.
+Revizija: kad se radi editor događaja.
+
+**251. Koordinate se vežu na `campaign_id` i `venue_name`.** `staging-web-pregled.sql` i
+`susret-zagreb-2027.sql` dijele `campaign_id …f01` s različitim mjestom, pa samo id nije
+dovoljan. Mjesto koje nije u OpenStreetMapu (Pastoralni centar, Varaždin) ostaje `NULL`.
+Revizija: kad se sudar `…f01` riješi u seedovima (Matija).
+
+**252. `venue_lat`/`venue_lon` su u tipovima `number | null`, opcionalni.** PostgREST
+`numeric` šalje kao JSON broj (provjereno lokalno). Opcionalni su dok jezgra nema
+migraciju; `koordinate()` i dalje prihvaća numerički string. Tip `EventDetailsS2b` iz
+`karta.ts` je uklonjen (odluka 308). `EventDetails` dobiva i `description_en`, a `brand`
+`logo_url`, koje Worker već vraća.
+Revizija: nema.
+
+**253. Worker polja ne prepisuje pojedinačno.** `publicEvent` već prosljeđuje `event` iz
+feeda cijeli, pa se mijenja samo tip `FeedEvent`; test (`worker-tests/dogadjaj-s2b.test.ts`)
+čuva da polja prolaze, da `null` ostaje `null` i da feed bez njih ne dobiva izmišljena polja.
+Revizija: nema.

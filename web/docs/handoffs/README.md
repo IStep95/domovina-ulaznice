@@ -33,9 +33,9 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | S1 | Astro kostur, tipovi, mock, mjerenje SSR-a, design brief | gotovo | 010ab24 | web 13, korijen 97 | Ivan, 2026-11-19; odluke 100–107; SSR na Workersu radi |
 | — | (!) dizajn u Claude Designu | gotovo | (ovaj commit) | — | 2026-11-19, stil kao Luma; 14 artboarda, `web/design/README.md` |
 | S2 | dizajnerski sustav | gotovo | fdc3fed | web 26, korijen 97 | Ivan, 2026-11-19; odluke 200–209; snimke `/_komponente` |
-| S2b | dorada sheme događaja (Ivanov prijedlog) | otvoreno | | | može odmah nakon S1 |
-| — | (!) migracija jezgre i `events-feed` | čeka | | | Matija |
-| S3 | popis i događaj | gotovo | (ovaj commit) | web 58, korijen 97 | Ivan, 2026-11-20; odluke 300–311; S2b i dalje otvoren |
+| S2b | dorada sheme događaja (Ivanov prijedlog) | gotovo | (ovaj commit) | web 58, korijen 99 | Ivan, 2026-11-20; odluke 250–253; `domovina-api` zaseban PR |
+| — | (!) migracija jezgre i `events-feed` | čeka | | | Matija; `docs/deploy-dug.md` #5, migracija prije `events-feed` |
+| S3 | popis i događaj | gotovo | f81f559 | web 58, korijen 97 | Ivan, 2026-11-20; odluke 300–311; S2b i dalje otvoren |
 | S4 | kupnja | otvoreno | | | |
 | S5 | narudžba, pravno, 404 | otvoreno | | | |
 | S6 | service binding, lokalna e2e | otvoreno | | | |

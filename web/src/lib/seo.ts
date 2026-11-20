@@ -3,7 +3,7 @@
 // OrderView.currency je uvijek „eur”).
 import type { EventView, TierView } from "../../../shared/api-tipovi.ts";
 import { cijenaDecimalno, stanjeTiera } from "./format.ts";
-import { koordinate, type DetaljiDogadjaja } from "./karta.ts";
+import { koordinate } from "./karta.ts";
 
 const SCHEMA = "https://schema.org/";
 
@@ -35,7 +35,7 @@ export interface UlazJsonLd {
 }
 
 export function eventJsonLd({ dogadjaj, url, urlKupnje, opis, slika, organizatorWeb }: UlazJsonLd): Record<string, unknown> | null {
-  const d = dogadjaj.event as DetaljiDogadjaja | null;
+  const d = dogadjaj.event;
   if (!d?.starts_at) return null;
   const k = koordinate(d);
   return {

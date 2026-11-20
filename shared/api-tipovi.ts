@@ -27,7 +27,13 @@ export interface EventDetails {
   ends_at: string | null;
   timezone: string;
   description_hr: string | null;
+  description_en: string | null;
   cover_image_url: string | null;
+  /** Alt tekst naslovne slike, ≤ 300 znakova (S2b, odluka 15). */
+  cover_image_alt?: string | null;
+  /** WGS84; oba ili nijedno (S2b, odluka 14). Opcionalno dok jezgra nema migraciju. */
+  venue_lat?: number | null;
+  venue_lon?: number | null;
   organizer_name: string;
   organizer_email: string | null;
   organizer_web: string | null;
@@ -41,7 +47,7 @@ export interface EventView {
   tiers: TierView[];
   stripe_connected: boolean;
   kupovno: boolean;
-  brand?: { accent_color?: string; hero_url?: string; intro_html?: string; terms_url?: string } | null;
+  brand?: { accent_color?: string; logo_url?: string; hero_url?: string; intro_html?: string; terms_url?: string } | null;
 }
 
 export interface TicketView {
