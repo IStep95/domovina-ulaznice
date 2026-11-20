@@ -1,0 +1,162 @@
+---
+// Pravna stranica (S5; Pravno-1280): sadržaj lijevo (220 px, ljepljiv), tekst
+// desno do ~70 znakova u retku, banner „Nacrt” ispod naslova. Na mobitelu (dizajn
+// ga nema, web/design/README.md) jedan stupac i sadržaj iznad teksta.
+// Odjeljci dolaze u slotu kao <h2 id="…"> + odlomci/liste; `odjeljci` daje
+// popis za sadržaj istim redom i s istim id-evima.
+//
+// Tekst je NACRT (src/pages/Pravno.tsx): pravni subjekt platforme i politika
+// povrata nisu određeni, pa su vidljivi placeholderi (Praznina.astro), a ne
+// uvjerljive izmišljotine. Prije javne prodaje ide na pravnu provjeru.
+import Osnovni from "../layouts/Osnovni.astro";
+import Banner from "./Banner.astro";
+
+interface Props {
+  naslov: string;
+  /** Kratki opis za <meta name="description">. */
+  opis: string;
+  odjeljci: ReadonlyArray<{ id: string; naslov: string }>;
+}
+
+const { naslov, opis, odjeljci } = Astro.props;
+---
+<Osnovni title={`${naslov} · Ulaznice`} opis={opis} sirina="siroka">
+  <div class="pravno">
+    <nav class="sadrzaj" aria-label="Sadržaj">
+      <span class="sadrzaj-naslov">Sadržaj</span>
+      <ol>
+        {
+          odjeljci.map((o) => (
+            <li>
+              <a href={`#${o.id}`}>{o.naslov}</a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+
+    <article class="tekst">
+      <h1>{naslov}</h1>
+      <Banner ton="wait" uloga="note" ikona="upozorenje" class="nacrt">
+        <b>Nacrt.</b> Ovaj tekst još nije pravno provjeren i ne primjenjuje se na stvarnu prodaju. Prije prve naplate
+        mora ga potvrditi pravnik.
+      </Banner>
+      <slot />
+    </article>
+  </div>
+</Osnovni>
+
+<style>
+  .pravno {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 56px;
+    align-items: start;
+  }
+
+  .sadrzaj {
+    position: sticky;
+    top: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    padding-top: 6px;
+    font-size: var(--font-size-sm);
+  }
+  .sadrzaj-naslov {
+    margin-bottom: var(--space-2);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .sadrzaj ol {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .sadrzaj a {
+    display: block;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .sadrzaj a:hover,
+  .sadrzaj a:focus-visible {
+    background: var(--color-surface);
+    color: var(--color-text);
+  }
+
+  .tekst {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    max-width: 680px;
+    font-size: 17px;
+    line-height: 1.65;
+    overflow-wrap: anywhere;
+  }
+  h1 {
+    font-size: 40px;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .tekst :global(.nacrt) {
+    font-size: 15px;
+    line-height: 1.5;
+  }
+  .tekst :global(h2) {
+    margin-top: var(--space-4);
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    /* Skok iz sadržaja ne smije sakriti naslov uz rub. */
+    scroll-margin-top: var(--space-6);
+  }
+  .tekst :global(ul) {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-left: 22px;
+  }
+
+  @media (max-width: 719px) {
+    .pravno {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-6);
+    }
+    .sadrzaj {
+      position: static;
+      padding: var(--space-3);
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+    }
+    .sadrzaj-naslov {
+      margin: 0 0 0 10px;
+    }
+    .sadrzaj a {
+      display: flex;
+      align-items: center;
+      min-height: var(--tap-min);
+      padding: 0 10px;
+    }
+    .tekst {
+      gap: 14px;
+      font-size: var(--font-size-md);
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: var(--font-size-2xl);
+    }
+    .tekst :global(h2) {
+      margin-top: var(--space-2);
+      font-size: var(--font-size-lg);
+    }
+  }
+</style>

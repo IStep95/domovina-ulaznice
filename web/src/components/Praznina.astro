@@ -1,0 +1,20 @@
+---
+// Vidljivi placeholder u pravnom tekstu (Pravno-1280): podatak koji nedostaje
+// jer odluka još nije donesena (pravni subjekt, politika povrata). Mora se
+// razlikovati od teksta: monospace, isprekidan obrub, neutralna podloga.
+---
+<mark class="praznina"><slot /></mark>
+
+<style>
+  .praznina {
+    padding: 2px 6px;
+    border: 1px dashed var(--color-border-strong);
+    border-radius: 4px;
+    background: var(--color-neutral-bg);
+    color: var(--color-neutral);
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: var(--font-size-sm);
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+</style>

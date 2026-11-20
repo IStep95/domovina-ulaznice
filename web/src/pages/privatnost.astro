@@ -1,0 +1,65 @@
+---
+// Politika privatnosti (S5; stil Pravno-1280, dizajn crta samo uvjete).
+// Sadržaj iz src/pages/Pravno.tsx (SPA). Prerenderira se u buildu (dist/).
+// NACRT: v. PravnaStranica.astro.
+import PravnaStranica from "../components/PravnaStranica.astro";
+import Praznina from "../components/Praznina.astro";
+
+export const prerender = true;
+
+/** Pravni subjekt platforme: otvoreno pitanje (docs/2026-09-03-plan-do-produkcije.md §3.2). */
+const SUBJEKT = "[PRAVNI SUBJEKT PLATFORME — nije određen]";
+
+const odjeljci = [
+  { id: "voditelj", naslov: "1. Tko obrađuje podatke" },
+  { id: "podaci", naslov: "2. Koje podatke prikupljamo" },
+  { id: "qr", naslov: "3. QR kod" },
+  { id: "cuvanje", naslov: "4. Koliko dugo čuvamo podatke" },
+  { id: "prava", naslov: "5. Vaša prava" },
+  { id: "kolacici", naslov: "6. Kolačići" },
+] as const;
+const [voditelj, podaci, qr, cuvanje, prava, kolacici] = odjeljci;
+---
+<PravnaStranica
+  naslov="Politika privatnosti"
+  opis="Koje podatke kupaca obrađujemo, zašto, koliko dugo i koja su vaša prava."
+  odjeljci={odjeljci}
+>
+  <h2 id={voditelj.id}>{voditelj.naslov}</h2>
+  <p>
+    Voditelj obrade je <b>organizator događaja</b>; platforma <Praznina>{SUBJEKT}</Praznina> obrađuje podatke u
+    njegovo ime kao izvršitelj obrade.
+  </p>
+
+  <h2 id={podaci.id}>{podaci.naslov}</h2>
+  <ul>
+    <li><b>E-mail kupca</b> — za dostavu ulaznica i obavijesti o narudžbi.</li>
+    <li><b>Ime holdera</b> (samo kod imenskih ulaznica) — jer ulaznica glasi na ime.</li>
+    <li><b>Podatke o plaćanju</b> obrađuje Stripe; broj kartice ne dolazi do nas i ne pohranjuje se.</li>
+    <li><b>Tehnički zapis</b> o narudžbi i dostavi e-maila, radi rješavanja reklamacija.</li>
+  </ul>
+
+  <h2 id={qr.id}>{qr.naslov}</h2>
+  <p>
+    U bazi se trajno čuva samo kriptografski otisak (sha256) QR koda, nikad sam kod. Čitljiv kod postoji samo u
+    poruci koju ste primili.
+  </p>
+
+  <h2 id={cuvanje.id}>{cuvanje.naslov}</h2>
+  <p>
+    Ime i e-mail holdera anonimiziraju se <b>90 dana nakon završetka događaja</b>. Podaci potrebni za
+    knjigovodstvene i porezne obveze čuvaju se u zakonskom roku.
+  </p>
+
+  <h2 id={prava.id}>{prava.naslov}</h2>
+  <p>
+    Imate pravo na pristup, ispravak, brisanje i prigovor. Zahtjev pošaljite organizatoru ili na{" "}
+    <a href="mailto:podrska@domovina.ai">podrska@domovina.ai</a>.
+  </p>
+
+  <h2 id={kolacici.id}>{kolacici.naslov}</h2>
+  <p>
+    Stranica prodaje ulaznica <b>ne koristi kolačiće za praćenje ni analitiku</b>. Prijava organizatora koristi
+    privremenu pohranu u pregledniku koja se briše zatvaranjem kartice.
+  </p>
+</PravnaStranica>

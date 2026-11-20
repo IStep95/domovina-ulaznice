@@ -2,10 +2,12 @@
 // Red ulaznice u narudžbi (Main.dc.html „Red ulaznice”, Narudzba-1280).
 // QR se ovdje namjerno ne prikazuje (stiže e-mailom i u aplikaciji).
 // Stanje: vrijedi (ok), ušlo (neutral), poništena (error) — uvijek tekstom.
-// Mapiranje TicketView.state → stanje radi S5.
+// Mapiranje TicketView.state → stanje: stanjeUlaznice() u src/lib/narudzba.ts;
+// nepoznato stanje (null) nema oznaku.
 import Oznaka from "./Oznaka.astro";
+import type { StanjeUlaznice } from "../lib/narudzba.ts";
 
-export type StanjeUlaznice = "vrijedi" | "uslo" | "ponistena";
+export type { StanjeUlaznice };
 
 interface Props {
   /** `holder_name`; null → „Ulaznica”. */
@@ -13,7 +15,7 @@ interface Props {
   serijski: string;
   /** Naziv vrste, npr. „Redovna ulaznica”. */
   vrsta?: string;
-  stanje: StanjeUlaznice;
+  stanje: StanjeUlaznice | null;
 }
 
 const { ime, serijski, vrsta, stanje } = Astro.props;
@@ -28,7 +30,7 @@ const oznaka = {
     <b class="ime">{ime || "Ulaznica"}</b>
     <span class="meta">{[vrsta, serijski].filter(Boolean).join(" · ")}</span>
   </div>
-  <Oznaka ton={oznaka[stanje].ton}>{oznaka[stanje].tekst}</Oznaka>
+  {stanje && <Oznaka ton={oznaka[stanje].ton}>{oznaka[stanje].tekst}</Oznaka>}
 </div>
 
 <style>

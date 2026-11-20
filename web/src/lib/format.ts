@@ -244,6 +244,37 @@ export function datumPlohe(
   return { veliki: `${s.dan}.–${e.dan}.`, mali: `${MJESECI_GENITIV[s.mjesec - 1]} ${s.godina}.` };
 }
 
+/**
+ * Termin u jednom retku (sažetak narudžbe, Narudzba-1280):
+ *   „petak, 16. travnja 2027. u 9:00 – nedjelja, 18. travnja”,
+ *   bez satnice „petak, 16. travnja 2027.” ili raspon dana „16. – 18. travnja 2027.”.
+ */
+export function terminJednimRetkom(
+  startsAt: string | null | undefined,
+  endsAt: string | null | undefined,
+  timeZone = ZADANA_ZONA,
+): string {
+  const s = trenutak(startsAt, timeZone);
+  if (!s) return TERMIN_NEPOZNAT;
+  const e = valjanKraj(s, trenutak(endsAt, timeZone));
+  if (imaSatnicu(s)) return `${DANI[s.danUTjednu]}, ${puniDatum(s)} u ${satnicaOd(s, e)}`;
+  if (e && !istiDan(s, e)) return rasponDana(s, e);
+  return `${DANI[s.danUTjednu]}, ${puniDatum(s)}`;
+}
+
+/**
+ * Rok rezervacije (`expires_at`): „15:10” ako ističe danas, inače
+ * „20. 11. 2026. u 15:10”. Uvijek sa satom, i u ponoć (rok nije „datum bez
+ * satnice”). `sada` je za testove.
+ */
+export function rokRezervacije(iso: string | null | undefined, timeZone = ZADANA_ZONA, sada: Date = new Date()): string | null {
+  const t = trenutak(iso, timeZone);
+  if (!t) return null;
+  const danas = trenutak(sada.toISOString(), timeZone);
+  if (danas && istiDan(t, danas)) return sat(t);
+  return `${t.dan}. ${t.mjesec}. ${t.godina}. u ${sat(t)}`;
+}
+
 /** Kratki datum s vremenom: „1. 3. 2027. u 10:00”; u ponoć samo „1. 3. 2027.”. */
 export function kratkiDatum(iso: string | null | undefined, timeZone = ZADANA_ZONA): string | null {
   const t = trenutak(iso, timeZone);

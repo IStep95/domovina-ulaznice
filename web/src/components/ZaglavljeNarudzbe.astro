@@ -4,8 +4,9 @@
 // slot je za dodatak (rok rezervacije, „Natrag na događaj”, poništene ulaznice).
 import Ikona from "./Ikona.astro";
 import type { IkonaIme, Ton } from "../lib/ikone.ts";
+import type { StanjeZaglavlja } from "../lib/narudzba.ts";
 
-export type StanjeNarudzbe = "pending" | "pending-placeno" | "paid" | "expired" | "refunded" | "failed";
+export type StanjeNarudzbe = StanjeZaglavlja;
 
 interface Props {
   stanje: StanjeNarudzbe;
