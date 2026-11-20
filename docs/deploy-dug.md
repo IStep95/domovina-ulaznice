@@ -19,8 +19,9 @@ pretpostavljeno iz gita. „Nepotvrđeno“ znači da nitko nije pogledao.
 | 3 | Staging Worker zaostaje za `main` (P0/P1 od 3. 9., `/preuzmi` za mobilne aplikacije, link „otvori u aplikaciji“) | `main` od `829852d` nadalje | `ulaznice-staging.domovina.ai` | `npm run deploy` (= `--env staging`) | `GET /api/zdravlje` ima polja `prijava`, `alarm`, `racun`; `POST /api/ulaznice/<uuid>/preuzmi` s `{}` → **400**, ne 404 | ❌ 26. 9. nema tih polja, `/preuzmi` je 404 |
 | 4 | Migracije `20260903120000` (`event_rail_ready`) i `20260903120100` (`rotate_ticket_tokens`) | `domovina-api@e5a7691` | produkcijska baza | u `domovina-api`: prvo `./scripts/db-migrate.sh --dry-run` — skripta pušta **sve** pending migracije, pa i tuđe (maksimir, voting) | `./scripts/db-psql.sh -c "select proname from pg_proc where proname in ('event_rail_ready','rotate_ticket_tokens')"` → 2 retka | ⚠️ nepotvrđeno; #3 (`/preuzmi`) ovisi o `rotate_ticket_tokens` |
 | 5 | Migracija `20261120120000_events_venue_geo` (`events.venue_lat`, `venue_lon`, `cover_image_alt`) i `events-feed` koji ih vraća (S2b lanca `web/`) | `domovina-api` PR iz `IStep95/domovina-api` (S2b) | produkcijska baza, pa `api.domovina.ai` (edge runtime) | u `domovina-api`: `./scripts/db-migrate.sh --dry-run`, pa migracija; zatim `./scripts/deploy-functions.sh --only=events-feed --restart`. Koordinate: `psql … -f seeds/koordinate-mjesta.sql` samo gdje su seedovi već pušteni | `./scripts/db-psql.sh -c "select venue_lat from pinka_finance.events limit 1"` radi; `curl …/functions/v1/events-feed` ima `venue_lat` u `event` | ⏳ čeka Matiju; polja su nullable pa `web/` i aplikacije rade i bez toga |
+| 6 | Stranice kupaca na stagingu kroz Astro: binding `WEB` (+ `assets.run_worker_first`) u `env.staging` glavnog Workera, podjela putanja u `worker/index.ts` (S6 lanca `web/`) | S6 lanca `web/` (PR iz `IStep95/domovina-ulaznice`) | prvo `domovina-ulaznice-web-staging` (`ulaznice-web-staging.domovina.ai`), pa `ulaznice-staging.domovina.ai` | v. „Binding `WEB` (S6)” niže | v. „Binding `WEB` (S6)” niže | ⏳ čeka merge S6 |
 
-Redoslijed: **4 → 1 → 2 → 3**; #5 je neovisan, ali unutar njega **migracija strogo prije `events-feed`**: novi feed nad starom shemom vraća 500 (`column events.venue_lat does not exist`) i ruši popis događaja. Backend ide prije Workera, a D1 shema prije
+Redoslijed: **4 → 1 → 2 → 3**, #6 nakon #3 (isti Worker, isti `npm run deploy`); #5 je neovisan, ali unutar njega **migracija strogo prije `events-feed`**: novi feed nad starom shemom vraća 500 (`column events.venue_lat does not exist`) i ruši popis događaja. Backend ide prije Workera, a D1 shema prije
 koda koji je čita (isto pravilo kao u [2026-08-04 §8](2026-08-04-lokalna-verifikacija-i-nalazi.md#8-redoslijed-puštanja-u-pogon-ne-mijenjati)).
 
 Zamka uz #2: `npm run db:staging` i `npm run db:remote` primjenjuju **samo
@@ -41,6 +42,49 @@ skripti: `npm --prefix web run deploy:staging`, odnosno `deploy:prod`. Goli
 `wrangler deploy --env staging` nad produkcijskim buildom deploya produkcijsku
 konfiguraciju. Provjera nakon deploya: `/` vraća „u izradi” (`noindex`), a
 `/dogadjaj/<slug>` naslov događaja (na stagingu tek kad je pušten test događaj, odluka 23).
+
+### Binding `WEB` (S6)
+
+Glavni staging Worker stranice kupaca (`/`, `/dogadjaj/*`, `/ulaznice/*`, `/uvjeti`,
+`/privatnost`, nepoznate putanje, Astrova statika) prosljeđuje Astro Workeru kroz service
+binding; `/api/*`, `/webhook/*`, `/.well-known/*`, `/organizator`, `/skener` i `/assets/*`
+(SPA) ostaju njegovi. Povratak sa Stripea (`success_url`) i link u mailu (`PUBLIC_BASE_URL`)
+time vode na Astro. Produkcija se ne mijenja (`NAJAVA=1`, bez bindinga).
+
+1. **Prvo `web`**, s istog commita: `npm --prefix web ci && npm --prefix web run deploy:staging`.
+   Binding na servis koji ne postoji ruši deploy glavnog Workera, a stari `web` bi kupcima
+   servirao stare stranice. Provjera: `curl -s -o /dev/null -w '%{http_code}'
+   https://ulaznice-web-staging.domovina.ai/uvjeti` → 200.
+2. **Pa glavni Worker**: `npm run deploy` (= `--env staging`).
+
+Varijable: ništa novo za postaviti, sve je u configu. `web` staging ima `API_BASE_URL` =
+`https://ulaznice-staging.domovina.ai` (`web/wrangler.jsonc`, `env.staging.vars`): SSR zove
+`/api` glavnog Workera javnim URL-om. Glavni Worker: `services: [{ binding: "WEB", service:
+"domovina-ulaznice-web-staging" }]` i `assets.run_worker_first: true` u `env.staging`
+korijenskog `wrangler.jsonc`; `PUBLIC_BASE_URL` ostaje `https://ulaznice-staging.domovina.ai`.
+Bez novih tajni.
+
+Provjere nakon deploya (dodaj `?cb=$RANDOM` ako sumnjaš na cache, [2026-08-08 §4.4](2026-08-08-deploy-okruzenja-i-stripe.md)):
+
+| Zahtjev na `https://ulaznice-staging.domovina.ai` | Očekivano |
+| --- | --- |
+| `/` | 200, `<title>Događaji · Ulaznice` (Astro), ne SPA; nema stranice „Pokušaj ponovno” (to znači da SSR ne dohvaća `/api` javnim URL-om, web S6 točka 3) |
+| `/uvjeti`, `/privatnost` | 200; `/uvjeti/` → 307 na `/uvjeti` (lokalno pod wranglerom 3 binding daje 200, [research](../web/docs/research/2026-11-20-lokalna-e2e-kroz-astro.md) zamka 7) |
+| `/nepostoji-$RANDOM`, `/ulaznice/00000000-0000-4000-8000-000000000000` | 404 iz Astra („Stranica nije pronađena”), ne SPA 200 |
+| `/organizator`, `/skener` | 200, SPA |
+| `/api/zdravlje`, `/.well-known/apple-app-site-association` | 200 JSON |
+| `/dogadjaj/<slug>` | 200 tek kad je u jezgri objavljen događaj ([web odluka 23](../web/docs/decisions.md)) |
+
+Uz to `npx wrangler tail --env staging` dok se otvaraju stranice: bez `[worker] neuhvaćena
+greška` i bez 5xx s `WEB`. Kupnja od kraja do kraja na stagingu čeka Stripe/Resend tajne
+(„Namjerno se ne deploya”); lokalno je prošla kroz `scripts/lokalno/pokreni.sh` +
+`npm --prefix web run e2e:stack`.
+
+Povratak: ukloniti `services` iz `env.staging` i `npm run deploy` — bez `env.WEB` Worker sve
+što nije `/api` ili `/webhook` servira iz `ASSETS` kao prije S6 (`run_worker_first` tada samo
+znači da Worker vidi i statiku SPA-e, ponašanje je isto). Brže, bez commita: prethodna verzija
+Workera u Cloudflare dashboardu (Workers → `domovina-ulaznice-staging` → Deployments →
+Rollback). `domovina-ulaznice-web-staging` može ostati deployan, na svojoj domeni ne smeta.
 
 ## Namjerno se ne deploya
 

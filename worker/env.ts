@@ -9,6 +9,13 @@ export interface Env {
   DB: D1Database;
   RL?: KVNamespace;
   ASSETS: { fetch(req: Request): Promise<Response> };
+  /**
+   * Service binding na Astro frontend za kupce (`web/`, Worker
+   * `domovina-ulaznice-web-staging`). Postoji samo u `env.staging`; bez njega
+   * Worker radi kao prije S6 (sve osim /api i /webhook servira SPA iz ASSETS).
+   * Koje putanje idu ovamo: `idePremaWebu()` u worker/index.ts.
+   */
+  WEB?: { fetch(req: Request): Promise<Response> };
 
   // vars (wrangler.jsonc)
   //
