@@ -65,6 +65,9 @@ export interface ApiState {
   checkin: Record<string, unknown>;
   checkinStatus: number;
   organizerOverview: Record<string, unknown>;
+  /** `events-organizer` create: status i tijelo odgovora; pozivi za provjeru. */
+  kreiranjeStatus: number;
+  kreiranje: Record<string, unknown>;
   /** `organizer_payment_rails.invoice_provider` — tko izdaje račun kupcu. */
   invoiceProvider: string;
   /** Odgovor FIRA API-ja. */
@@ -102,6 +105,8 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     jwt: "jwt-organizatora",
     checkin: { status: "checked_in", serial: "SUS-000004", holder_name: "Ana Anić", tier_title: "Redovna", checked_in_count: 1 },
     checkinStatus: 200,
+    kreiranjeStatus: 200,
+    kreiranje: { id: "dogadjaj-id", slug: "novi-dogadjaj", existing: false, event_created: true },
     organizerOverview: { accounts: [{ id: "acc-1", name: "Test udruga", allowlisted: true, has_record: true }], events: [] },
     invoiceProvider: "organizator",
     firaOk: true,
@@ -311,6 +316,14 @@ function installFetchStub(state: ApiState) {
         refresh_token: "refresh-koji-ne-smije-izaci",
         user: { id: "u1", email: "org@test.hr" },
       });
+    }
+
+    // ---- domovina-api: events-organizer (editor; korisnikov JWT, nikad service)
+    if (url.includes("/functions/v1/events-organizer")) {
+      if (!headers.authorization?.startsWith("Bearer ")) {
+        throw new Error("events-organizer pozvan BEZ Authorization headera");
+      }
+      return json(state.kreiranje, state.kreiranjeStatus);
     }
 
     // ---- domovina-api: events-checkin (traži Authorization, za razliku od ostalih)

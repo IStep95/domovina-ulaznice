@@ -104,6 +104,82 @@ test("kod koji nisu znamenke se odbija prije mreže", async () => {
   assert.equal(t.calls.filter((c) => c.url.includes("/auth/v1/verify")).length, 0);
 });
 
+// ------------------------------------------------------------ editor događaja
+
+const noviDogadjaj = {
+  event_id: "11111111-1111-4111-8111-111111111111",
+  account_id: "22222222-2222-4222-8222-222222222222",
+  title: "Koncert",
+  venue_name: "Dvorana",
+  venue_city: "Zagreb",
+  tiers: [{ title: "Ulaz", price_cents: 1500 }],
+};
+
+test("kreiranje događaja ide korisnikovim JWT-om na events-organizer create", async () => {
+  t = testEnv();
+  const { status, body } = await callJson<{ slug: string }>(t, "/api/organizator/dogadjaj", {
+    headers: auth(),
+    body: { ...noviDogadjaj, action: "publish", visibility: "public", nepoznato: 1 },
+  });
+  assert.equal(status, 200);
+  assert.equal(body.slug, "novi-dogadjaj");
+  const poziv = t.calls.find((c) => c.url.includes("/functions/v1/events-organizer"));
+  assert.equal(poziv!.headers.authorization, "Bearer jwt-organizatora");
+  assert.equal(poziv!.headers.apikey, ANON_KEY);
+  const poslano = JSON.parse(poziv!.body);
+  assert.equal(poslano.action, "create", "klijent ne smije podmetnuti drugu akciju");
+  assert.ok(!("visibility" in poslano) && !("nepoznato" in poslano), "propuštaju se samo poznata polja");
+});
+
+test("kreiranje bez prijave → 401, bez mreže", async () => {
+  t = testEnv();
+  const { status } = await callJson(t, "/api/organizator/dogadjaj", { body: noviDogadjaj });
+  assert.equal(status, 401);
+  assert.equal(t.calls.filter((c) => c.url.includes("events-organizer")).length, 0);
+});
+
+test("kreiranje bez ulaznica ili s lošim id-em se odbija prije mreže", async () => {
+  t = testEnv();
+  for (const [izmjena, kod] of [
+    [{ tiers: [] }, "invalid_tiers"],
+    [{ event_id: "x" }, "invalid_event_id"],
+    [{ account_id: "x" }, "invalid_account_id"],
+  ] as const) {
+    const { status, body } = await callJson<{ error: string }>(t, "/api/organizator/dogadjaj", {
+      headers: auth(),
+      body: { ...noviDogadjaj, ...izmjena },
+    });
+    assert.equal(status, 400);
+    assert.equal(body.error, kod);
+  }
+  assert.equal(t.calls.filter((c) => c.url.includes("events-organizer")).length, 0);
+});
+
+test("RLS odbijanje (nije admin ili nema provjeren identitet) → 403 nema_prava_kreiranja", async () => {
+  t = testEnv();
+  t.api.kreiranjeStatus = 400;
+  t.api.kreiranje = { error: "new" };
+  const { status, body } = await callJson<{ error: string }>(t, "/api/organizator/dogadjaj", {
+    headers: auth(),
+    body: noviDogadjaj,
+  });
+  assert.equal(status, 403);
+  assert.equal(body.error, "nema_prava_kreiranja");
+});
+
+test("strojni kod iz baze prolazi, sirova poruka baze ne", async () => {
+  t = testEnv();
+  t.api.kreiranjeStatus = 400;
+  t.api.kreiranje = { error: "invalid_venue_name" };
+  const a = await callJson<{ error: string }>(t, "/api/organizator/dogadjaj", { headers: auth(), body: noviDogadjaj });
+  assert.equal(a.body.error, "invalid_venue_name");
+
+  t.api.kreiranje = { error: "duplicate key value violates unique constraint \"x\"" };
+  const b = await callJson<{ error: string }>(t, "/api/organizator/dogadjaj", { headers: auth(), body: noviDogadjaj });
+  assert.equal(b.status, 502);
+  assert.ok(!b.text.includes("duplicate key"));
+});
+
 // -------------------------------------------------------------------- pregled
 
 test("pregled bez tokena → 401", async () => {

@@ -149,6 +149,13 @@ export interface OrgPregled {
 export const dohvatiPregled = (token: string): Promise<OrgPregled> =>
   json<OrgPregled>("/api/organizator/pregled", { method: "GET" }, token);
 
+/** Editor: nova privatna skica događaja (tijelo složi `src/lib/editor.ts`). */
+export const kreirajDogadjaj = (
+  token: string,
+  tijelo: Record<string, unknown>,
+): Promise<{ id: string; slug: string; existing: boolean }> =>
+  json("/api/organizator/dogadjaj", { method: "POST", body: JSON.stringify(tijelo) }, token);
+
 export interface SkenRezultat {
   status: "checked_in" | "already_checked_in" | "void" | "not_found";
   serial?: string;

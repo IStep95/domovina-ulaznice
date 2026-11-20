@@ -522,6 +522,52 @@ export async function checkin(env: Env, jwt: string, qrToken: string): Promise<C
 }
 
 /**
+ * Novi događaj iz editora organizatora → `events-organizer` (`action: create`).
+ *
+ * Kao i kod skenera, ide KORISNIKOVIM JWT-om: `create_event` je security
+ * invoker i RLS traži admina računa s provjerenim identitetom (KYC). Događaj
+ * nastaje kao privatna skica; objava je zaseban `publish_event`.
+ *
+ * `event_id` šalje klijent, pa je ponovljeni zahtjev (npr. nakon prekida mreže)
+ * isti događaj, ne duplikat (`create_event` je idempotentan po `p_id`).
+ */
+export async function kreirajDogadjaj(
+  env: Env,
+  jwt: string,
+  podaci: Record<string, unknown>,
+): Promise<{ id: string; slug: string; existing: boolean }> {
+  const res = await fetch(`${env.DOMOVINA_API_URL}/functions/v1/events-organizer`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey(env),
+      Authorization: `Bearer ${jwt}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ ...podaci, action: "create" }),
+  });
+  const text = await res.text();
+  let parsed: Record<string, unknown> = {};
+  try {
+    parsed = text ? JSON.parse(text) : {};
+  } catch {
+    throw new HttpError(502, "api_bad_json", `events-organizer: ${text.slice(0, 200)}`);
+  }
+  if (!res.ok) {
+    if (res.status === 401) throw new HttpError(401, "nije_prijavljen");
+    const code = String(parsed.error ?? `http_${res.status}`);
+    // RLS odbijanje („new row violates row-level security policy”) funkcija
+    // skrati u „new”: korisnik nije admin računa ili nema provjeren identitet.
+    if (code === "new" || /row-level security/.test(code)) throw new HttpError(403, "nema_prava_kreiranja");
+    // funkcija vraća 400 i za sirove poruke baze; prema browseru idu samo strojni kodovi
+    if (res.status >= 500 || !/^[a-z_]+$/.test(code)) {
+      throw new HttpError(502, "api_error", `events-organizer: ${res.status} ${text.slice(0, 200)}`);
+    }
+    throw new HttpError(400, code);
+  }
+  return parsed as { id: string; slug: string; existing: boolean };
+}
+
+/**
  * Zabilježi povrat u jezgri: narudžba → `refunded`, izdane ulaznice → `void`,
  * inventory se vraća u prodaju, audit zapis ostaje.
  *

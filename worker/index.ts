@@ -660,6 +660,34 @@ app.get("/api/organizator/holderi.csv", async (c) => {
   });
 });
 
+/**
+ * Editor događaja: nova privatna skica. Worker propušta samo poznata polja i
+ * odbija očito smeće prije mreže; prava validacija (i tko smije) je u
+ * `create_event` u bazi. Galerija, koordinate i objava još nisu ovdje.
+ */
+app.post("/api/organizator/dogadjaj", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return fail("bad_json");
+  }
+  if (!UUID_RE.test(String(body.event_id ?? ""))) return fail("invalid_event_id");
+  if (!UUID_RE.test(String(body.account_id ?? ""))) return fail("invalid_account_id");
+  if (!Array.isArray(body.tiers) || body.tiers.length === 0) return fail("invalid_tiers");
+
+  const POLJA = [
+    "event_id", "account_id", "title", "event_type", "starts_at", "ends_at", "timezone",
+    "venue_name", "venue_address", "venue_city", "description_hr", "cover_image_url",
+    "organizer_name", "organizer_email", "organizer_web", "tiers",
+  ];
+  const podaci = Object.fromEntries(POLJA.filter((k) => k in body).map((k) => [k, body[k]]));
+  return c.json(await api.kreirajDogadjaj(c.env, jwt, podaci));
+});
+
 app.post("/api/skener/sken", async (c) => {
   const jwt = bearer(c);
   if (!jwt) return fail("nije_prijavljen", 401);
