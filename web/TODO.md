@@ -36,8 +36,8 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] formatiranje novca iz centi (`6000` → `60,00 €`) i datuma (Europe/Zagreb) s testovima → S3
 - [x] `/dogadjaj/[slug]/kupnja`: React otok (tier, količina, imena za `imenska`, e-mail, uvjeti), `POST /api/narudzba`, preusmjerenje na `checkout_url` → S4
 - [x] svaki kod greške iz `POST /api/narudzba` ima poruku na hrvatskom, 429 poštuje `retry_after` → S4
-- [ ] `/ulaznice/[orderId]`: isto ponašanje kao `src/pages/Narudzba.tsx` (pending → paid, QR, ponovna dostava, preuzimanje u aplikaciju) → S5
-- [ ] `/uvjeti`, `/privatnost` prerenderirane; 404 stranica → S5
+- [x] `/ulaznice/[orderId]`: isto ponašanje kao `src/pages/Narudzba.tsx` (pending → paid, ponovna dostava, link u aplikaciju; QR namjerno ne, odluka 501) → S5
+- [x] `/uvjeti`, `/privatnost` prerenderirane; 404 stranica → S5
 
 ## F2 — spajanje, staging, čišćenje
 
