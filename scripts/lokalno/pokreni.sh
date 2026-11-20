@@ -3,7 +3,8 @@
 #
 #   :55390  edge funkcije events-* iz ../domovina-api, vožene Denom (fn-shim.ts)
 #   :8901   lažni Stripe (checkout stranica + potpisan webhook) i Resend inbox
-#   :8788   Worker (--env staging) + SPA iz dist/
+#   :8788   Worker (--env staging) + SPA iz dist/ (/organizator, /skener)
+#   :8792   Astro iz web/ (pokreni-web.sh); :8788 mu kroz binding WEB šalje stranice kupaca
 #
 # Preduvjet: lokalni Supabase u ../domovina-api radi (Kong :55321, DB :55322),
 # vidi docs/2026-08-04-lokalna-verifikacija-i-nalazi.md §9.
@@ -34,6 +35,9 @@ EVENTS_STRIPE_CONFIRM_SECRET="$(secret EVENTS_STRIPE_CONFIRM_SECRET)" \
 WHSEC="$(secret STRIPE_WEBHOOK_SECRET)" WORKER=http://127.0.0.1:8788 \
   node "$HERE/fake-stripe.mjs" & pids+=($!)
 
+# Stranice kupaca (/, /dogadjaj/*, /ulaznice/*…): bez ovoga na :8788 daju 503.
+"$HERE/pokreni-web.sh" & pids+=($!)
+
 # :8787 je na ovom stroju često zauzet drugim projektom → 8788.
 # --var pobjeđuje .dev.vars; ANON_KEY mora biti lokalni, ne produkcijski iz wrangler.jsonc.
 npx wrangler dev --env staging --local --port 8788 --ip 127.0.0.1 \
@@ -41,5 +45,5 @@ npx wrangler dev --env staging --local --port 8788 --ip 127.0.0.1 \
   --var DOMOVINA_API_URL:http://127.0.0.1:55390 \
   --var DOMOVINA_API_ANON_KEY:"$ANON_KEY" & pids+=($!)
 
-echo "▶ aplikacija http://127.0.0.1:8788/  ·  inbox http://127.0.0.1:8901/inbox  (Ctrl+C gasi sve)"
+echo "▶ aplikacija http://127.0.0.1:8788/  ·  inbox http://127.0.0.1:8901/inbox  ·  e2e: npm --prefix web run e2e:stack  (Ctrl+C gasi sve)"
 wait
