@@ -14,9 +14,11 @@ import {
   kratkiDatum,
   najnizaCijena,
   prikazUrla,
+  rokRezervacije,
   sigurniUrl,
   stanjeTiera,
   terminDogadjaja,
+  terminJednimRetkom,
   terminKartice,
   trenutak,
   vrstaDogadjaja,
@@ -171,4 +173,54 @@ test("sigurniUrl: samo http(s), dopuna sheme", () => {
   assert.equal(sigurniUrl("  "), null);
   assert.equal(sigurniUrl(null), null);
   assert.equal(prikazUrla("https://www.prilikazasusret.hr/"), "prilikazasusret.hr");
+});
+
+// ── narudžba (S5) ───────────────────────────────────────────────────────────
+
+const ZG = "Europe/Zagreb";
+
+test("terminJednimRetkom: sažetak narudžbe (Narudzba-1280)", () => {
+  assert.equal(
+    terminJednimRetkom("2027-04-16T07:00:00+00:00", "2027-04-18T16:00:00+00:00", ZG),
+    "petak, 16. travnja 2027. u 9:00 – nedjelja, 18. travnja",
+  );
+  assert.equal(terminJednimRetkom("2027-04-16T07:00:00+00:00", "2027-04-16T16:00:00+00:00", ZG), "petak, 16. travnja 2027. u 9:00 – 18:00");
+  assert.equal(terminJednimRetkom("2027-04-16T07:00:00+00:00", null, ZG), "petak, 16. travnja 2027. u 9:00");
+  // kraj u drugoj godini nosi godinu; kraj prije početka se ignorira
+  assert.equal(
+    terminJednimRetkom("2027-12-31T07:00:00+00:00", "2028-01-02T16:00:00+00:00", ZG),
+    "petak, 31. prosinca 2027. u 8:00 – nedjelja, 2. siječnja 2028.",
+  );
+  assert.equal(terminJednimRetkom("2027-04-16T07:00:00+00:00", "2027-04-15T07:00:00+00:00", ZG), "petak, 16. travnja 2027. u 9:00");
+});
+
+test("terminJednimRetkom: bez satnice (ponoć u zoni) → dan ili raspon dana", () => {
+  // 22:00 UTC = ponoć u Zagrebu: „datum bez satnice”
+  assert.equal(terminJednimRetkom("2027-04-15T22:00:00+00:00", null, ZG), "petak, 16. travnja 2027.");
+  assert.equal(terminJednimRetkom("2027-04-15T22:00:00+00:00", "2027-04-17T22:00:00+00:00", ZG), "16. – 18. travnja 2027.");
+  assert.equal(terminJednimRetkom("2027-04-15T22:00:00+00:00", "2027-05-01T22:00:00+00:00", ZG), "16. travnja – 2. svibnja 2027.");
+});
+
+test("terminJednimRetkom: zona događaja, zadana zona i nepoznat termin", () => {
+  assert.equal(terminJednimRetkom("2027-04-16T07:00:00+00:00", null, "America/New_York"), "petak, 16. travnja 2027. u 3:00");
+  assert.equal(terminJednimRetkom("2027-04-16T07:00:00+00:00", null), "petak, 16. travnja 2027. u 9:00");
+  for (const los of [null, undefined, "", "nije-datum"]) assert.equal(terminJednimRetkom(los, null, ZG), TERMIN_NEPOZNAT);
+});
+
+test("rokRezervacije: danas samo sat, inače datum i sat (uvijek sa satom, i u ponoć)", () => {
+  const sada = new Date("2026-11-20T13:00:00Z"); // 14:00 u Zagrebu
+  assert.equal(rokRezervacije("2026-11-20T14:10:00Z", ZG, sada), "15:10");
+  assert.equal(rokRezervacije("2026-11-21T14:10:00Z", ZG, sada), "21. 11. 2026. u 15:10");
+  assert.equal(rokRezervacije("2026-11-19T23:00:00Z", ZG, sada), "0:00"); // ponoć 20. 11. je „danas”
+  assert.equal(rokRezervacije("2026-11-20T23:00:00Z", ZG, sada), "21. 11. 2026. u 0:00");
+  for (const los of [null, undefined, "", "nije-datum"]) assert.equal(rokRezervacije(los, ZG, sada), null);
+});
+
+test("rokRezervacije: „danas” je dan u zoni događaja, ne u UTC-u", () => {
+  const sada = new Date("2026-11-20T13:00:00Z");
+  // 23:30 UTC je u Zagrebu već sutra, u UTC-u još danas
+  assert.equal(rokRezervacije("2026-11-20T23:30:00Z", ZG, sada), "21. 11. 2026. u 0:30");
+  assert.equal(rokRezervacije("2026-11-20T23:30:00Z", "UTC", sada), "23:30");
+  // i obrnuto: kad je u Zagrebu već 21. 11., rok 20. 11. u 23:30 više nije „danas”
+  assert.equal(rokRezervacije("2026-11-20T22:30:00Z", ZG, new Date("2026-11-20T23:30:00Z")), "20. 11. 2026. u 23:30");
 });

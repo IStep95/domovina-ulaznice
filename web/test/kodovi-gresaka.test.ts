@@ -7,11 +7,14 @@
 // kodove: string literale u prvom argumentu `fail(…)` (i u ternarnim izrazima
 // unutar njega) te u drugom argumentu `new HttpError(…)`. Novi `fail("novi_kod")`
 // bez poruke u poruke.ts ruši ovaj test. Bez mreže, samo fs.
+//
+// S5: isto za `/api/ulaznice/*` (stanje narudžbe, ponovna dostava, preuzimanje)
+// i PORUKE_ULAZNICA.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { GENERICKA_PORUKA, PORUKE_NARUDZBE, porukaGreske } from "../src/lib/poruke.ts";
+import { GENERICKA_PORUKA, KOD_MREZA, PORUKE_NARUDZBE, PORUKE_ULAZNICA, porukaGreske, porukaUlaznica } from "../src/lib/poruke.ts";
 
 const izvor = (ime: string) => readFileSync(new URL(`../../worker/${ime}`, import.meta.url), "utf8");
 
@@ -250,4 +253,72 @@ test("greska_servera namjerno nosi generičku poruku (neuhvaćena greška u Work
   assert.ok(Object.hasOwn(PORUKE_NARUDZBE, "greska_servera"));
   assert.equal(PORUKE_NARUDZBE.greska_servera, GENERICKA_PORUKA);
   assert.equal(porukaGreske("greska_servera"), GENERICKA_PORUKA);
+});
+
+// ── narudžba: /api/ulaznice/* (S5) ──────────────────────────────────────────
+
+const RUTE_ULAZNICA = [
+  'app.get("/api/ulaznice/:order_id"',
+  'app.post("/api/ulaznice/:order_id/ponovna-dostava"',
+  'app.post("/api/ulaznice/:order_id/preuzmi"',
+];
+const ulaznice = RUTE_ULAZNICA.map((r) => kodoviPoziva(blok(index, r), "fail", 0));
+
+/**
+ * Kodovi jezgre (events-tickets kroz callFunction, kao 502) koje statički ne vidimo:
+ * `code` u api.ts je dinamičan, a domovina-api nije u ovom repou. Ručno popisani.
+ */
+const JEZGRA_ULAZNICA = ["method_not_allowed", "too_many_orders"];
+/** Kodovi koje proizvodi sam klijent (src/lib/api.ts, kodIzGreske). */
+const KLIJENT = ["neispravan_odgovor", KOD_MREZA];
+
+/** HttpError iz api.ts koji nisu na putu /api/ulaznice/* (isti izuzeci kao za kupnju). */
+const httpUlaznica = [...httpApi.kodovi].filter((k) => !Object.hasOwn(IZVAN_KUPNJE, k));
+
+const kodoviUlaznica = new Set([
+  ...ulaznice.flatMap((u) => [...u.kodovi]),
+  ...onError.kodovi,
+  ...fallback.kodovi,
+  ...httpUlaznica,
+]);
+
+test("ekstrakcija: /api/ulaznice/* daje poznate kodove, svi kao literali", () => {
+  for (const k of [
+    "invalid_order_id",
+    "order_not_found",
+    "previse_pokusaja",
+    "narudzba_nije_placena",
+    "nema_email_adrese",
+    "rotacija_nije_uspjela",
+    "bad_json",
+    "invalid_buyer_email",
+    "email_ne_odgovara",
+  ]) {
+    assert.ok(kodoviUlaznica.has(k), `ekstrakcija nije našla ${k}`);
+  }
+  // svaka ruta je nađena i ima barem invalid_order_id i order_not_found
+  for (const [i, u] of ulaznice.entries()) {
+    assert.ok(u.kodovi.has("invalid_order_id") && u.kodovi.has("order_not_found"), RUTE_ULAZNICA[i]);
+    assert.deepEqual(u.dinamicni, [], RUTE_ULAZNICA[i]);
+  }
+  // blok() staje na sljedećem `app.`: kodovi organizatora ne smiju procuriti u ulaznice
+  assert.ok(!kodoviUlaznica.has("prijava_neuspjela"));
+  assert.ok(!kodoviUlaznica.has("nije_prijavljen"));
+});
+
+test("svaki kod iz /api/ulaznice/* (i HttpError na tom putu) ima poruku u PORUKE_ULAZNICA", () => {
+  const bez = [...kodoviUlaznica, ...JEZGRA_ULAZNICA, ...KLIJENT].filter((k) => !Object.hasOwn(PORUKE_ULAZNICA, k));
+  assert.deepEqual(bez, [], `kodovi bez poruke u PORUKE_ULAZNICA (web/src/lib/poruke.ts): ${bez.join(", ")}`);
+});
+
+test("kodovi /api/ulaznice/* imaju vlastitu poruku, ne generičku (osim greska_servera)", () => {
+  const genericki = [...kodoviUlaznica].filter((k) => k !== "greska_servera" && porukaUlaznica(k) === GENERICKA_PORUKA);
+  assert.deepEqual(genericki, [], `kodovi s generičkom porukom: ${genericki.join(", ")}`);
+  assert.equal(porukaUlaznica("greska_servera"), GENERICKA_PORUKA);
+});
+
+test("PORUKE_ULAZNICA nema zastarjelih kodova (svaki ključ dolazi iz Workera, jezgre ili klijenta)", () => {
+  const poznati = new Set([...kodoviUlaznica, ...JEZGRA_ULAZNICA, ...KLIJENT]);
+  const visak = Object.keys(PORUKE_ULAZNICA).filter((k) => !poznati.has(k));
+  assert.deepEqual(visak, [], `ključevi koje /api/ulaznice/* ne vraća: ${visak.join(", ")}`);
 });
