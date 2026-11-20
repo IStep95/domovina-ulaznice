@@ -35,7 +35,7 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | S2 | dizajnerski sustav | gotovo | fdc3fed | web 26, korijen 97 | Ivan, 2026-11-19; odluke 200–209; snimke `/_komponente` |
 | S2b | dorada sheme događaja (Ivanov prijedlog) | otvoreno | | | može odmah nakon S1 |
 | — | (!) migracija jezgre i `events-feed` | čeka | | | Matija |
-| S3 | popis i događaj | gotovo | (ovaj commit) | web 58, korijen 97 | Ivan, 2026-11-20; odluke 300–311; S2b i dalje otvoren |
+| S3 | popis i događaj | gotovo | f81f559 | web 58, korijen 97 | Ivan, 2026-11-20; odluke 300–311; S2b i dalje otvoren |
 | S4 | kupnja | otvoreno | | | |
 | S5 | narudžba, pravno, 404 | otvoreno | | | |
 | S6 | service binding, lokalna e2e | otvoreno | | | |
