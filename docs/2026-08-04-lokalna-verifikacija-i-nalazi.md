@@ -167,3 +167,12 @@ Zamke:
   `clampInt` ga stisne na 1). Popravljeno u `domovina-api@ca375ab`, na produkciji
   još nije (v. [deploy-dug](deploy-dug.md)). Simptom: na početnoj stranici vidi
   se samo najnoviji događaj.
+- **Zaostali procesi iz ranijeg pokretanja drže portove** (2026-11-20). Stari
+  deno na `:55390` ostao je živ s kodom `events-feed` od prije izmjene; novi
+  `pokreni.sh` nije mogao zauzeti port, a skripta to ne javlja. Simptom: Worker
+  vraća događaje, ali bez novih polja. Isto vrijedi za `:8901` i za mock na
+  `:8797`. Prije pokretanja: `lsof -iTCP -sTCP:LISTEN -P | grep -E ':(8788|8797|8901|55390)\b'`
+  i ugasi što je ostalo.
+- **Astro (`web/`) protiv ovog stacka:** u `web/.dev.vars` (gitignoran)
+  `API_BASE_URL_DEV=http://127.0.0.1:8788`, pa `npx astro dev` u `web/`. Prazan
+  `.dev.vars` znači mock na `:8797`.
