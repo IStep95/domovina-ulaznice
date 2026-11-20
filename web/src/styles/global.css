@@ -21,7 +21,14 @@ body {
   font-size: var(--font-size-md);
   line-height: 1.55;
   color: var(--color-text);
-  background: var(--color-bg);
+  /* Mrlja naglasne boje na vrhu, kao na Lumi: zadana zelena na popisu, boja
+     organizatora na događaju (--color-accent s <html>). Blijedi do --color-bg
+     prije sadržaja, pa kontrast teksta ostaje kao na ravnoj podlozi. */
+  background:
+    radial-gradient(70% 520px at 12% -80px, color-mix(in srgb, var(--color-accent) 34%, transparent), transparent),
+    radial-gradient(55% 440px at 88% -60px, color-mix(in srgb, var(--color-accent) 20%, transparent), transparent),
+    var(--color-bg);
+  background-repeat: no-repeat;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
