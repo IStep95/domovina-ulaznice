@@ -41,10 +41,10 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F2 — spajanje, staging, čišćenje
 
-- [ ] postojeći Worker prosljeđuje kupačke putanje Astro Workeru kroz service binding `WEB`; `/api/*`, `/webhook/*`, `/.well-known/*`, `/organizator`, `/skener` ostaju njegovi → S6
-- [ ] test u `worker-tests/` za podjelu putanja → S6
-- [ ] cijela kupnja lokalno kroz Astro (`scripts/lokalno/pokreni.sh` + Astro) → S6
-- [ ] zapis u `docs/deploy-dug.md` → S6
+- [x] postojeći Worker prosljeđuje kupačke putanje Astro Workeru kroz service binding `WEB`; `/api/*`, `/webhook/*`, `/.well-known/*`, `/organizator`, `/skener` ostaju njegovi → S6
+- [x] test u `worker-tests/` za podjelu putanja → S6
+- [x] cijela kupnja lokalno kroz Astro (`scripts/lokalno/pokreni.sh` + Astro) → S6
+- [x] zapis u `docs/deploy-dug.md` → S6
 - [ ] (!) deploy na `ulaznice-staging.domovina.ai` (Matija) → vrata nakon S6
 - [ ] izmjereno na stagingu: Lighthouse (performance, SEO, a11y) Astro naspram starog SPA-a, pregled linka u WhatsAppu → S7
 - [ ] kupačke stranice uklonjene iz `src/` (Popis, Dogadjaj, Kupnja, Narudzba, Pravno); SPA drži samo organizatora, skener i prijavu → S7

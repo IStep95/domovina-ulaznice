@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "dev:mock": "node scripts/dev-mock.mjs",
     "e2e": "node scripts/e2e-cdp.mjs",
+    "e2e:stack": "node scripts/e2e-cdp.mjs --stack",
     "build": "astro build",
     "preview": "astro preview",
     "test": "node --test \"test/**/*.test.ts\"",

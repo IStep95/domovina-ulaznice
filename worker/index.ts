@@ -649,9 +649,51 @@ app.post("/webhook/stripe", async (c) => {
   return handleStripeWebhook(c.req.raw, c.env);
 });
 
-// SPA fallback — sve što nije /api ili /webhook servira statika.
+// ------------------------------------------------- kupci (WEB) ili SPA (ASSETS)
+
+/**
+ * Putanje koje i uz Astro (binding `WEB`) ostaju staroj SPA iz `dist/`.
+ *
+ * Popis je namjerno eksplicitan i kratak: SPA danas služi samo organizatoru i
+ * skeneru, a sve što vidi kupac (`/`, `/dogadjaj/*` s `.ics` i `/kupnja`,
+ * `/ulaznice/*` s `?placeno=1`, `/uvjeti`, `/privatnost`, `/_astro/*`,
+ * `/favicon.svg`, `/og-zadana.png`) je Astrovo. Zato se popisuje manja strana.
+ *
+ *   /organizator, /skener   stranice SPA (src/main.tsx); /x/… pokriva i kosu crtu
+ *   /assets/                Viteov build.assetsDir (dist/assets/*), JS i CSS SPA-a
+ *
+ * Bez heuristike („ima ekstenziju → statika”, „WEB vrati 404 → probaj ASSETS”):
+ * obje bi tiho sakrile sudar. Ovako je pravilo jedno: statična datoteka u
+ * korijenu domene pripada Astru (web/public/), a SPA ima samo `/assets/`. Ako
+ * SPA jednom dobije vlastiti `public/favicon.svg`, Astrov ga zasjenjuje — to je
+ * svjesno, kupac mora vidjeti istu ikonu na svim svojim stranicama.
+ */
+const SPA_STRANICE = ["/organizator", "/skener"];
+const SPA_PREFIKSI = ["/assets/"];
+
+/**
+ * Ide li putanja na Astro (`env.WEB`)? Poziva se tek kad je jasno da nije
+ * /api/* ni /webhook/*; `/.well-known/*` ostaje ovdje (AASA i assetlinks su
+ * rute iznad, ostalo ide u ASSETS kao i prije S6).
+ *
+ * Nepoznata putanja (`/nesto`, `/dogadjaj`, `/robots.txt`) ide na WEB, ne u
+ * SPA: Astro vraća pravi 404 (web/docs/decisions.md, odluka 510), a SPA bi
+ * vratila 200 s index.html-om pa preusmjerila na `/` — tražilica i link
+ * checker bi mrtav link vidjeli kao živ.
+ */
+function idePremaWebu(path: string): boolean {
+  if (path.startsWith("/.well-known/")) return false;
+  if (SPA_PREFIKSI.some((p) => path.startsWith(p))) return false;
+  if (SPA_STRANICE.some((p) => path === p || path.startsWith(`${p}/`))) return false;
+  return true;
+}
+
+// Fallback — sve što nije /api ili /webhook: Astro (ako je binding tu) ili SPA.
+// Request se prosljeđuje nepromijenjen (metoda, headeri, query, Host): Astro
+// tako gradi kanonske i og: URL-ove na domeni na kojoj ga je kupac otvorio.
 app.all("*", async (c) => {
   if (c.req.path.startsWith("/api/") || c.req.path.startsWith("/webhook/")) return fail("not_found", 404);
+  if (c.env.WEB && idePremaWebu(c.req.path)) return c.env.WEB.fetch(c.req.raw);
   return c.env.ASSETS.fetch(c.req.raw);
 });
 

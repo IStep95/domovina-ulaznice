@@ -4,6 +4,14 @@
 //   npm run e2e                                   # digne dev:mock na :4331 (mock :8798) i ugasi ga
 //   npm run e2e -- --base http://localhost:4331   # već dignut `WEB_PORT=4331 npm run dev:mock`
 //   npm run e2e -- --snimke /neki/dir             # screenshotovi (zadano privremeni direktorij)
+//   npm run e2e:stack                             # = --stack: lokalni stack (scripts/lokalno/pokreni.sh), v. dolje
+//
+// `--stack`: kupnja ide kroz pravi Worker, jezgru i lažni Stripe iz scripts/lokalno/pokreni.sh
+// (fake-stripe.mjs, checkout i inbox na :8901), ne kroz mock. Base je zadano glavni Worker
+// :8788, koji stranice kupaca kroz binding WEB daje Astru (pokreni-web.sh, :8792). Stripeov
+// success_url i link u mailu su PUBLIC_BASE_URL glavnog Workera i moraju biti na base.
+//   --inbox <url>   lažni Stripe / Resend inbox (zadano http://127.0.0.1:8901)
+//   --slug <slug>   događaj (zadano prilika-za-susret-2027, postoji i u mocku i u seedu jezgre)
 //
 // Port 4321 je Ivanov `astro dev` na lokalnom stacku (odluka 412): skripta ga ne dira, a
 // dev:mock dobiva zaseban port, mock i Vite cache (scripts/dev-mock.mjs).
@@ -28,8 +36,12 @@ const { values: arg } = parseArgs({
   options: {
     base: { type: "string" },
     snimke: { type: "string" },
+    stack: { type: "boolean", default: false },
+    inbox: { type: "string", default: "http://127.0.0.1:8901" },
+    slug: { type: "string", default: "prilika-za-susret-2027" },
   },
 });
+const STACK_BASE = "http://127.0.0.1:8788"; // glavni Worker iz scripts/lokalno/pokreni.sh
 
 // ---------------------------------------------------------------------------
 // CDP: jedna WebSocket veza na stranicu (target „page”).
@@ -236,6 +248,25 @@ class Stranica {
     if (vrijednost !== tekst) throw new Error(`upisi ${sel}: očekivao „${tekst}”, polje ima „${vrijednost}”`);
   }
 
+  /**
+   * Pokreni `akcija()` i uhvati odgovor prvog zahtjeva na `uzorak` (CDP Fetch, faza odgovora):
+   * zahtjev stoji dok se tijelo ne pročita, pa ga navigacija koja slijedi ne može odnijeti.
+   * Vraća { status, tijelo }.
+   */
+  async uhvatiOdgovor(uzorak, akcija, ms = CEKANJE_MS) {
+    await this.cdp.send("Fetch.enable", { patterns: [{ urlPattern: uzorak, requestStage: "Response" }] });
+    try {
+      const pauzirano = this.cdp.dogadjaj("Fetch.requestPaused", undefined, ms);
+      await akcija();
+      const p = await pauzirano;
+      const { body, base64Encoded } = await this.cdp.send("Fetch.getResponseBody", { requestId: p.requestId });
+      await this.cdp.send("Fetch.continueRequest", { requestId: p.requestId });
+      return { status: p.responseStatusCode, tijelo: base64Encoded ? Buffer.from(body, "base64").toString() : body };
+    } finally {
+      await this.cdp.send("Fetch.disable");
+    }
+  }
+
   /** Screenshot vidljivog dijela u direktorij snimki; vraća putanju. */
   async snimi(ime) {
     const { data } = await this.cdp.send("Page.captureScreenshot", { format: "png" });
@@ -346,60 +377,144 @@ async function ocekujNoindex(s, dokument, sto) {
   ocekuj(`${meta} ${header}`.includes("noindex"), `${sto}: nema noindex (meta „${meta}”, x-robots-tag „${header}”)`);
 }
 
-const SLUG = "prilika-za-susret-2027"; // mobile/mock-api.mjs
+const SLUG = arg.slug; // zadani postoji u mobile/mock-api.mjs i u seedu lokalne jezgre
+
+/** Popis → događaj → kupnja → ispunjena forma; vraća prije klika „Nastavi na plaćanje”. */
+async function ispuniKupnju(s, base, email) {
+  const d = await s.otvori(`${base}/`);
+  ocekujStatus(d, 200, "popis");
+  await s.cekaj(`document.querySelector('a[href="/dogadjaj/${SLUG}"]')`, `link na /dogadjaj/${SLUG}`);
+  await s.snimi("popis");
+
+  await s.klik(`a[href="/dogadjaj/${SLUG}"]`);
+  await s.cekajPutanju(`/dogadjaj/${SLUG}`);
+  ocekujStatus(s.dokument, 200, "događaj");
+  await s.snimi("dogadjaj");
+
+  await s.klik(`a[href="/dogadjaj/${SLUG}/kupnja"]`);
+  await s.cekajPutanju(`/dogadjaj/${SLUG}/kupnja`);
+  ocekujStatus(s.dokument, 200, "kupnja");
+  // Otok je hidriran kad Astro skine `ssr` s <astro-island>; prije toga React još
+  // nije preuzeo polja.
+  await s.cekajSelektor("astro-island:not([ssr]) #kupac-email", 30_000);
+  // Zadani tier je prvi kupivi (Redovna, imenska) i količina 1.
+  await s.upisi("#ime-0", "Ana Anić");
+  await s.upisi("#kupac-email", email);
+  await s.klikJs("#uvjeti");
+  await s.snimi("kupnja-ispunjena");
+}
+
+const nastaviNaPlacanje = (s) => s.klik('button[type="submit"]', { tekst: "Nastavi na plaćanje" });
+
+/** Narudžba prije plaćanja: SSR, no-store, noindex, „Čeka plaćanje”. */
+async function ocekujPending(s, base, orderId) {
+  const d = await s.otvori(`${base}/ulaznice/${orderId}`);
+  ocekujStatus(d, 200, "narudžba (pending)");
+  ocekujBezKesa(d, "narudžba (pending)");
+  await ocekujNoindex(s, d, "narudžba (pending)");
+  await s.cekajTekst("Čeka plaćanje");
+  await s.snimi("narudzba-pending");
+}
+
+async function ocekujPaid(s, sto) {
+  ocekujStatus(s.dokument, 200, sto);
+  ocekujBezKesa(s.dokument, sto);
+  await s.cekajTekst("Plaćeno");
+  await s.cekajTekst("Pošalji ponovno"); // ponovna dostava postoji samo za paid
+  await s.snimi("narudzba-paid");
+}
+
+const kupnjaMock = [
+  "kupnja → narudžba (pending pa paid)",
+  async (s, base) => {
+    await ispuniKupnju(s, base, "ana.e2e@primjer.hr");
+    await nastaviNaPlacanje(s);
+
+    const checkout = await s.cekajPutanju(/^\/mock-checkout\/[^/]+$/);
+    const orderId = checkout.pathname.split("/").pop();
+    await s.cekajTekst("Plati (lažno)");
+    await s.snimi("checkout");
+
+    await ocekujPending(s, base, orderId);
+
+    // Lažni Checkout: POST → 303 na /ulaznice/<id>?placeno=1, mock je narudžbu označio paid.
+    await s.otvori(`${base}/mock-checkout/${orderId}`);
+    await s.klik("button", { tekst: "Plati (lažno)" });
+    const povratak = await s.cekajPutanju(`/ulaznice/${orderId}`);
+    ocekuj(povratak.searchParams.get("placeno") === "1", `povratak bez ?placeno=1: ${povratak}`);
+    await ocekujPaid(s, "narudžba (paid)");
+  },
+];
+
+/** Mjerenja kupnje kroz stack (ms), ispisuju se nakon slučaja. */
+const mjerenja = [];
+const mjeri = (ime, od) => mjerenja.push(`${ime} ${Date.now() - od} ms`);
+
+/** Mail lažnog Resenda za `email` (inbox na :8901 je HTML popis, najnoviji prvi). */
+async function cekajMail(inbox, email, ms = CEKANJE_MS) {
+  const kraj = Date.now() + ms;
+  while (Date.now() < kraj) {
+    const html = await (await fetch(`${inbox}/inbox`)).text();
+    const m = html.match(new RegExp(`<a href="(/inbox/[^"]+)">([^<]*)</a> <span class=muted>→ [^<]*${email.replace(/[.+]/g, "\\$&")}`));
+    if (m) return { url: inbox + m[1], naslov: m[2] };
+    await pauza(250);
+  }
+  throw new Error(`u ${ms} ms nema maila za ${email} na ${inbox}/inbox`);
+}
+
+const kupnjaStack = [
+  "kupnja kroz lažni Stripe → paid → e-mail s QR",
+  async (s, base) => {
+    const inbox = arg.inbox.replace(/\/$/, "");
+    const email = `ana.e2e+${Date.now()}@primjer.hr`; // jedinstven, da se mail nađe u inboxu
+    await ispuniKupnju(s, base, email);
+
+    let t = Date.now();
+    const narudzba = await s.uhvatiOdgovor("*/api/narudzba", () => nastaviNaPlacanje(s));
+    mjeri(`POST /api/narudzba → ${narudzba.status}`, t);
+    ocekuj(narudzba.status >= 200 && narudzba.status < 300, `POST /api/narudzba: ${narudzba.status} ${narudzba.tijelo}`);
+    const { order_id: orderId, checkout_url: checkoutUrl } = JSON.parse(narudzba.tijelo);
+    ocekuj(new URL(checkoutUrl).origin === new URL(inbox).origin, `checkout_url ${checkoutUrl} nije lažni Stripe ${inbox}`);
+    await s.cekaj(`location.href.startsWith(${JSON.stringify(checkoutUrl)}) && document.readyState === "complete"`, "checkout lažnog Stripea");
+    mjeri("forma → checkout učitan", t);
+    await s.cekajTekst("TEST MODE");
+    await s.snimi("checkout");
+
+    await ocekujPending(s, base, orderId);
+
+    // fake-stripe.mjs: POST /pay/<sesija> šalje potpisan webhook glavnom Workeru (čeka odgovor),
+    // pa 303 na success_url = <PUBLIC_BASE_URL>/ulaznice/<id>?placeno=1.
+    await s.otvori(checkoutUrl);
+    t = Date.now();
+    await s.klik("button", { tekst: "Plati" });
+    const povratak = await s.cekajPutanju(`/ulaznice/${orderId}`, 30_000);
+    mjeri("„Plati” → success_url učitan", t);
+    ocekuj(povratak.searchParams.get("placeno") === "1", `povratak bez ?placeno=1: ${povratak}`);
+    ocekuj(
+      povratak.origin === new URL(base).origin,
+      `success_url vodi na ${povratak.origin}, ne na ${base} (PUBLIC_BASE_URL glavnog Workera)`,
+    );
+    await ocekujPaid(s, "narudžba (paid)");
+
+    const mail = await cekajMail(inbox, email);
+    mjeri("„Plati” → mail u inboxu", t);
+    const d = await s.otvori(mail.url);
+    ocekujStatus(d, 200, "mail u inboxu");
+    // QR je privitak s content_id; inbox ga ugradi kao data:image/png.
+    const qr = await s.izvrsi(`document.querySelectorAll('img[src^="data:image/png"]').length`);
+    ocekuj(qr >= 1, `mail „${mail.naslov}” nema QR sliku`);
+    const link = await s.izvrsi(`[...document.querySelectorAll("a[href]")].map((a) => a.href).find((h) => h.includes(${JSON.stringify(`/ulaznice/${orderId}`)})) ?? ""`);
+    ocekuj(link, `mail nema link na /ulaznice/${orderId}`);
+    await s.snimi("mail");
+    // Link iz maila vodi na istu narudžbu kroz Astro (Worker koji je obradio webhook).
+    ocekuj(new URL(link).origin === new URL(base).origin, `link u mailu vodi na ${link}, ne na ${base}`);
+    await s.otvori(link);
+    await ocekujPaid(s, "narudžba iz maila");
+  },
+];
 
 const slucajevi = [
-  [
-    "kupnja → narudžba (pending pa paid)",
-    async (s, base) => {
-      let d = await s.otvori(`${base}/`);
-      ocekujStatus(d, 200, "popis");
-      await s.cekajTekst("Prilika za Susret 2027");
-      await s.snimi("popis");
-
-      await s.klik(`a[href="/dogadjaj/${SLUG}"]`);
-      await s.cekajPutanju(`/dogadjaj/${SLUG}`);
-      ocekujStatus(s.dokument, 200, "događaj");
-      await s.snimi("dogadjaj");
-
-      await s.klik(`a[href="/dogadjaj/${SLUG}/kupnja"]`);
-      await s.cekajPutanju(`/dogadjaj/${SLUG}/kupnja`);
-      ocekujStatus(s.dokument, 200, "kupnja");
-      // Otok je hidriran kad Astro skine `ssr` s <astro-island>; prije toga React još
-      // nije preuzeo polja.
-      await s.cekajSelektor("astro-island:not([ssr]) #kupac-email", 30_000);
-      // Zadani tier je prvi kupivi (Redovna, imenska) i količina 1.
-      await s.upisi("#ime-0", "Ana Anić");
-      await s.upisi("#kupac-email", "ana.e2e@primjer.hr");
-      await s.klikJs("#uvjeti");
-      await s.snimi("kupnja-ispunjena");
-      await s.klik('button[type="submit"]', { tekst: "Nastavi na plaćanje" });
-
-      const checkout = await s.cekajPutanju(/^\/mock-checkout\/[^/]+$/);
-      const orderId = checkout.pathname.split("/").pop();
-      await s.cekajTekst("Plati (lažno)");
-      await s.snimi("checkout");
-
-      // Prije plaćanja: pending.
-      d = await s.otvori(`${base}/ulaznice/${orderId}`);
-      ocekujStatus(d, 200, "narudžba (pending)");
-      ocekujBezKesa(d, "narudžba (pending)");
-      await ocekujNoindex(s, d, "narudžba (pending)");
-      await s.cekajTekst("Čeka plaćanje");
-      await s.snimi("narudzba-pending");
-
-      // Lažni Checkout: POST → 303 na /ulaznice/<id>?placeno=1, mock je narudžbu označio paid.
-      await s.otvori(`${base}/mock-checkout/${orderId}`);
-      await s.klik("button", { tekst: "Plati (lažno)" });
-      const povratak = await s.cekajPutanju(`/ulaznice/${orderId}`);
-      ocekuj(povratak.searchParams.get("placeno") === "1", `povratak bez ?placeno=1: ${povratak}`);
-      ocekujStatus(s.dokument, 200, "narudžba (paid)");
-      ocekujBezKesa(s.dokument, "narudžba (paid)");
-      await s.cekajTekst("Plaćeno");
-      await s.cekajTekst("Pošalji ponovno"); // ponovna dostava postoji samo za paid
-      await s.snimi("narudzba-paid");
-    },
-  ],
+  arg.stack ? kupnjaStack : kupnjaMock,
   [
     "pravne stranice",
     async (s, base) => {
@@ -454,7 +569,7 @@ async function main() {
   const snimke = arg.snimke ?? mkdtempSync(join(tmpdir(), "web-e2e-snimke-"));
   mkdirSync(snimke, { recursive: true });
 
-  let base = arg.base?.replace(/\/$/, "");
+  let base = (arg.base ?? (arg.stack ? STACK_BASE : undefined))?.replace(/\/$/, "");
   if (!base) {
     console.log(`dižem dev:mock na :${WEB_PORT} (mock :${MOCK_PORT})…`);
     devMock = await digniDevMock();
@@ -473,6 +588,7 @@ async function main() {
       await fn(s, base);
       ocekuj(s.iznimke.length === 0, `iznimke na stranici:\n    ${s.iznimke.join("\n    ")}`);
       console.log(`  ok    ${ime} (${Date.now() - pocetak} ms)`);
+      for (const m of mjerenja.splice(0)) console.log(`        ${m}`);
     } catch (e) {
       palo++;
       const snimka = await s.snimi(`PALO-${ime.replace(/[^a-z0-9]+/gi, "-")}`).catch(() => null);

@@ -544,3 +544,58 @@ Kanonski oblik je bez kose crte; `/uvjeti/` sada vodi 307 na `/uvjeti`. SSR rute
 (provjereno u `wrangler dev` nad buildom: `/`, događaj, kupnja, narudžba, 404). Alternativa
 `assets.html_handling: "drop-trailing-slash"` u `web/wrangler.jsonc`.
 Revizija: nema.
+
+## S6 (2026-11-20)
+
+**600. Podjela putanja: eksplicitan popis SPA-e, sve ostalo ide Astru.** Glavni Worker
+odgovara na `/api/*`, `/webhook/*`, AASA i assetlinks. SPA (ASSETS) dobiva `/organizator*`,
+`/skener*`, `/assets/*` (Viteov `assetsDir`) i ostale `/.well-known/*`. Sve ostalo ide na `WEB`,
+uključujući `/`, `/_astro/*`, `web/public/*` i nepoznate putanje. Manja strana (SPA) se
+nabraja, pa nova Astrova stranica ne traži izmjenu Workera. Nepoznata putanja dobiva Astrov
+404 umjesto SPA-ovog 200 s `index.html` (odluka 510). Bez heuristike („ima ekstenziju”,
+„WEB 404 → ASSETS”), jer bi sakrila sudar. Statična datoteka u korijenu domene pripada Astru.
+Test `worker-tests/web-binding.test.ts` provjerava i da svaka datoteka iz `web/public/` ide na WEB.
+Revizija: S7 (kad se kupačke stranice uklone iz SPA-a).
+
+**601. `assets.run_worker_first: true` u `env.staging`.** Bez toga Cloudflare `/` i
+`/index.html` poslužuje ravno iz `dist/` (SPA) i Worker zahtjev ni ne vidi (izmjereno u
+`wrangler dev`). Wrangler 3.114 prima samo boolean, pa se Worker poziva i za statiku SPA-e.
+Bez bindinga `WEB` odgovori su isti kao prije.
+Revizija: kad korijen prijeđe na wrangler 4 (popis uzoraka).
+
+**602. Astro do API-ja ide preko javnog `API_BASE_URL`, bez obrnutog bindinga.** Svaka SSR
+stranica radi jedan GET bez IP rate limita (`consume()` je samo na narudžbi, prijavi, skenu i
+webhooku, koje zove preglednik). `/api/*` se nikad ne prosljeđuje na WEB, pa nema petlje.
+Lokalno (wrangler 3, 40 zahtjeva, p50/p90): `/api/dogadjaji` 18,4/22,6 ms, Astro izravno
+`/` 27,4/34,1 ms, glavni → WEB → Astro `/` 46,4/59,4 ms. Lokalni binding ide kroz HTTP proxy
+dev registryja, pa brojke nisu edge.
+Revizija: staging. Ako SSR stranica s jednim API pozivom ima više od ~50 ms viška u odnosu na
+izravni `/api`, ili ako fetch na istu zonu ne radi, uvesti binding Astro → glavni Worker.
+
+**603. Lokalno oba Workera na istoj major verziji wranglera i s istim registryjem.**
+Korijen je na 3.114, `web/` na 4.165, a njihovi dev registryji su u različitim formatima i ne
+vide se. Astro build se lokalno vrti korijenskim wranglerom 3 s
+`-c web/dist/server/wrangler.json` (compat date se spusti na 2025-07-18, samo upozorenje).
+`wrangler dev` nad `web/dist` padne čim novi `astro build` obriše `dist/client`.
+Revizija: kad korijen prijeđe na wrangler 4.
+
+**604. Lokalni stack sam diže Astro.** `pokreni.sh` poziva `pokreni-web.sh` (Astro na `:8792`),
+a glavni Worker na `:8788` mu kroz `WEB` daje stranice kupaca. Bez toga kupačke putanje na
+`:8788` daju 503. E2E kroz stack je `npm --prefix web run e2e:stack` (lažni Stripe na `:8901`,
+mail u inboxu). Svako pokretanje troši jednu ulaznicu u lokalnoj jezgri.
+Revizija: kad korijen prijeđe na wrangler 4 (odluka 603).
+
+**605. `wrangler dev` vrti kopiju Astro builda** (`.wrangler/web-build`, bez `.dev.vars`), jer
+svaki novi `astro build` briše `web/dist` i ruši proces. Build ide sa zasebnim Vite cacheom, pa
+Ivanov `:4321` ostaje netaknut.
+Revizija: nema.
+
+**606. E2E stacka traži da `success_url` i link u mailu budu na istoj adresi kao kupnja.**
+Id narudžbe se hvata iz odgovora `POST /api/narudzba` (CDP `Fetch`). Bez bindinga test pada,
+jer povratak sa Stripea vodi na staru SPA. Tako je namjerno.
+Revizija: nema.
+
+**607. `run_worker_first` se ne pokupi hot reloadom**, za razliku od `services`. Nakon izmjene
+`assets` u korijenskom `wrangler.jsonc` lokalni Worker treba restartati. Napola učitan config
+daje 503 na kupačkim putanjama i SPA na `/`.
+Revizija: nema.
