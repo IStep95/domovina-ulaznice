@@ -151,6 +151,8 @@ export interface FeedEvent {
     cover_image_url: string | null;
     // S2b: nullable; undefined dok jezgra nema migraciju events_venue_geo
     cover_image_alt?: string | null;
+    // galerija: [] kad je nema; undefined dok jezgra nema migraciju events_gallery
+    gallery?: Array<{ url: string; alt?: string | null }>;
     venue_lat?: number | null;
     venue_lon?: number | null;
     organizer_name: string;
