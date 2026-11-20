@@ -1,0 +1,74 @@
+---
+// Uvjeti korištenja (S5; Pravno-1280). Sadržaj iz src/pages/Pravno.tsx (SPA),
+// raspored iz dizajna. Statičan tekst: prerenderira se u buildu (dist/), bez
+// SSR-a po zahtjevu. NACRT: v. PravnaStranica.astro.
+import PravnaStranica from "../components/PravnaStranica.astro";
+import Praznina from "../components/Praznina.astro";
+
+export const prerender = true;
+
+/** Pravni subjekt platforme: otvoreno pitanje (docs/2026-09-03-plan-do-produkcije.md §3.2). */
+const SUBJEKT = "[PRAVNI SUBJEKT PLATFORME — nije određen]";
+
+const odjeljci = [
+  { id: "prodavatelj", naslov: "1. Tko je prodavatelj" },
+  { id: "racun", naslov: "2. Račun" },
+  { id: "ulaznica", naslov: "3. Ulaznica i ulazak" },
+  { id: "povrat", naslov: "4. Otkazivanje i povrat" },
+  { id: "odgovornost", naslov: "5. Odgovornost" },
+  { id: "kontakt", naslov: "6. Kontakt" },
+] as const;
+const [prodavatelj, racun, ulaznica, povrat, odgovornost, kontakt] = odjeljci;
+---
+<PravnaStranica
+  naslov="Uvjeti korištenja"
+  opis="Uvjeti kupnje ulaznica: tko je prodavatelj, račun, ulazak, povrat i kontakt."
+  odjeljci={odjeljci}
+>
+  <h2 id={prodavatelj.id}>{prodavatelj.naslov}</h2>
+  <p>
+    Ulaznicu prodaje <b>organizator događaja</b>, ne platforma. Ugovor o ulasku na događaj sklapate izravno s
+    organizatorom, koji je naveden na stranici svakog događaja. Platforma <Praznina>{SUBJEKT}</Praznina> pruža
+    organizatoru softver za prodaju i dostavu ulaznica.
+  </p>
+  <p>
+    Plaćanje karticom obrađuje Stripe, izravno na račun organizatora.{" "}
+    <b>Platforma ne naplaćuje naknadu na prodanu ulaznicu i ne drži novac kupaca.</b>
+  </p>
+
+  <h2 id={racun.id}>{racun.naslov}</h2>
+  <p>
+    Za izdavanje računa i fiskalizaciju odgovoran je organizator kao prodavatelj usluge. Ovisno o njegovim
+    postavkama, račun stiže e-mailom neposredno nakon plaćanja ili ga izdaje organizator svojim sustavom.
+  </p>
+
+  <h2 id={ulaznica.id}>{ulaznica.naslov}</h2>
+  <ul>
+    <li>Ulaznica je QR kod poslan e-mailom nakon potvrđenog plaćanja.</li>
+    <li>QR kod vrijedi <b>za jedan ulazak</b>; prvi uspješan sken poništava daljnje.</li>
+    <li>Ponovna dostava izdaje nove QR kodove, a <b>prethodno poslani prestaju vrijediti</b>.</li>
+    <li>Imenske ulaznice glase na ime navedeno pri kupnji; na ulazu se može tražiti identifikacijski dokument.</li>
+  </ul>
+
+  <h2 id={povrat.id}>{povrat.naslov}</h2>
+  <p>
+    <Praznina>[POLITIKA POVRATA — određuje organizator]</Praznina> Rok i uvjeti moraju stajati ovdje prije prve
+    prodaje.
+  </p>
+  <p>
+    Neovisno o tome: ako je uplata zaprimljena nakon što su ulaznice rasprodane, cijeli iznos se vraća automatski.
+    Ako organizator otkaže događaj, povrat izvršava organizator.
+  </p>
+
+  <h2 id={odgovornost.id}>{odgovornost.naslov}</h2>
+  <p>
+    Za održavanje događaja, njegov sadržaj, termin i uvjete ulaska odgovara organizator. Platforma odgovara za rad
+    softvera za prodaju i dostavu ulaznica.
+  </p>
+
+  <h2 id={kontakt.id}>{kontakt.naslov}</h2>
+  <p>
+    Za pitanja o događaju obratite se organizatoru. Za tehničke probleme s kupnjom ili dostavom ulaznice:{" "}
+    <a href="mailto:podrska@domovina.ai">podrska@domovina.ai</a>.
+  </p>
+</PravnaStranica>

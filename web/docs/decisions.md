@@ -452,3 +452,95 @@ datoteke prebaci i Ivanov `astro dev` na mock. S4 ju je za e2e privremeno zakome
 (`PUBLIC_BASE_URL=http://localhost:4331`) i `astro dev --port 4331`. Za S5: `dev-mock.mjs`
 dobiva port kroz env i adresu mocka koja ne ovisi o `.dev.vars`.
 Revizija: S5.
+
+## S5 (2026-11-20)
+
+**500. Narudžba je SSR s dva mala otoka** (`PotvrdaPlacanja`, `PonovnaDostava`). Prijelaz
+pending → paid prikazuje se ponovnim učitavanjem stranice, pa svako stanje crtaju isti Astro
+dijelovi i ništa se ne duplicira u Reactu. Logika bez Astra i Reacta je u `src/lib/narudzba.ts`.
+Revizija: nema.
+
+**501. Web ne prikazuje QR i ne zove `/preuzmi`**, kao stara SPA (`src/pages/Narudzba.tsx`),
+design-brief §4.4/§9 i Narudzba-1280: tokeni su jednokratni i žive u e-mailu, a `/preuzmi`
+je put aplikacije. „Preuzimanje u aplikaciju” je link `domovina-ulaznice://narudzba/<id>` s
+upozorenjem prije klika da prijenos može poništiti QR iz e-maila. Handoff S5 („prikaz QR-a”,
+„poziv `/preuzmi`”) bio je netočno sažet; mjerodavna je SPA. Poruke za kodove `/preuzmi`
+ipak postoje.
+Revizija: ako se promijeni model prijetnji.
+
+**502. Neispravan id daje 404 bez poziva API-ju** (`ORDER_ID_RE` = `UUID_RE` iz Workera,
+grep-test). `order_not_found`/`invalid_order_id` → 404, ostalo → 503 s „Pokušaj ponovno”.
+Svi odgovori `no-store` (`CACHE_NARUDZBA`) i `noindex`.
+Revizija: nema.
+
+**503. Osvježavanje kao SPA: svake 2 s, najviše 10 puta**, zatim neutralni banner s gumbom
+„Osvježi” (nova serija). Greška jedne provjere samo troši pokušaj. Bez JavaScripta
+`<noscript>` meta refresh 5 s, samo za pending + `?placeno=1`.
+Revizija: nema.
+
+**504. `PORUKE_ULAZNICA` je zasebna tablica** od poruka kupnje, jer `order_not_found` u
+kupnji znači nešto drugo. 429 ponovne dostave: „Novi QR kodovi mogu se zatražiti za N min”
+(iz dizajna) i odbrojavanje u gumbu.
+Revizija: nema.
+
+**505. Rok rezervacije u zoni događaja, bez dana u tjednu** (dizajnovo „do četvrtak” je
+gramatički krivo). U zaglavlju samo za običan pending, u sažetku za svaki pending.
+Revizija: nema.
+
+**506. Sažetak narudžbe bez naziva tiera i u platformskoj boji**: `OrderView` nema tier ni
+`event.brand`. Prikazuje „Ulaznica N” i iznos.
+Revizija: ako Worker doda ta polja u `OrderView` (ugovor se u lancu ne mijenja).
+
+**507. Nakon ponovne dostave narudžba se ne učitava ponovno**: rotacija ne mijenja
+serijske brojeve ni stanja.
+Revizija: nema.
+
+**508. Nepoznato `TicketView.state` nema oznaku**, da stranica ne tvrdi da ulaznica vrijedi.
+Revizija: nema.
+
+**509. Pravne stranice po Pravno-1280, bez scrollspyja** (traži JavaScript). Sadržaj
+doslovno iz `Pravno.tsx` osim placeholdera §4 iz dizajna; banner „Nacrt” i `noindex`
+ostaju.
+Revizija: kad pravnik da konačan tekst.
+
+**510. `404.astro` se renderira na zahtjev**, da sigurno nosi status 404 i `cache-control`
+60 s (odluka 303).
+Revizija: nema.
+
+**511. Bundle nakon S5:** server 1 621 957 B (S4: 1 580 744 B), isti način mjerenja kao 409.
+Klijent: `PonovnaDostava` 1 348 B, `PotvrdaPlacanja` 818 B, `narudzba` 506 B.
+Revizija: S7.
+
+**512. `dev:mock` nadjačava `.dev.vars` zasebnim Wrangler configom.** U wrangleru 4.165
+`.dev.vars` iz direktorija configa uvijek pobjeđuje `vars`, a uz njega se `process.env` i
+`.env` ne čitaju. Zato `dev-mock.mjs` generira `node_modules/.dev-mock-<port>/wrangler.json`
+(kopija `wrangler.jsonc`) s vlastitim `.dev.vars` (`API_BASE_URL_DEV` = mock) i predaje ga
+Astru kroz `WEB_WRANGLER_CONFIG`. Port: `WEB_PORT` (zadano 4321), mock `MOCK_PORT` (8797).
+Revizija: ako Cloudflare adapter dopusti nadjačavanje varijabli iz env-a.
+
+**513. Vite proxy u devu prati `API_BASE_URL_DEV` kao i SSR**, inače mock. Prije je bio
+tvrdo na mock, pa je na Ivanovom `:4321` SSR čitao stack `:8788`, a preglednikov `/api`
+dobivao 502 (forma kupnje nije mogla poslati narudžbu). Vrijednost se čita pri pokretanju.
+Revizija: nema.
+
+**514. Vite cache za `dev:mock` je po portu** (`node_modules/.dev-mock-<port>/vite`,
+`WEB_VITE_CACHE`); `npm run dev` ostaje na `node_modules/.vite`. Bez env-a config je isti kao
+prije.
+Revizija: nema.
+
+**515. E2E je `npm run e2e`** (`scripts/e2e-cdp.mjs`): headless Chrome kroz CDP s Nodeovim
+`WebSocket`om, bez ovisnosti. Sam diže `dev:mock` na `:4331` (mock `:8798`) ili prima
+`--base`; zauzet port ruši s prijedlogom `--base`. CDP port bira Chrome
+(`--remote-debugging-port=0`), snimke idu u tmp (`--snimke <dir>`).
+Revizija: S6 (e2e kroz lokalni stack).
+
+**516. Svaka `Runtime.exceptionThrown` ruši e2e slučaj** (hvata pad hidracije i
+`_jsxDEV`). Kvačica uvjeta klika se kroz `el.click()` jer label sadrži linkove.
+Revizija: nema.
+
+**517. `build.format: "file"`**: Cloudflare assets (`auto-trailing-slash`) inače
+preusmjeravaju prerenderirane `/uvjeti` i `/privatnost` (307) na putanju s kosom crtom.
+Kanonski oblik je bez kose crte; `/uvjeti/` sada vodi 307 na `/uvjeti`. SSR rute se ne mijenjaju
+(provjereno u `wrangler dev` nad buildom: `/`, događaj, kupnja, narudžba, 404). Alternativa
+`assets.html_handling: "drop-trailing-slash"` u `web/wrangler.jsonc`.
+Revizija: nema.

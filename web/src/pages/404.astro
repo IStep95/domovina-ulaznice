@@ -1,0 +1,19 @@
+---
+// 404 za nepostojeću putanju (S5; Nije-pronadeno-1280, Greske-390 „404 ·
+// nepostojeća putanja”). Astro je vraća sa statusom 404 za svaku rutu koja ne
+// postoji. Renderira se na zahtjev, ne prerenderira: tako sigurno nosi status
+// i cache-control kao 404 događaja (odluka 303: 60 s u pregledniku).
+// 404 događaja i narudžbe crtaju svoje stranice s istim StranicaGreske.
+import Osnovni from "../layouts/Osnovni.astro";
+import Gumb from "../components/Gumb.astro";
+import StranicaGreske from "../components/StranicaGreske.astro";
+import { CACHE_STRANICA } from "../lib/stranica.ts";
+
+Astro.response.status = 404;
+Astro.response.headers.set("cache-control", CACHE_STRANICA);
+---
+<Osnovni title="Stranica nije pronađena · Ulaznice" sirina="srednja" noindex>
+  <StranicaGreske kod="404" naslov="Stranica nije pronađena" opis="Link je možda zastario ili je u njemu greška.">
+    <Gumb href="/">Na popis događaja</Gumb>
+  </StranicaGreske>
+</Osnovni>

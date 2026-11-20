@@ -1,0 +1,11 @@
+/* Otok ponovne dostave (Narudzba-1280): gumb lijevo, ishod ispod njega. */
+.otok {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.otok > [role] {
+  align-self: stretch;
+}

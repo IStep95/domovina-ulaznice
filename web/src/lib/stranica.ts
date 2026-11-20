@@ -15,6 +15,11 @@ export const CACHE_GRESKA = "no-store";
  * stranica nije za dijeljenje ni za tražilice.
  */
 export const CACHE_KUPNJA = "no-store";
+/**
+ * Narudžba (S5): stanje se mijenja (pending → paid), a URL je ključ narudžbe
+ * (`order_id` je bearer capability). Ne kešira se nigdje, ni greška ni 404.
+ */
+export const CACHE_NARUDZBA = "no-store";
 /** .ics se mijenja samo kad organizator promijeni termin. */
 export const CACHE_ICS = "public, max-age=300";
 

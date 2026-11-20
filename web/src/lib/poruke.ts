@@ -1,4 +1,4 @@
-// Poruke grešaka kupnje (S4): strojni kod → rečenica na hrvatskom.
+// Poruke grešaka kupnje (S4) i narudžbe (S5): strojni kod → rečenica na hrvatskom.
 //
 // Poruka ovisi o KODU, ne o HTTP statusu: isti kod stiže s dva statusa (npr.
 // `tier_sold_out` je 409 iz Workera, a 502 kad ga vrati jezgra kroz
@@ -150,12 +150,22 @@ const KONACNO = new Set([
 ]);
 
 /**
- * „za 2 min” / „za 45 s” za banner 429 (Kupnja-390: „Pokušajte ponovno za 2 min.”).
- * Minute se zaokružuju naviše, da kupac ne pokuša prerano; gumb ionako odbrojava točno.
+ * „2 min” / „45 s”: preostalo čekanje nakon 429. Minute se zaokružuju naviše, da
+ * kupac ne pokuša prerano; gumb ionako odbrojava točno.
  */
-export function porukaCekanja(sekundi: number): string {
+export function trajanjeCekanja(sekundi: number): string {
   const s = Math.max(1, Math.ceil(sekundi));
-  return s < 60 ? `Pokušajte ponovno za ${s} s.` : `Pokušajte ponovno za ${Math.ceil(s / 60)} min.`;
+  return s < 60 ? `${s} s` : `${Math.ceil(s / 60)} min`;
+}
+
+/** Banner 429 kupnje (Kupnja-390): „Pokušajte ponovno za 2 min.” */
+export function porukaCekanja(sekundi: number): string {
+  return `Pokušajte ponovno za ${trajanjeCekanja(sekundi)}.`;
+}
+
+/** `retry_after` iz 429 → cijele sekunde čekanja; bez njega (ili 0) ZADANO_CEKANJE_S. */
+export function sekundeCekanja(retryAfter?: number): number {
+  return retryAfter !== undefined && Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : ZADANO_CEKANJE_S;
 }
 
 /** Kod (+ `retry_after`) → što forma prikazuje i kako se ponaša. */
@@ -170,7 +180,7 @@ export function greskaNarudzbe(kod: string, retryAfter?: number): GreskaNarudzbe
     cekajSekundi: 0,
   };
   if (kod === "previse_pokusaja") {
-    const s = retryAfter !== undefined && Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : ZADANO_CEKANJE_S;
+    const s = sekundeCekanja(retryAfter);
     g.ton = "wait";
     g.cekajSekundi = s;
     g.dopuna = porukaCekanja(s);
@@ -193,6 +203,97 @@ export function kodIzGreske(e: unknown): { kod: string; retryAfter?: number } {
   if (e instanceof ApiError) return { kod: e.code, retryAfter: e.retryAfter };
   if (e instanceof TypeError) return { kod: KOD_MREZA };
   return { kod: "nepoznata_greska" };
+}
+
+// ── Narudžba: /api/ulaznice/* (S5) ──────────────────────────────────────────
+//
+// Zasebna tablica jer isti kod znači drugo nego u kupnji: `order_not_found` iz
+// kupnje je jezgra koja nije našla tek stvorenu narudžbu (events-stripe-intent),
+// a ovdje je kupac otvorio link narudžbe koja ne postoji. Izvori:
+//   worker/index.ts  GET /api/ulaznice/:id, POST …/ponovna-dostava, POST …/preuzmi
+//                    (fail("…")), app.onError i 404 fallback
+//   worker/api.ts    HttpError na tom putu: orderStatus (rest), feed, deliverTickets
+//                    (callFunction → events-tickets), rotateTicketTokens (restRpc)
+//   jezgra           events-tickets (kroz callFunction kao 502)
+//   klijent          isto kao u kupnji
+// `/preuzmi` zove samo mobilna aplikacija; web na nju vodi linkom (odluka 501),
+// ali njezini kodovi su ovdje da poruke za cijeli put budu na jednom mjestu.
+
+const NARUDZBA_NE_POSTOJI = "Narudžba nije pronađena. Provjerite link iz e-maila — mora biti cijeli, do zadnjeg znaka.";
+const ZAHTJEV_NIJE_POSLAN = "Zahtjev nije ispravno poslan. Osvježite stranicu i pokušajte ponovno.";
+const ULAZNICE_NEDOSTUPNE = "Ulaznice trenutačno ne možemo poslati. Pokušajte ponovno kasnije.";
+
+/** Kod → poruka za sve što `/api/ulaznice/*` (i klijent oko njega) može vratiti. */
+export const PORUKE_ULAZNICA: Readonly<Record<string, string>> = {
+  // ── worker/index.ts, /api/ulaznice/* ──
+  invalid_order_id: NARUDZBA_NE_POSTOJI,
+  order_not_found: NARUDZBA_NE_POSTOJI,
+  previse_pokusaja: "Previše pokušaja.",
+  narudzba_nije_placena: "Narudžba još nije plaćena, pa ulaznice još nisu izdane.",
+  nema_email_adrese: "Za ovu narudžbu nemamo e-mail adresu, pa ulaznice ne možemo poslati. Javite se na podrska@domovina.ai.",
+  rotacija_nije_uspjela: "Nismo uspjeli izdati nove QR kodove. Javite se na podrska@domovina.ai.",
+  // samo /preuzmi (mobilna aplikacija šalje e-mail kupca)
+  bad_json: ZAHTJEV_NIJE_POSLAN,
+  invalid_buyer_email: "Upišite ispravnu e-mail adresu.",
+  email_ne_odgovara: "E-mail adresa ne odgovara onoj iz narudžbe. Upišite adresu na koju su stigle ulaznice.",
+  // app.onError i 404 fallback za nepostojeću /api/ rutu
+  greska_servera: GENERICKA_PORUKA,
+  not_found: ZAHTJEV_NIJE_POSLAN,
+
+  // ── worker/api.ts (HttpError na putu narudžbe i dostave) ──
+  api_feed_error: SUSTAV_NE_ODGOVARA,
+  api_rest_error: SUSTAV_NE_ODGOVARA,
+  api_rpc_error: SUSTAV_NE_ODGOVARA,
+  api_bad_json: SUSTAV_NE_ODGOVARA,
+  service_key_missing: ULAZNICE_NEDOSTUPNE,
+  hmac_secret_missing: ULAZNICE_NEDOSTUPNE,
+
+  // ── jezgra: events-tickets (deliverTickets) ──
+  method_not_allowed: ULAZNICE_NEDOSTUPNE,
+  too_many_orders: ULAZNICE_NEDOSTUPNE,
+
+  // ── klijent ──
+  neispravan_odgovor: PORUKE_NARUDZBE.neispravan_odgovor!,
+  [KOD_MREZA]: PORUKE_NARUDZBE[KOD_MREZA]!,
+};
+
+/** Kao porukaGreske, ali iz PORUKE_ULAZNICA (stranica narudžbe, ponovna dostava). */
+export function porukaUlaznica(kod: string): string {
+  if (Object.hasOwn(PORUKE_ULAZNICA, kod)) return PORUKE_ULAZNICA[kod]!;
+  const http = /^http_(\d{3})$/.exec(kod);
+  if (http && Number(http[1]) >= 500) return HTTP_5XX;
+  return GENERICKA_PORUKA;
+}
+
+export interface GreskaUlaznica {
+  kod: string;
+  /** Glavna rečenica bannera. */
+  poruka: string;
+  /** Dopuna iza poruke, npr. „Novi QR kodovi mogu se zatražiti za 60 min.” */
+  dopuna?: string;
+  /** wait = 429 (čekanje), error = sve ostalo. */
+  ton: "error" | "wait";
+  /** > 0: gumb „Pošalji ponovno” je zaključan toliko sekundi (429). */
+  cekajSekundi: number;
+}
+
+/**
+ * Kod (+ `retry_after`) → banner ispod gumba „Pošalji ponovno”. 429 nosi
+ * `retry_after` iz rate limita (prozor 10 min) ili 3600 kad jezgra odbije
+ * rotaciju; tekst je iz Narudzba-stanja-1280.
+ */
+export function greskaUlaznica(kod: string, retryAfter?: number): GreskaUlaznica {
+  if (kod === "previse_pokusaja") {
+    const s = sekundeCekanja(retryAfter);
+    return {
+      kod,
+      poruka: porukaUlaznica(kod),
+      dopuna: `Novi QR kodovi mogu se zatražiti za ${trajanjeCekanja(s)}.`,
+      ton: "wait",
+      cekajSekundi: s,
+    };
+  }
+  return { kod, poruka: porukaUlaznica(kod), ton: "error", cekajSekundi: 0 };
 }
 
 // ── Poruke polja forme (klijentska validacija, src/lib/kupnja.ts) ────────────
