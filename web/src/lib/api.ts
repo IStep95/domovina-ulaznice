@@ -33,15 +33,20 @@ export type {
   TierView,
 };
 
-/** Isti oblik kao ApiError u src/lib/api.ts: `code` je strojni kod s backenda. */
+/**
+ * Isti oblik kao ApiError u src/lib/api.ts: `code` je strojni kod s backenda.
+ * `retryAfter` (sekunde) nosi `retry_after` iz tijela uz 429 `previse_pokusaja`.
+ */
 export class ApiError extends Error {
   code: string;
   status: number;
-  constructor(code: string, status: number) {
+  retryAfter?: number;
+  constructor(code: string, status: number, retryAfter?: number) {
     super(code);
     this.name = "ApiError";
     this.code = code;
     this.status = status;
+    if (retryAfter !== undefined) this.retryAfter = retryAfter;
   }
 }
 
@@ -63,13 +68,16 @@ export function parseApiResponse<T>(status: number, text: string): T {
   return body as T;
 }
 
-/** ApiError iz statusa i već parsiranog tijela (`{error: "tier_sold_out"}` + 409 → code tier_sold_out). */
+/**
+ * ApiError iz statusa i već parsiranog tijela (`{error: "tier_sold_out"}` + 409 → code
+ * tier_sold_out). `retry_after` se prenosi samo kao konačan nenegativan broj.
+ */
 export function apiErrorFromBody(status: number, body: unknown): ApiError {
-  const error =
-    body !== null && typeof body === "object" && typeof (body as { error?: unknown }).error === "string"
-      ? (body as { error: string }).error
-      : undefined;
-  return new ApiError(error ?? `http_${status}`, status);
+  const obj = body !== null && typeof body === "object" ? (body as { error?: unknown; retry_after?: unknown }) : {};
+  const error = typeof obj.error === "string" ? obj.error : undefined;
+  const ra = obj.retry_after;
+  const retryAfter = typeof ra === "number" && Number.isFinite(ra) && ra >= 0 ? ra : undefined;
+  return new ApiError(error ?? `http_${status}`, status, retryAfter);
 }
 
 /** Puni URL za SSR, relativni za preglednik. */

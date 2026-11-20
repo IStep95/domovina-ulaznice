@@ -1,7 +1,7 @@
 // Polje forme s oznakom, pomoći i greškom (Main.dc.html: 4 stanja).
 // React jer živi u formi kupnje (otok u S4); bez client: direktive Astro ga
 // renderira kao čisti HTML. Greška: aria-invalid + aria-describedby na poruku.
-import type { ChangeEvent, HTMLInputTypeAttribute } from "react";
+import type { ChangeEvent, FocusEvent, HTMLAttributes, HTMLInputTypeAttribute } from "react";
 import css from "./polje.module.css";
 
 export interface PoljeProps {
@@ -19,9 +19,13 @@ export interface PoljeProps {
   disabled?: boolean;
   required?: boolean;
   autoComplete?: string;
+  maxLength?: number;
+  inputMode?: HTMLAttributes<HTMLInputElement>["inputMode"];
   /** 16/700 oznaka (samostalno polje, npr. e-mail kupca). */
   vecaOznaka?: boolean;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
+  /** Kupnja (S4): greška polja se prikazuje tek kad ga kupac napusti. */
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
   /** Samo za /_komponente: prikaži izgled fokusa bez fokusa. */
   prikaziFokus?: boolean;
 }

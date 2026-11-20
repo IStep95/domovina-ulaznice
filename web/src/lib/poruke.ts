@@ -1,0 +1,206 @@
+// Poruke grešaka kupnje (S4): strojni kod → rečenica na hrvatskom.
+//
+// Poruka ovisi o KODU, ne o HTTP statusu: isti kod stiže s dva statusa (npr.
+// `tier_sold_out` je 409 iz Workera, a 502 kad ga vrati jezgra kroz
+// `api.createOrder`, worker/api.ts `callFunction`). Nepoznat kod → GENERICKA_PORUKA;
+// tehnički kod se kupcu nikad ne prikazuje (design-brief §8).
+//
+// Čist modul (bez Reacta i Astra), da ga node:test provjeri protiv
+// `worker/index.ts`. Popis kodova je izvučen grepom (S4), po izvoru:
+//   worker/index.ts  POST /api/narudzba: fail("…") i ternarni izraz u provjeri tiera,
+//                    plus app.onError (`greska_servera`) i 404 fallback (`not_found`)
+//   worker/api.ts    HttpError na putu narudžbe (feed, rest, callFunction)
+//   worker/stripe.ts HttpError iz createCheckoutSession / stripeClient
+//   jezgra           events-order (create_ticket_order) i events-stripe-intent;
+//                    kroz callFunction stižu kao 502 (404 ostaje 404) s kodom jezgre
+//   klijent          web/src/lib/api.ts (`neispravan_odgovor`, `http_<status>`) i
+//                    ovaj modul (`mrezna_greska`, `nedovoljno_ulaznica`)
+import { ApiError } from "./api.ts";
+
+export const GENERICKA_PORUKA = "Nešto je pošlo po zlu. Pokušajte ponovno.";
+
+/** Klijentski kod: fetch nije stigao do poslužitelja (nema mreže, prekid, CORS). */
+export const KOD_MREZA = "mrezna_greska";
+/**
+ * Klijentski kod: `tier_sold_out` za tier koji je nakon osvježavanja i dalje
+ * kupiv, dakle traženo je više nego što je ostalo (Worker vraća isti kod za oba
+ * slučaja, worker/index.ts: `quantity > avail.available`).
+ */
+export const KOD_NEDOVOLJNO = "nedovoljno_ulaznica";
+
+const NARUDZBA_NIJE_POSLANA = "Narudžba nije ispravno poslana. Osvježite stranicu i pokušajte ponovno.";
+const NAPLATA_NEDOSTUPNA = "Naplata trenutačno nije dostupna. Pokušajte ponovno kasnije.";
+const SUSTAV_NE_ODGOVARA = "Sustav prodaje trenutačno ne odgovara. Pokušajte ponovno za trenutak.";
+const NARUDZBA_NIJE_PRIPREMLJENA = "Narudžbu nismo uspjeli pripremiti. Pokušajte ponovno.";
+const TIER_NE_POSTOJI = "Odabrana vrsta ulaznice više nije u prodaji. Odaberite drugu vrstu.";
+
+/** Kod → poruka za sve što `POST /api/narudzba` (i klijent oko njega) može vratiti. */
+export const PORUKE_NARUDZBE: Readonly<Record<string, string>> = {
+  // ── worker/index.ts, POST /api/narudzba ──
+  previse_pokusaja: "Previše pokušaja.",
+  bad_json: NARUDZBA_NIJE_POSLANA,
+  invalid_campaign_id: NARUDZBA_NIJE_POSLANA,
+  invalid_tier_id: NARUDZBA_NIJE_POSLANA,
+  invalid_quantity: "Odaberite između 1 i 10 ulaznica.",
+  invalid_buyer_email: "Upišite ispravnu e-mail adresu.",
+  event_not_found: "Događaj više nije u prodaji.",
+  tier_not_found: TIER_NE_POSTOJI,
+  tier_sold_out: "Ulaznice te vrste su rasprodane. Odaberite drugu vrstu.",
+  sale_not_started: "Prodaja za tu vrstu ulaznice još nije počela.",
+  sale_ended: "Prodaja za tu vrstu ulaznice je zatvorena.",
+  holders_incomplete: "Za imenske ulaznice upišite ime i prezime za svaku ulaznicu.",
+  organizer_not_connected: "Organizator još nije povezao račun za naplatu, pa online kupnja nije moguća.",
+  organizer_charges_disabled: "Organizatorov račun za naplatu još nije aktivan, pa online kupnja trenutačno nije moguća.",
+  checkout_bez_url: "Stranica za plaćanje se nije otvorila. Pokušajte ponovno.",
+  // app.onError i 404 fallback za nepostojeću /api/ rutu
+  greska_servera: GENERICKA_PORUKA,
+  not_found: NARUDZBA_NIJE_POSLANA,
+
+  // ── worker/api.ts (HttpError na putu narudžbe) ──
+  api_feed_error: SUSTAV_NE_ODGOVARA,
+  api_rest_error: SUSTAV_NE_ODGOVARA,
+  api_rpc_error: SUSTAV_NE_ODGOVARA,
+  api_bad_json: SUSTAV_NE_ODGOVARA,
+  service_key_missing: NAPLATA_NEDOSTUPNA,
+  hmac_secret_missing: NAPLATA_NEDOSTUPNA,
+
+  // ── worker/stripe.ts ──
+  stripe_not_configured: NAPLATA_NEDOSTUPNA,
+  stripe_api_base_invalid: NAPLATA_NEDOSTUPNA,
+  stripe_api_base_forbidden: NAPLATA_NEDOSTUPNA,
+
+  // ── jezgra: events-order + create_ticket_order (domovina-api) ──
+  method_not_allowed: NARUDZBA_NIJE_POSLANA,
+  invalid_order_id: NARUDZBA_NIJE_PRIPREMLJENA,
+  order_id_required: NARUDZBA_NIJE_PRIPREMLJENA,
+  invalid_payer_address: NARUDZBA_NIJE_POSLANA,
+  campaign_not_found: "Događaj više nije u prodaji.",
+  campaign_not_tickets: "Za ovaj događaj se ne prodaju ulaznice.",
+  campaign_not_active: "Prodaja za ovaj događaj je zatvorena.",
+  tier_not_ticket: TIER_NE_POSTOJI,
+  tier_price_missing: "Organizator još nije postavio cijenu za tu vrstu ulaznice.",
+  invalid_holder: "Ime na ulaznici nije ispravno. Upišite ime i prezime (2 do 120 znakova).",
+  order_rate_limited: "Previše narudžbi u kratkom vremenu. Pokušajte ponovno kasnije.",
+
+  // ── jezgra: events-stripe-intent (poziva ga Worker odmah nakon createOrder) ──
+  order_not_found: NARUDZBA_NIJE_PRIPREMLJENA,
+  order_not_pending: NARUDZBA_NIJE_PRIPREMLJENA,
+  order_expired: "Rezervacija je istekla prije plaćanja. Pokušajte ponovno.",
+  secret_not_configured: NAPLATA_NEDOSTUPNA,
+  missing_signature: NAPLATA_NEDOSTUPNA,
+  bad_signature: NAPLATA_NEDOSTUPNA,
+
+  // ── klijent ──
+  neispravan_odgovor: "Poslužitelj je vratio neočekivan odgovor. Pokušajte ponovno.",
+  [KOD_MREZA]: "Nema veze s poslužiteljem. Provjerite internetsku vezu i pokušajte ponovno.",
+  [KOD_NEDOVOLJNO]: "Ulaznica te vrste nema u traženom broju. Smanjite broj ili odaberite drugu vrstu.",
+};
+
+const HTTP_5XX = "Poslužitelj trenutačno ne odgovara. Pokušajte ponovno za trenutak.";
+
+/** Poruka za kod; `http_<status>` (bez koda u tijelu) po klasi statusa; ostalo generički. */
+export function porukaGreske(kod: string): string {
+  if (Object.hasOwn(PORUKE_NARUDZBE, kod)) return PORUKE_NARUDZBE[kod]!;
+  const http = /^http_(\d{3})$/.exec(kod);
+  if (http && Number(http[1]) >= 500) return HTTP_5XX;
+  return GENERICKA_PORUKA;
+}
+
+// ── Ponašanje forme po kodu ──────────────────────────────────────────────────
+
+/** Polje forme na koje se greška odnosi (inline poruka uz banner). */
+export type CiljGreske = "email" | "imena" | null;
+
+export interface GreskaNarudzbe {
+  kod: string;
+  /** Glavna rečenica bannera (podebljana). */
+  poruka: string;
+  /** Dopuna iza poruke, npr. „Pokušajte ponovno za 2 min.” */
+  dopuna?: string;
+  /** wait = 429 (čekanje), error = sve ostalo. */
+  ton: "error" | "wait";
+  cilj: CiljGreske;
+  /** Raspoloživost se promijenila: ponovno učitati događaj (tierove). */
+  osvjezi: boolean;
+  /** Ponovni pokušaj ne pomaže (organizator, kampanja): forma se zaključa. */
+  konacno: boolean;
+  /** > 0: gumb je zaključan toliko sekundi (429). */
+  cekajSekundi: number;
+}
+
+/** Kad 429 dođe bez `retry_after`, čeka se minuta (prozor narudžbi je 10 min, worker/ratelimit.ts). */
+export const ZADANO_CEKANJE_S = 60;
+
+const OSVJEZI = new Set([
+  "tier_sold_out",
+  "sale_not_started",
+  "sale_ended",
+  "tier_not_found",
+  "tier_not_ticket",
+  "tier_price_missing",
+  KOD_NEDOVOLJNO,
+]);
+const KONACNO = new Set([
+  "event_not_found",
+  "campaign_not_found",
+  "campaign_not_tickets",
+  "campaign_not_active",
+  "organizer_not_connected",
+  "organizer_charges_disabled",
+]);
+
+/**
+ * „za 2 min” / „za 45 s” za banner 429 (Kupnja-390: „Pokušajte ponovno za 2 min.”).
+ * Minute se zaokružuju naviše, da kupac ne pokuša prerano; gumb ionako odbrojava točno.
+ */
+export function porukaCekanja(sekundi: number): string {
+  const s = Math.max(1, Math.ceil(sekundi));
+  return s < 60 ? `Pokušajte ponovno za ${s} s.` : `Pokušajte ponovno za ${Math.ceil(s / 60)} min.`;
+}
+
+/** Kod (+ `retry_after`) → što forma prikazuje i kako se ponaša. */
+export function greskaNarudzbe(kod: string, retryAfter?: number): GreskaNarudzbe {
+  const g: GreskaNarudzbe = {
+    kod,
+    poruka: porukaGreske(kod),
+    ton: "error",
+    cilj: null,
+    osvjezi: OSVJEZI.has(kod),
+    konacno: KONACNO.has(kod),
+    cekajSekundi: 0,
+  };
+  if (kod === "previse_pokusaja") {
+    const s = retryAfter !== undefined && Number.isFinite(retryAfter) && retryAfter > 0 ? Math.ceil(retryAfter) : ZADANO_CEKANJE_S;
+    g.ton = "wait";
+    g.cekajSekundi = s;
+    g.dopuna = porukaCekanja(s);
+  } else if (kod === "invalid_buyer_email") {
+    g.cilj = "email";
+    g.dopuna = "Ispravite označeno polje i pokušajte ponovno.";
+  } else if (kod === "holders_incomplete" || kod === "invalid_holder") {
+    g.cilj = "imena";
+    g.dopuna = "Ispravite označena polja i pokušajte ponovno.";
+  }
+  return g;
+}
+
+/**
+ * Bilo što bačeno iz `kreirajNarudzbu` → kod i `retry_after`. ApiError nosi kod
+ * s backenda; TypeError je fetch koji nije stigao do poslužitelja; ostalo je
+ * neočekivano i ide na generičku poruku.
+ */
+export function kodIzGreske(e: unknown): { kod: string; retryAfter?: number } {
+  if (e instanceof ApiError) return { kod: e.code, retryAfter: e.retryAfter };
+  if (e instanceof TypeError) return { kod: KOD_MREZA };
+  return { kod: "nepoznata_greska" };
+}
+
+// ── Poruke polja forme (klijentska validacija, src/lib/kupnja.ts) ────────────
+
+export const PORUKE_POLJA = {
+  emailPrazan: "Upišite e-mail adresu.",
+  emailNeispravan: "Upišite ispravnu e-mail adresu (npr. ime@primjer.hr).",
+  emailPredug: "E-mail adresa je preduga (najviše 200 znakova).",
+  imeKratko: "Upišite ime i prezime (najmanje 2 znaka).",
+  imeDugo: "Ime je predugo (najviše 120 znakova).",
+} as const;

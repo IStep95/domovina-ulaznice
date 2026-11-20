@@ -87,13 +87,28 @@ createServer(async (req, res) => {
   }
   if (p === "/api/narudzba" && req.method === "POST") {
     const b = await readBody(req);
+    // Za ručnu provjeru poruka (web S4): e-mail „greska+<kod>@…” vrati taj kod
+    // sa statusom kakav bi dao Worker; „greska+http_503@…” bez koda u tijelu.
+    const forsirano = /^greska\+([a-z0-9_]+)@/.exec(b.buyer_email ?? "")?.[1];
+    if (forsirano) {
+      const http = /^http_(\d{3})$/.exec(forsirano);
+      if (http) return json(res, {}, Number(http[1]));
+      if (forsirano === "neispravan_odgovor") { res.writeHead(200, { "content-type": "text/html" }); return res.end("<html>nije json</html>"); }
+      const STATUS = { previse_pokusaja: 429, holders_incomplete: 422, event_not_found: 404, tier_not_found: 404, greska_servera: 500,
+        tier_sold_out: 409, sale_not_started: 409, sale_ended: 409, organizer_not_connected: 409, organizer_charges_disabled: 409 };
+      const status = STATUS[forsirano] ?? (forsirano.startsWith("invalid_") || forsirano === "bad_json" ? 400 : 502);
+      return json(res, { error: forsirano, ...(status === 429 ? { retry_after: 90 } : {}) }, status);
+    }
     const ev = events.find((e) => e.campaign_id === b.campaign_id);
     if (!ev) return json(res, { error: "event_not_found" }, 404);
     const t = ev.tiers.find((x) => x.id === b.tier_id);
     if (!t) return json(res, { error: "tier_not_found" }, 404);
-    if (!avail(t).buyable) return json(res, { error: "tier_sold_out" }, 409);
-    if (!ev.stripe_connected) return json(res, { error: "organizer_not_connected" }, 409);
     const q = Number(b.quantity);
+    const a = avail(t);
+    // isti redoslijed kodova kao worker/index.ts (ternarni izraz + premalo preostalih)
+    if (!a.buyable) return json(res, { error: a.sold_out ? "tier_sold_out" : a.not_started ? "sale_not_started" : "sale_ended" }, 409);
+    if (a.available !== null && q > a.available) return json(res, { error: "tier_sold_out" }, 409);
+    if (!ev.stripe_connected) return json(res, { error: "organizer_not_connected" }, 409);
     if (!(q >= 1 && q <= 10)) return json(res, { error: "invalid_quantity" }, 400);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(b.buyer_email ?? "")) return json(res, { error: "invalid_buyer_email" }, 400);
     const holders = (b.holders ?? []).slice(0, q);
@@ -118,7 +133,7 @@ createServer(async (req, res) => {
     return res.end(`<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><body style="font-family:system-ui;padding:24px">
       <h2>MOCK Stripe Checkout</h2><p>${o.tier.title} × ${o.quantity} = <b>${(o.amount_cents / 100).toFixed(2)} €</b></p>
       <form method=post><button style="font-size:18px;padding:12px 24px">Plati (lažno)</button></form>
-      <p><a href="${BASE}/dogadjaj/x?otkazano=1">Odustani</a></p></body>`);
+      <p><a href="${BASE}/dogadjaj/${encodeURIComponent(events.find((e) => e.campaign_id === o.campaign_id)?.slug ?? "")}?otkazano=1">Odustani</a></p></body>`);
   }
   if ((m = p.match(/^\/ulaznice\/([^/]+)$/))) {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });

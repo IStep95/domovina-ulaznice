@@ -9,6 +9,12 @@
 export const CACHE_STRANICA = "public, max-age=60";
 /** Greška servera ili API-ja: ne kešira se, sljedeći pokušaj ide na server. */
 export const CACHE_GRESKA = "no-store";
+/**
+ * Kupnja (S4): forma s raspoloživošću u trenutku otvaranja. Ne kešira se ni u
+ * pregledniku: povratak sa Stripea („natrag”) mora pokazati svježe stanje, a
+ * stranica nije za dijeljenje ni za tražilice.
+ */
+export const CACHE_KUPNJA = "no-store";
 /** .ics se mijenja samo kad organizator promijeni termin. */
 export const CACHE_ICS = "public, max-age=300";
 
