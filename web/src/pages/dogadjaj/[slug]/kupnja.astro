@@ -1,0 +1,163 @@
+---
+// Kupnja ulaznica (S4; Kupnja-1280, Kupnja-390). SSR učita događaj iz
+// GET /api/dogadjaj/:slug (isti obrazac grešaka kao [slug].astro: 404 / 503),
+// a forma je React otok (KupnjaForma, client:load) koji šalje POST /api/narudzba
+// i na uspjeh preusmjerava na Stripe Checkout.
+//
+// Cache: no-store (CACHE_KUPNJA) i za grešku i za formu: raspoloživost mora biti
+// svježa, a povratak sa Stripea ne smije prikazati staru stranicu.
+import { ApiError, type EventView } from "../../../lib/api.ts";
+import { serverApi } from "../../../lib/api-ssr.ts";
+import Osnovni from "../../../layouts/Osnovni.astro";
+import Banner from "../../../components/Banner.astro";
+import Gumb from "../../../components/Gumb.astro";
+import Ikona from "../../../components/Ikona.astro";
+import KupnjaForma from "../../../components/KupnjaForma.tsx";
+import StranicaGreske from "../../../components/StranicaGreske.astro";
+import { ZADANA_ZONA, kratkiDatum, sigurniUrl } from "../../../lib/format.ts";
+import { CACHE_KUPNJA } from "../../../lib/stranica.ts";
+
+const slug = Astro.params.slug ?? "";
+let dogadjaj: EventView | null = null;
+let greska: "nije-pronaden" | "server" | null = null;
+try {
+  dogadjaj = await serverApi().dohvatiDogadjaj(slug);
+} catch (e) {
+  if (e instanceof ApiError && e.status === 404) greska = "nije-pronaden";
+  else {
+    console.error("dohvatiDogadjaj (kupnja)", slug, e);
+    greska = "server";
+  }
+}
+
+if (greska === "nije-pronaden") Astro.response.status = 404;
+if (greska === "server") Astro.response.status = 503;
+Astro.response.headers.set("cache-control", CACHE_KUPNJA);
+
+const d = dogadjaj?.event ?? null;
+const zona = d?.timezone || ZADANA_ZONA;
+const natrag = dogadjaj ? `/dogadjaj/${encodeURIComponent(dogadjaj.slug)}` : "/";
+const podnaslov = dogadjaj
+  ? [dogadjaj.title, kratkiDatum(d?.starts_at, zona), [d?.venue_name, d?.venue_city].filter(Boolean).join(", ")]
+      .filter(Boolean)
+      .join(" · ")
+  : "";
+const uvjetiOrganizatora = sigurniUrl(dogadjaj?.brand?.terms_url);
+---
+{
+  !dogadjaj ? (
+    <Osnovni title={greska === "server" ? "Greška · Ulaznice" : "Događaj nije pronađen · Ulaznice"} sirina="srednja">
+      {greska === "server" ? (
+        <StranicaGreske
+          kod="500"
+          naslov="Nešto je pošlo po zlu."
+          opis="Pokušajte ponovno za trenutak. Ako se ponavlja, javite se na podrska@domovina.ai."
+          ikona="upozorenje"
+          ton="error"
+        >
+          <Gumb href={Astro.url.pathname + Astro.url.search}>Pokušaj ponovno</Gumb>
+        </StranicaGreske>
+      ) : (
+        <StranicaGreske
+          kod="404"
+          naslov="Događaj nije pronađen."
+          opis="Možda ga je organizator uklonio ili je link nepotpun. Pogledajte događaje koji su trenutačno u prodaji."
+        >
+          <Gumb href="/">Na popis događaja</Gumb>
+        </StranicaGreske>
+      )}
+    </Osnovni>
+  ) : (
+    <Osnovni
+      title={`Kupnja · ${dogadjaj.title} · Ulaznice`}
+      opis={`Kupnja ulaznica za ${dogadjaj.title}, izravno od organizatora.`}
+      naglasak={dogadjaj.brand?.accent_color ?? null}
+    >
+      <div class="kupnja">
+        <a class="natrag" href={natrag}>
+          <Ikona ime="natrag" velicina={16} />
+          Natrag na događaj
+        </a>
+        <div class="naslov">
+          <h1>Kupnja ulaznica</h1>
+          <span class="podnaslov">{podnaslov}</span>
+        </div>
+
+        {dogadjaj.kupovno ? (
+          <KupnjaForma
+            client:load
+            campaignId={dogadjaj.campaign_id}
+            slug={dogadjaj.slug}
+            tiers={dogadjaj.tiers}
+            zona={zona}
+            uvjetiOrganizatora={uvjetiOrganizatora}
+          />
+        ) : (
+          <Banner ton="neutral" class="bez-prodaje">
+            {dogadjaj.stripe_connected
+              ? "Online prodaja za ovaj događaj trenutačno nije aktivna."
+              : "Organizator još nije aktivirao online prodaju za ovaj događaj."}
+            <Fragment slot="akcija">
+              <Gumb varijanta="sekundarni" href={natrag}>Natrag na događaj</Gumb>
+            </Fragment>
+          </Banner>
+        )}
+      </div>
+    </Osnovni>
+  )
+}
+
+<style>
+  .kupnja {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+  }
+  .natrag {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--tap-min);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .natrag:hover {
+    color: var(--color-text);
+  }
+  .naslov {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  h1 {
+    font-size: 34px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .podnaslov {
+    font-size: var(--font-size-md);
+    color: var(--color-text-muted);
+    overflow-wrap: anywhere;
+  }
+  .bez-prodaje {
+    max-width: 640px;
+  }
+
+  @media (max-width: 719px) {
+    .kupnja {
+      gap: var(--space-4);
+    }
+    .natrag {
+      margin-top: calc(-1 * var(--space-2));
+    }
+    h1 {
+      font-size: var(--font-size-2xl);
+    }
+    .podnaslov {
+      font-size: var(--font-size-sm);
+    }
+  }
+</style>

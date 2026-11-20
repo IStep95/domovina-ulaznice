@@ -124,3 +124,5 @@ S2 (2026-11-19): tokeni, samohostan Figtree, `Osnovni.astro`, 20 komponenti (`.a
 S3 (2026-11-20): `/` i `/dogadjaj/[slug]` iz API-ja (SSR), `format.ts` (novac, datumi u zoni događaja, stanja tierova), Markdown opis, Maps linkovi, Google kalendar i `.ics`, OG, JSON-LD, `cache-control`. Sljedeće: S4 (S2b i dalje paralelno).
 
 S2b (2026-11-20): migracija `events_venue_geo` u `domovina-api` (dva runa, drugi bez promjene), `events-feed` vraća `venue_lat`, `venue_lon`, `cover_image_alt`; tipovi, mock, test Workera, `seeds/koordinate-mjesta.sql` iz OSM-a. Lokalno (`pokreni.sh`) `/api/dogadjaj/:slug` vraća koordinate. Sljedeće: vrata migracije (Matija), S4.
+
+S4 (2026-11-20): `/dogadjaj/[slug]/kupnja` (SSR + React otok `KupnjaForma`), validacija u `kupnja.ts` zrcali Worker, `poruke.ts` s porukom za svih 27 kodova (test grepa Worker), 429 s odbrojavanjem, ponovno učitavanje raspoloživosti nakon odbijanja; mock vraća `sale_*` i prisilne kodove (`greska+<kod>@`). E2E kroz mock do `/ulaznice/<id>?placeno=1` u headless Chromeu. Sljedeće: S5.

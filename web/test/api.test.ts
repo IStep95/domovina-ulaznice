@@ -190,3 +190,48 @@ test("paritet sa src/lib/api.ts: isti URL i isti ishod za iste odgovore", async 
     assert.equal(web.calls[0]!.url, root.calls[0]!.url);
   }
 });
+
+// ------------------------------------------------------------- retry_after (S4)
+
+test("retry_after: konačan broj ≥ 0 prenosi se u ApiError.retryAfter", () => {
+  for (const ra of [90, 0, 1.5, 3600]) {
+    const err = apiErrorFromBody(429, { error: "previse_pokusaja", retry_after: ra });
+    assert.equal(err.code, "previse_pokusaja");
+    assert.equal(err.retryAfter, ra);
+  }
+  const krozParse = (() => {
+    try {
+      parseApiResponse(429, JSON.stringify({ error: "previse_pokusaja", retry_after: 90 }));
+    } catch (e) {
+      return e;
+    }
+  })();
+  assert.ok(krozParse instanceof ApiError);
+  assert.equal(krozParse.retryAfter, 90);
+});
+
+test("retry_after: sve što nije konačan broj ≥ 0 se ignorira", () => {
+  // JSON nema NaN/Infinity, ali tijelo može doći i iz drugog izvora; provjera je ista.
+  for (const ra of ["90", -1, Number.NaN, Number.POSITIVE_INFINITY, null, true, { s: 90 }, [90]]) {
+    const err = apiErrorFromBody(429, { error: "previse_pokusaja", retry_after: ra });
+    assert.equal(err.retryAfter, undefined, JSON.stringify(ra) ?? String(ra));
+  }
+  assert.equal(apiErrorFromBody(429, { error: "previse_pokusaja" }).retryAfter, undefined);
+  // Bez koda u tijelu: http_<status>, retry_after se i dalje čita.
+  const bezKoda = apiErrorFromBody(429, { retry_after: 30 });
+  assert.equal(bezKoda.code, "http_429");
+  assert.equal(bezKoda.retryAfter, 30);
+});
+
+test("kreirajNarudzbu: 429 s retry_after → ApiError s retryAfter; tijelo i metoda kao SPA", async () => {
+  const { fetch: f, calls } = fakeFetch(429, JSON.stringify({ error: "previse_pokusaja", retry_after: 120 }));
+  const api = createApiClient({ fetch: f });
+  const zahtjev = { campaign_id: "c", tier_id: "t", quantity: 2, buyer_email: "a@b.hr", holders: [] };
+  await assert.rejects(
+    api.kreirajNarudzbu(zahtjev),
+    (e: unknown) => e instanceof ApiError && e.code === "previse_pokusaja" && e.status === 429 && e.retryAfter === 120,
+  );
+  assert.equal(calls[0]!.url, "/api/narudzba");
+  assert.equal(calls[0]!.init?.method, "POST");
+  assert.deepEqual(JSON.parse(String(calls[0]!.init?.body)), zahtjev);
+});
