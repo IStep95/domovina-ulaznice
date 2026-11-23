@@ -72,7 +72,11 @@
     "ALARM_EMAIL": "podrska@domovina.ai",
     "ALARM_PRIGUSI_MIN": "180",
     "RL_ORDER_IP": "10/600",
-    "RL_WEBHOOK_IP": "300/60"
+    "RL_WEBHOOK_IP": "300/60",
+    // Jezgra je zajednička sa stagingom: [TEST] organizator iz
+    // seeds/staging-web-pregled.sql (sandbox Stripe rail) se na produkciji ne
+    // prikazuje ni ne prodaje. Staging ovu varijablu namjerno nema.
+    "SKRIVENI_ORGANIZATORI": "00000000-0000-4000-8000-0000000000f2"
   },
 
   "env": {

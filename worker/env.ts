@@ -24,6 +24,12 @@ export interface Env {
   // krene, da javna domena ne izgleda kao da radi. Namjerno se provjerava
   // točna vrijednost "1" — svaka druga (i odsutnost) znači normalan rad.
   NAJAVA?: string;
+  /**
+   * UUID-evi organizatora (`public.accounts.id`), odvojeni zarezom, čiji se
+   * događaji u ovom okruženju ne prikazuju ni ne prodaju (`api.feed()`).
+   * Produkcija tu drži test organizatora jer je jezgra zajednička sa stagingom.
+   */
+  SKRIVENI_ORGANIZATORI?: string;
   PUBLIC_BASE_URL: string;
   DOMOVINA_API_URL: string;
   EMAIL_FROM?: string;

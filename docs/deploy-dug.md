@@ -13,6 +13,8 @@ Jezgra 23. 11. (Matija): migracija `20261120120000_events_venue_geo` i `events-f
 
 Staging Stripe 23. 11. (Matija): novi sandbox restricted key i Connect webhook (API `2025-02-24.acacia`) postavljeni, `/api/zdravlje` → `stripe`, `webhook` = true; stari endpoint `we_1U2CSIQoZhPywPyhprOeashs` (`2020-08-27`) **disabled** (bivši #12).
 
+Produkcija 23. 11. (Matija): `SKRIVENI_ORGANIZATORI` = test organizator `…0000000000f2` — jezgra je zajednička, pa produkcija ne prikazuje ni ne prodaje `[TEST]` događaje sa sandbox railom (`worker/api.ts` `feed()`). Svaki novi test organizator ide u tu varijablu **prije** seeda.
+
 Staging 23. 11.: D1 `0002` puštena (`invoices`, `alarms` postoje); Worker na `main` — `/api/zdravlje` ima `prijava`, `alarm`, `racun`, `/preuzmi` s `{}` → 400 (bivši #2 i #3).
 
 Stanje u tablici je **provjereno na živim sustavima** na navedeni datum, ne

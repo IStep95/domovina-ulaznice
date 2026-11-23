@@ -244,13 +244,46 @@ export interface TicketRow {
 
 // ------------------------------------------------------------------ operacije
 
-export const feed = (env: Env, params = ""): Promise<{ events: FeedEvent[] }> =>
-  fetch(`${env.DOMOVINA_API_URL}/functions/v1/events-feed${params}`, {
+export async function feed(env: Env, params = ""): Promise<{ events: FeedEvent[] }> {
+  const r = await fetch(`${env.DOMOVINA_API_URL}/functions/v1/events-feed${params}`, {
     headers: env.DOMOVINA_API_SERVICE_KEY ? { apikey: env.DOMOVINA_API_SERVICE_KEY } : {},
-  }).then(async (r) => {
-    if (!r.ok) throw new HttpError(502, "api_feed_error", `events-feed: ${r.status}`);
-    return (await r.json()) as { events: FeedEvent[] };
   });
+  if (!r.ok) throw new HttpError(502, "api_feed_error", `events-feed: ${r.status}`);
+  const body = (await r.json()) as { events: FeedEvent[] };
+  const skriveni = skriveniOrganizatori(env);
+  if (!skriveni.length || !body.events?.length) return body;
+  return { ...body, events: await bezSkrivenih(env, body.events, skriveni) };
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** `SKRIVENI_ORGANIZATORI`: UUID-evi `public.accounts`, odvojeni zarezom. */
+function skriveniOrganizatori(env: Env): string[] {
+  return (env.SKRIVENI_ORGANIZATORI ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => UUID_RE.test(s));
+}
+
+/**
+ * Jezgra je zajednička stagingu i produkciji, pa bi `[TEST]` događaj sa
+ * sandbox Stripe railom na produkciji izgledao kupovno, a checkout s live
+ * ključem bi pao. Produkcija zato skriva događaje navedenih organizatora — iz
+ * popisa, stranice događaja, kupnje i svega drugog što ide kroz `feed()`.
+ * `account_id` se provjerava i ovdje, ne samo u upitu.
+ */
+async function bezSkrivenih(env: Env, events: FeedEvent[], skriveni: string[]): Promise<FeedEvent[]> {
+  const ids = events.map((e) => e.campaign_id).filter((id) => UUID_RE.test(id));
+  if (!ids.length) return events;
+  const camps = await rest<Array<{ id: string; account_id: string }>>(
+    env,
+    `campaigns?select=id,account_id&id=in.(${ids.join(",")})&account_id=in.(${skriveni.join(",")})`,
+  );
+  const skrij = new Set(
+    camps.filter((c) => skriveni.includes(String(c.account_id).toLowerCase())).map((c) => c.id),
+  );
+  return skrij.size ? events.filter((e) => !skrij.has(e.campaign_id)) : events;
+}
 
 export const createOrder = (
   env: Env,
