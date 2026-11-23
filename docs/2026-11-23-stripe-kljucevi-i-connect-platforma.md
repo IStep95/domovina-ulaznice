@@ -52,12 +52,12 @@ redirectom, `pk_` se nigdje ne koristi.
 
 | | produkcija | staging |
 | --- | --- | --- |
-| restricted key | ✅ postavljen 23. 11. | ⏳ |
-| webhook | ✅ `domovina-ulaznice-produkcija` | ⏳ novi `domovina-ulaznice-staging` (acacia) |
-| `/api/zdravlje` | `stripe:true`, `webhook:true` | `stripe:false`, `webhook:false` |
+| restricted key | ✅ postavljen 23. 11. | ✅ postavljen 23. 11. |
+| webhook | ✅ `domovina-ulaznice-produkcija` | ✅ `domovina-ulaznice-staging` (acacia) |
+| `/api/zdravlje` | `stripe:true`, `webhook:true` | `stripe:true`, `webhook:true` |
 
 Stari sandbox endpoint `we_1U2CSIQoZhPywPyhprOeashs` (iz kolovoza) ima isti URL i
-događaje, ali API `2020-08-27`. Kad novi radi: **Disable** stari, inače svaki
+događaje, ali API `2020-08-27` — **disabled 23. 11.** (ne brisati odmah, služi kao referenca). Da je ostao aktivan, svaki
 događaj stiže dvaput (idempotencija na `webhook_events` PK to podnosi, ali drugi
 potpis neće proći jer Worker zna samo jedan `whsec_`, pa se u Stripeu gomilaju
 neuspjele isporuke).
