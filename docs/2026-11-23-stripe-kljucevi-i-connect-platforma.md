@@ -88,19 +88,31 @@ Dok 1–4 nisu riješeni, produkcija s postavljenim `sk`/`whsec` je sigurna: bez
 connected accounta i objavljenog događaja nema checkouta (`worker/stripe.ts`
 odbija organizatora bez `charges_enabled`).
 
-## 4. Staging testna kupnja — stanje na kraju 23. 11.
+## 4. Staging testna kupnja — prošla 23. 11. (17:31)
 
 - `[TEST]` događaj `test-pregled-web-sucelja` je u jezgri; produkcija ga skriva
   (`SKRIVENI_ORGANIZATORI`, `worker/api.ts` `feed()`).
-- Prva testna uplata pala je na Stripeu: „Your account cannot currently make
-  charges”. Sandbox connected account `acct_1U2CRfByTQ1uTmhK` je **Restricted**
-  (onboarding iz 8. 8. nedovršen). Rail je vraćen na `charges_enabled = false`.
-- Onboarding je započet kroz Dashboard → Connected accounts → račun →
-  *Request information* (remediation link na `connect.stripe.com`). Telefon i SMS
-  potvrđeni Stripeovim sandbox gumbima; ostali koraci (business type,
-  representative, IBAN, ToS) **nisu dovršeni**.
-- Kad Stripe uključi charges, `account.updated` preko novog webhooka treba sam
-  postaviti rail na `true` — to je ujedno prvi pravi test webhooka.
+- Prva testna uplata pala je na Stripeu („Your account cannot currently make
+  charges”): sandbox connected account `acct_1U2CRfByTQ1uTmhK` bio je
+  **Restricted** (onboarding iz 8. 8. nedovršen).
+- Onboarding je dovršen kroz Dashboard → Connected accounts → račun →
+  *Request information* (remediation link → Express). Sve testnim podacima:
+  adresa `address_full_match`, MBS/telefon nule, predstavnik i direktor
+  „Test Predstavnik” (DOB 1. 1. 1901.), direktori potvrđeni *Electronic
+  attestation* (upisano ime kao potpis), IBAN gumbom *Use test account*
+  (STRIPE TEST BANK), pa *Agree and submit*.
+- **Webhook je sam prebacio rail**: 7× `account.updated` u D1 `webhook_events`
+  s outcome `rail_updated` (nijedan `rail_unknown_account`); `/api/dogadjaj/…`
+  → `kupovno: true`, `stripe_connected: true`. Ručno se ništa nije diralo.
+- Kupnja karticom 4242 (imenska, 40,00 €): jezgra `contributions` `ab2e7543…`
+  `state = paid`, `payment_rail = stripe`, `external_payment_ref = pi_3Uf09Z…`;
+  `tickets` `TES-000001` `issued`; `contribution_events` created → paid →
+  `tickets.issued`. D1: `checkout.session.completed` → `paid`;
+  `pending_deliveries` 1 red, „RESEND_API_KEY nije postavljen” (očekivano).
+- Uočeno, nije popravljeno: `holder_name` = „Matija␣␣Stepanić” (dvostruki
+  razmak — provjeriti normalizaciju imena u obrascu/`events-checkout`);
+  `terms_accepted_at` je prazan na plaćenoj narudžbi — provjeriti šalje li ga
+  Worker uopće.
 
 ## 5. Zamke iz ove sesije
 
@@ -121,3 +133,9 @@ odbija organizatora bez `charges_enabled`).
 - **Stripe CLI** profil `domovina-ulaznice-staging` ima test ključ istekao 6. 11.
   (`stripe login --project-name domovina-ulaznice-staging`). Profil
   `domovina-ulaznice` (italk.hr) drži i `live_mode_api_key` — nepotreban rizik.
+- **Stripe Express sesija (remediation link) istječe usred onboardinga** — dvaput
+  na koraku *Business directors* („Session expired or invalidated”). Uneseno
+  ostaje spremljeno; iz Dashboarda uzeti novi *Request information* link (SMS:
+  *Use test code*) i nastaviti. Forma je cross-origin iframe: `find`/`read_page`
+  ne vide polja, a `file_upload` ne može do inputa — direktore potvrditi
+  *Electronic attestation*, ne uploadom.

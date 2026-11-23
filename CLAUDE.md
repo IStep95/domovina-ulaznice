@@ -16,8 +16,9 @@ djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; Connect onboard
 (treba admin računa + provjeren identitet). Objava, uređivanje, galerija i
 koordinate još idu kao dosad: organizator događaj priprema na svoj način (Google
 Forms, FIRA `Config.gs`…), a agent ga u chatu formalizira u seed — pravila
-mapiranja: `docs/2026-09-28-unos-dogadjaja-kroz-chat.md`. Prodaja **još ne radi ni na
-stagingu** — nedostaju Stripe/Resend tajne i objavljen događaj u jezgri.
+mapiranja: `docs/2026-09-28-unos-dogadjaja-kroz-chat.md`. Na **stagingu prodaja radi**
+(Stripe sandbox, prva testna kupnja 2026-11-23), ali mail ne ide dok nema
+`RESEND_API_KEY`.
 
 - `ulaznice-staging.domovina.ai` — puna aplikacija, Stripe **sandbox**
 - `ulaznice.domovina.ai` — puna aplikacija od 2026-11-23 (najava maknuta), ali **bez tajni** —

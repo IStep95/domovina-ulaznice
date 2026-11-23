@@ -15,7 +15,7 @@ Staging Stripe 23. 11. (Matija): novi sandbox restricted key i Connect webhook (
 
 Produkcija 23. 11. (Matija): `SKRIVENI_ORGANIZATORI` = test organizator `…0000000000f2` — jezgra je zajednička, pa produkcija ne prikazuje ni ne prodaje `[TEST]` događaje sa sandbox railom (`worker/api.ts` `feed()`). Svaki novi test organizator ide u tu varijablu **prije** seeda.
 
-Jezgra 23. 11. (Matija): pušten `seeds/staging-web-pregled.sql` sa sandbox railom (`acct_1U2CRfByTQ1uTmhK`). Produkcija: `[]` i 404 na događaju. Staging: događaj se vidi, ali je `kupovno: false` — sandbox connected account je **Restricted** (onboarding iz kolovoza nedovršen: business type, external account, representative, ToS), pa je Stripe odbio prvu testnu uplatu. Rail je vraćen na `charges_enabled = false`; postaje `true` sam kroz `account.updated` webhook kad se onboarding dovrši (Dashboard → Connected accounts → *Request information*).
+Jezgra 23. 11. (Matija): pušten `seeds/staging-web-pregled.sql` sa sandbox railom (`acct_1U2CRfByTQ1uTmhK`). Produkcija: `[]` i 404 na događaju. Staging: sandbox onboarding dovršen, `account.updated` webhook sam postavio rail → `kupovno: true`; **prva testna kupnja prošla** (narudžba `ab2e7543`, ulaznica `TES-000001`). Mail ne ide dok nema `RESEND_API_KEY` (#10). Detalji: [2026-11-23 §4](2026-11-23-stripe-kljucevi-i-connect-platforma.md).
 
 Staging 23. 11.: D1 `0002` puštena (`invoices`, `alarms` postoje); Worker na `main` — `/api/zdravlje` ima `prijava`, `alarm`, `racun`, `/preuzmi` s `{}` → 400 (bivši #2 i #3).
 
