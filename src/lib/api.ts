@@ -153,6 +153,7 @@ export const PORUKE: Record<string, string> = {
   nije_prijavljen: "Prijava je istekla. Prijavite se ponovno.",
   prijava_neuspjela: "Neispravna e-mail adresa ili lozinka.",
   kod_neispravan: "Kod nije ispravan ili je istekao. Zatraži novi.",
+  google_neuspjelo: "Prijava Googleom nije uspjela. Pokušaj ponovno ili koristi kod na e-mail.",
   nema_prava_kreiranja:
     "Ne možeš kreirati događaj za ovog organizatora. Trebaš biti administrator i imati provjeren identitet (eOsobna) na domovina.ai.",
   invalid_title: "Naziv događaja nije ispravan.",

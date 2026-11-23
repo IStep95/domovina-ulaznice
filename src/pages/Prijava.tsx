@@ -1,5 +1,13 @@
 import { useState, type FormEvent } from "react";
-import { AuthError, posaljiKod, potvrdiKod, prijavi, type Sesija } from "../lib/auth";
+import {
+  AuthError,
+  posaljiKod,
+  potvrdiKod,
+  preuzmiGoogleGresku,
+  prijavi,
+  prijaviGoogleom,
+  type Sesija,
+} from "../lib/auth";
 import { poruka } from "../lib/api";
 
 /**
@@ -7,7 +15,8 @@ import { poruka } from "../lib/api";
  *
  * Glavni put je kod na e-mail (isti domovina.ai račun), lozinka je sporedni:
  * osoblje na ulazu s tuđeg mobitela ne može čekati mail (REVIEW(fable) u
- * `worker/api.ts`). „Nastavi s Googleom” čeka redirect URL-ove u GoTrueu.
+ * `worker/api.ts`). „Nastavi s Googleom” ide kroz GoTrue `/authorize`
+ * (`/api/organizator/google`); token se vraća u fragmentu, v. `src/lib/auth.ts`.
  *
  * Namjerno bez „zapamti me": token živi u sessionStorageu i umire sa zatvaranjem
  * taba (v. `src/lib/auth.ts`). Na ulazu se često koristi tuđi mobitel.
@@ -19,7 +28,10 @@ export default function Prijava({ naslov, onPrijava }: { naslov: string; onPrija
   const [email, setEmail] = useState("");
   const [kod, setKod] = useState("");
   const [lozinka, setLozinka] = useState("");
-  const [greska, setGreska] = useState<string | null>(null);
+  const [greska, setGreska] = useState<string | null>(() => {
+    const g = preuzmiGoogleGresku();
+    return g ? poruka(g) : null;
+  });
   const [obavijest, setObavijest] = useState<string | null>(null);
   const [salje, setSalje] = useState(false);
 
@@ -74,7 +86,7 @@ export default function Prijava({ naslov, onPrijava }: { naslov: string; onPrija
             <button
               type="button"
               className="prijava__google"
-              onClick={() => setObavijest("Prijava Googleom još nije uključena. Zasad koristi kod na e-mail.")}
+              onClick={prijaviGoogleom}
             >
               <GoogleLogo />
               Nastavi s Googleom
