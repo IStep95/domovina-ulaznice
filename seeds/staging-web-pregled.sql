@@ -6,7 +6,8 @@
 --
 -- Stripe rail: organizator je vezan na sandbox connected account
 -- `acct_1U2CRfByTQ1uTmhK` (Express, HR) pod sandboxom `acct_1U2CO1QoZhPywPyh`,
--- pa je na stagingu `kupovno: true` i checkout ide u test mode.
+-- pa je na stagingu `kupovno: true` (i checkout ide u test mode) tek kad Stripe
+-- javi `charges_enabled` kroz `account.updated` webhook.
 --
 -- Jezgra je zajednička: događaj je `public` + `active` i u javnom events-feedu
 -- jezgre. Produkcijski Worker ga skriva preko `SKRIVENI_ORGANIZATORI`
@@ -68,12 +69,15 @@ update pinka_finance.campaign_tiers set inventory_claimed = inventory_total
 
 -- Stripe rail: sandbox connected account (v. zaglavlje). Fiskalizaciju vodi
 -- organizator (provider 'organizator'), FIRA se ne zove.
+-- charges/payouts NAMJERNO false: stvarno stanje piše samo Stripe, kroz
+-- `account.updated` webhook (worker/webhooks.ts → upsertOrganizerRail). Seed
+-- koji upiše `true` bez provjere pušta checkout koji Stripe odbije
+-- („Your account cannot currently make charges”, 23. 11. 2026.).
 insert into pinka_finance.organizer_payment_rails
   (account_id, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, invoice_provider)
-values ('00000000-0000-4000-8000-0000000000f2', 'acct_1U2CRfByTQ1uTmhK', true, true, 'organizator')
+values ('00000000-0000-4000-8000-0000000000f2', 'acct_1U2CRfByTQ1uTmhK', false, false, 'organizator')
 on conflict (account_id) do update
-  set stripe_account_id = excluded.stripe_account_id,
-      stripe_charges_enabled = true;
+  set stripe_account_id = excluded.stripe_account_id;
 
 commit;
 
