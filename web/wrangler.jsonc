@@ -24,6 +24,8 @@
   "workers_dev": false,
   "assets": { "binding": "ASSETS", "directory": "./dist" },
   "vars": { "API_BASE_URL": "https://ulaznice.domovina.ai" },
+  // SSR zove /api glavnog Workera kroz binding, ne javnim URL-om (src/lib/api-ssr.ts).
+  "services": [{ "binding": "API", "service": "domovina-ulaznice" }],
 
   "env": {
     "staging": {
@@ -32,7 +34,8 @@
       "routes": [{ "pattern": "ulaznice-web-staging.domovina.ai", "custom_domain": true }],
       "workers_dev": true,
       "assets": { "binding": "ASSETS", "directory": "./dist" },
-      "vars": { "API_BASE_URL": "https://ulaznice-staging.domovina.ai" }
+      "vars": { "API_BASE_URL": "https://ulaznice-staging.domovina.ai" },
+      "services": [{ "binding": "API", "service": "domovina-ulaznice-staging" }]
     }
   }
 }
