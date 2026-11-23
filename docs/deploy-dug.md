@@ -106,5 +106,4 @@ Rollback). `domovina-ulaznice-web-staging` može ostati deployan, na svojoj dome
 | Što | Zašto | Kada |
 | --- | --- | --- |
 | `seeds/*.sql` na produkcijsku jezgru | Stripe rail u seedovima ima izmišljen `acct_…`, a Safe je `0x1111…`. Na živom sustavu događaj bi izgledao kupovno, a naplata ne bi radila. | Kad Prilika za Susret završi pravi Stripe onboarding i potvrdi cjenik (TODO poslan Tomislavu Belaviću 26. 9. 2026.) |
-| Produkcijski Worker bez `NAJAVA=1` | `ulaznice.domovina.ai` je javna domena i ne smije izgledati kao da prodaja radi | Kad staging proda prvu pravu ulaznicu |
-| Stripe/Resend tajne na staging | Odluka vlasnika, v. [implementacija P0/P1](2026-09-03-implementacija-p0-p1.md) | Nakon odluke Standard vs Express ([plan §3.1](2026-09-03-plan-do-produkcije.md)) |
+| Resend tajna na staging (Stripe je postavljen 23. 11.) | Odluka vlasnika, v. [implementacija P0/P1](2026-09-03-implementacija-p0-p1.md) | Nakon odluke Standard vs Express ([plan §3.1](2026-09-03-plan-do-produkcije.md)) |
