@@ -87,3 +87,37 @@ neuspjele isporuke).
 Dok 1–4 nisu riješeni, produkcija s postavljenim `sk`/`whsec` je sigurna: bez
 connected accounta i objavljenog događaja nema checkouta (`worker/stripe.ts`
 odbija organizatora bez `charges_enabled`).
+
+## 4. Staging testna kupnja — stanje na kraju 23. 11.
+
+- `[TEST]` događaj `test-pregled-web-sucelja` je u jezgri; produkcija ga skriva
+  (`SKRIVENI_ORGANIZATORI`, `worker/api.ts` `feed()`).
+- Prva testna uplata pala je na Stripeu: „Your account cannot currently make
+  charges”. Sandbox connected account `acct_1U2CRfByTQ1uTmhK` je **Restricted**
+  (onboarding iz 8. 8. nedovršen). Rail je vraćen na `charges_enabled = false`.
+- Onboarding je započet kroz Dashboard → Connected accounts → račun →
+  *Request information* (remediation link na `connect.stripe.com`). Telefon i SMS
+  potvrđeni Stripeovim sandbox gumbima; ostali koraci (business type,
+  representative, IBAN, ToS) **nisu dovršeni**.
+- Kad Stripe uključi charges, `account.updated` preko novog webhooka treba sam
+  postaviti rail na `true` — to je ujedno prvi pravi test webhooka.
+
+## 5. Zamke iz ove sesije
+
+- **`npm ci` briše wranglerov zapamćeni račun** (`node_modules/.cache/wrangler`);
+  nakon toga `wrangler deploy` pada na „More than one account available”.
+  Deploy uvijek s `CLOUDFLARE_ACCOUNT_ID=7dc7167b7e2e00923bfa7cd697df14e4` (D.O.M.).
+- **`domovina-api/scripts/db-psql.sh --stdin` tiho ne radi**: `detect_db_container`
+  zove `ssh` bez `-n`, koji pojede stdin, pa psql dobije prazan ulaz i izađe s 0.
+  Za SQL datoteku: `ssh -n` za ime containera, pa `docker exec -i … psql < file`.
+- **Coolify API ne vraća vrijednosti tajni** (`value` izostavljen). Tajne jezgre
+  (`EVENTS_STRIPE_CONFIRM_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`) čitaju se iz
+  environmenta containera `supabase-edge-functions-*` preko SSH-a.
+- **Stripe Dashboard: tipkanje bez fokusa ide u tipkovničke prečace** (skok na
+  Invoices, otvara Workbench, koji onda prekriva obrazac i hvata klikove). Polja
+  puniti kroz native value setter + `input` event, Workbench zatvoriti prije klikova.
+- **Zadana API verzija webhooka je verzija računa (`2020-08-27`)** i na postojećem
+  endpointu se ne može promijeniti — uvijek ručno odabrati `2025-02-24.acacia`.
+- **Stripe CLI** profil `domovina-ulaznice-staging` ima test ključ istekao 6. 11.
+  (`stripe login --project-name domovina-ulaznice-staging`). Profil
+  `domovina-ulaznice` (italk.hr) drži i `live_mode_api_key` — nepotreban rizik.
