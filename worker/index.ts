@@ -563,6 +563,20 @@ app.post("/api/organizator/prijava", async (c) => {
   return c.json({ access_token: p.access_token, expires_in: p.expires_in, email: p.user?.email ?? email });
 });
 
+// Prijava Googleom: preusmjerenje na GoTrue `/authorize` (implicit flow).
+// GoTrue nakon Googlea vraća na `redirect_to` s tokenom u fragmentu, a SPA ga
+// preuzme (`src/lib/auth.ts`). Origin mora biti u `ADDITIONAL_REDIRECT_URLS`
+// jezgre (dodani ulaznice i ulaznice-staging 2026-11-23), inače GoTrue vrati
+// na SITE_URL. Povratak je ograničen na stranice s prijavom.
+app.get("/api/organizator/google", (c) => {
+  const povratak = c.req.query("povratak") ?? "";
+  const put = /^\/(organizator|organizator\/novi|skener)$/.test(povratak) ? povratak : "/organizator";
+  const u = new URL(`${c.env.DOMOVINA_API_URL}/auth/v1/authorize`);
+  u.searchParams.set("provider", "google");
+  u.searchParams.set("redirect_to", new URL(c.req.url).origin + put);
+  return c.redirect(u.toString(), 302);
+});
+
 // Prijava kodom na e-mail. Isti bucket kao lozinka: kod je 6 znamenki, pa je
 // limit po IP-u ono što brani od pogađanja (uz GoTrueov istek koda).
 app.post("/api/organizator/kod", async (c) => {

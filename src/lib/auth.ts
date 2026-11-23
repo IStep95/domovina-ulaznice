@@ -26,6 +26,8 @@ export interface Sesija {
 }
 
 export function procitajSesiju(): Sesija | null {
+  const izGooglea = preuzmiIzFragmenta();
+  if (izGooglea) return izGooglea;
   try {
     const raw = sessionStorage.getItem(KLJUC);
     if (!raw) return null;
@@ -106,6 +108,55 @@ export async function potvrdiKod(email: string, kod: string): Promise<Sesija> {
   return sesijaIz(
     await json<Token>("/api/organizator/potvrdi", { method: "POST", body: JSON.stringify({ email, kod }) }),
   );
+}
+
+// ------------------------------------------------------------------ Google
+
+/**
+ * Prijava Googleom, korak 1: Worker preusmjeri na GoTrue `/authorize` s
+ * `redirect_to` = ova stranica. Adresu jezgre browser i dalje ne zna.
+ */
+export function prijaviGoogleom(): void {
+  location.assign(`/api/organizator/google?povratak=${encodeURIComponent(location.pathname)}`);
+}
+
+/** Greška s povratka iz Googlea, za obrazac prijave (pročita se jednom). */
+let googleGreska: string | null = null;
+export function preuzmiGoogleGresku(): string | null {
+  const g = googleGreska;
+  googleGreska = null;
+  return g;
+}
+
+/**
+ * Korak 2: GoTrue se vraća implicit flowom, token je u fragmentu
+ * (`#access_token=…&expires_in=…&refresh_token=…`). Fragment se odmah briše
+ * iz adrese, a refresh token se ne sprema — ista odluka kao za lozinku i kod.
+ * E-mail je u JWT-u; potpis provjerava Worker na svakom pozivu, ovdje se samo
+ * čita za prikaz.
+ */
+function preuzmiIzFragmenta(): Sesija | null {
+  if (typeof location === "undefined" || location.hash.length < 2) return null;
+  const p = new URLSearchParams(location.hash.slice(1));
+  if (!p.has("access_token") && !p.has("error")) return null;
+  history.replaceState(null, "", location.pathname + location.search);
+
+  const token = p.get("access_token");
+  if (!token) {
+    googleGreska = "google_neuspjelo";
+    return null;
+  }
+  let email = "";
+  try {
+    const b64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const bin = atob(b64.padEnd(b64.length + ((4 - (b64.length % 4)) % 4), "="));
+    const json = new TextDecoder().decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0)));
+    email = (JSON.parse(json) as { email?: string }).email ?? "";
+  } catch {
+    googleGreska = "google_neuspjelo";
+    return null;
+  }
+  return sesijaIz({ access_token: token, expires_in: Number(p.get("expires_in")) || 3600, email });
 }
 
 function sesijaIz(r: Token): Sesija {
