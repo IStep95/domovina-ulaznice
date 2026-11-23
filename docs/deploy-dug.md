@@ -15,6 +15,8 @@ Staging Stripe 23. 11. (Matija): novi sandbox restricted key i Connect webhook (
 
 Produkcija 23. 11. (Matija): `SKRIVENI_ORGANIZATORI` = test organizator `…0000000000f2` — jezgra je zajednička, pa produkcija ne prikazuje ni ne prodaje `[TEST]` događaje sa sandbox railom (`worker/api.ts` `feed()`). Svaki novi test organizator ide u tu varijablu **prije** seeda.
 
+Jezgra 23. 11. (Matija): pušten `seeds/staging-web-pregled.sql` sa sandbox railom (`acct_1U2CRfByTQ1uTmhK`). Staging: `/api/dogadjaji` ima `test-pregled-web-sucelja` s `kupovno: true`, `POST /api/narudzba` vraća `cs_test_…` checkout; produkcija: `[]` i 404 na događaju.
+
 Staging 23. 11.: D1 `0002` puštena (`invoices`, `alarms` postoje); Worker na `main` — `/api/zdravlje` ima `prijava`, `alarm`, `racun`, `/preuzmi` s `{}` → 400 (bivši #2 i #3).
 
 Stanje u tablici je **provjereno na živim sustavima** na navedeni datum, ne

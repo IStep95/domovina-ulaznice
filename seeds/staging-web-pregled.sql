@@ -1,17 +1,19 @@
--- seeds/staging-web-pregled.sql — PRIPREMLJENO, NIJE PUŠTENO (2026-11-19).
+-- seeds/staging-web-pregled.sql — [TEST] događaj za staging (pripremio Ivan
+-- 2026-11-19; 2026-11-23 dodan sandbox Stripe rail i pušten na jezgru).
 --
--- Jedan jasno označen TEST događaj da ulaznice-web-staging.domovina.ai i
--- ulaznice-staging.domovina.ai imaju što prikazati. Pušta ga samo Matija, na
--- jezgru api.domovina.ai, nakon odluke (web/docs/decisions.md, odluka 23).
+-- Jedan jasno označen TEST događaj da ulaznice-staging.domovina.ai ima što
+-- prikazati i prodati u Stripe sandboxu.
 --
--- Razlika prema ostalim seedovima: NEMA Stripe raila (organizer_payment_rails),
--- pa Worker vraća `kupovno: false` i `stripe_connected: false` — stranica
--- događaja se vidi, a kupnja ne može krenuti. Zato nema problema iz
--- docs/deploy-dug.md („događaj bi izgledao kupovno, a naplata ne bi radila”).
+-- Stripe rail: organizator je vezan na sandbox connected account
+-- `acct_1U2CRfByTQ1uTmhK` (Express, HR) pod sandboxom `acct_1U2CO1QoZhPywPyh`,
+-- pa je na stagingu `kupovno: true` i checkout ide u test mode.
 --
--- Posljedica koju treba prihvatiti: jezgra je zajednička, pa je događaj
--- `public` + `active` vidljiv i u javnom events-feedu jezgre (i mobilnim
--- aplikacijama koje gađaju staging). Naslov počinje s [TEST].
+-- Jezgra je zajednička: događaj je `public` + `active` i u javnom events-feedu
+-- jezgre. Produkcijski Worker ga skriva preko `SKRIVENI_ORGANIZATORI`
+-- (wrangler.jsonc) — taj UUID organizatora (…0000000000f2) mora biti ondje
+-- PRIJE puštanja ovog seeda, inače bi produkcija pokazala kupovni događaj čiji
+-- checkout s live ključem pada. Mobilne aplikacije i ostali klijenti feeda
+-- jezgre ga vide; naslov počinje s [TEST].
 --
 -- Fiksni UUID-evi (…f0…) da se može čisto obrisati — v. dno datoteke.
 --
@@ -48,7 +50,7 @@ select pinka_finance.create_event(
   p_event_type          => 'konferencija',
   p_starts_at           => '2027-06-12T10:00:00+02',
   p_ends_at             => '2027-06-12T18:00:00+02',
-  p_description_hr      => E'Ovo je **testni događaj** za razvoj nove stranice ulaznica.\n\nUlaznice se ovdje ne prodaju.',
+  p_description_hr      => E'Ovo je **testni događaj** za razvoj stranice ulaznica.\n\nKupnja radi samo na stagingu, u Stripe sandboxu (testna kartica 4242 4242 4242 4242).',
   p_organizer_name      => '[TEST] Organizator',
   p_visibility          => 'public',
   p_tiers               => '[
@@ -64,10 +66,20 @@ update pinka_finance.campaigns set state = 'active'
 update pinka_finance.campaign_tiers set inventory_claimed = inventory_total
  where campaign_id = '00000000-0000-4000-8000-000000000f01' and title = 'Rasprodana';
 
+-- Stripe rail: sandbox connected account (v. zaglavlje). Fiskalizaciju vodi
+-- organizator (provider 'organizator'), FIRA se ne zove.
+insert into pinka_finance.organizer_payment_rails
+  (account_id, stripe_account_id, stripe_charges_enabled, stripe_payouts_enabled, invoice_provider)
+values ('00000000-0000-4000-8000-0000000000f2', 'acct_1U2CRfByTQ1uTmhK', true, true, 'organizator')
+on conflict (account_id) do update
+  set stripe_account_id = excluded.stripe_account_id,
+      stripe_charges_enabled = true;
+
 commit;
 
 -- Brisanje (NEPROVJERENO — prije pokretanja provjeri FK-ove i da nema narudžbi):
 -- begin;
+-- delete from pinka_finance.organizer_payment_rails where account_id = '00000000-0000-4000-8000-0000000000f2';
 -- delete from pinka_finance.campaign_tiers where campaign_id = '00000000-0000-4000-8000-000000000f01';
 -- delete from pinka_finance.events         where campaign_id = '00000000-0000-4000-8000-000000000f01';
 -- delete from pinka_finance.campaigns      where id          = '00000000-0000-4000-8000-000000000f01';
