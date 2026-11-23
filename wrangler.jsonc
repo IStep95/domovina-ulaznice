@@ -12,14 +12,14 @@
   //   vrh datoteke  → PRODUKCIJA   ulaznice.domovina.ai
   //   env.staging   → STAGING      ulaznice-staging.domovina.ai
   //
-  //   wrangler deploy                  → produkcija (samo najava, v. dolje)
+  //   wrangler deploy                  → produkcija (puna aplikacija)
   //   wrangler deploy --env staging    → staging (puna aplikacija)
   //
-  // Produkcija danas NIJE prodajna: nema ASSETS-a, D1, KV-a ni crona, a var
-  // NAJAVA=1 tjera Worker da na svaki zahtjev vrati statičnu najavu i da
-  // /api/* i /webhook/* vrate 404. Razlog: domena je javna i ne smije
-  // izgledati kao da prodaja radi dok ne radi. Kad prodaja krene, makne se
-  // NAJAVA i vrate se ASSETS/D1/KV/triggers (vrijednosti su u env.staging).
+  // Do 2026-11-23 produkcija je bila samo najava (var NAJAVA=1: statična stranica,
+  // /api/* i /webhook/* → 404, bez ASSETS/D1/KV/crona). Ivan ju je tada otvorio
+  // istim bindinzima kao staging. Prodaja radi tek kad su postavljene tajne
+  // (v. dno); do tada /api/zdravlje javlja stripe/hmac/mail: false.
+  // Za povratak na najavu: "NAJAVA": "1" u vars i deploy.
   //
   // Oba okruženja gađaju ISTU jezgru (api.domovina.ai) — to je odluka vlasnika,
   // ne propust: jezgra je backend-only i jednog dana drži i stvarno plaćene i
@@ -32,15 +32,47 @@
   "compatibility_date": "2024-11-01",
   "compatibility_flags": ["nodejs_compat"],
 
-  // ── PRODUKCIJA: samo najava ────────────────────────────────────────────────
+  // ── PRODUKCIJA: puna aplikacija (od 2026-11-23, Ivan) ──────────────────────
+  // Isto kao env.staging, s produkcijskim D1/KV/WEB. Za najavu vrati "NAJAVA": "1".
   "routes": [
     { "pattern": "ulaznice.domovina.ai", "custom_domain": true }
   ],
   "workers_dev": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "domovina-ulaznice",
+      "database_id": "2c01251e-133a-42db-9d1e-70cfe47db223"
+    }
+  ],
+  "kv_namespaces": [
+    { "binding": "RL", "id": "e138b49a3eb14b56b1bbb8f57cde1c66" }
+  ],
+  "triggers": {
+    "crons": ["*/15 * * * *"]
+  },
+  "services": [
+    { "binding": "WEB", "service": "domovina-ulaznice-web" }
+  ],
   "vars": {
-    "NAJAVA": "1",
     "PUBLIC_BASE_URL": "https://ulaznice.domovina.ai",
-    "DOMOVINA_API_URL": "https://api.domovina.ai"
+    "DOMOVINA_API_URL": "https://api.domovina.ai",
+    // Anon ključ nije tajna (v. env.staging).
+    "DOMOVINA_API_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3OTExMTcxMywiZXhwIjo0OTMyNzExNzEzLCJyb2xlIjoiYW5vbiJ9.Q4Ef7xMc2dmjMyfJebPDyqNirnARZzMxTWe7i0dASPI",
+    "APPLE_APP_IDS": "6SCK58757K.ai.domovina.ulaznice",
+    "ANDROID_CERT_SHA256": "",
+    "EMAIL_FROM": "Domovina ulaznice <ulaznice@domovina.ai>",
+    "EMAIL_REPLY_TO": "podrska@domovina.ai",
+    "ALARM_EMAIL": "podrska@domovina.ai",
+    "ALARM_PRIGUSI_MIN": "180",
+    "RL_ORDER_IP": "10/600",
+    "RL_WEBHOOK_IP": "300/60"
   },
 
   "env": {

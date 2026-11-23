@@ -20,7 +20,8 @@ mapiranja: `docs/2026-09-28-unos-dogadjaja-kroz-chat.md`. Prodaja **još ne radi
 stagingu** — nedostaju Stripe/Resend tajne i objavljen događaj u jezgri.
 
 - `ulaznice-staging.domovina.ai` — puna aplikacija, Stripe **sandbox**
-- `ulaznice.domovina.ai` — **samo najava** (`NAJAVA=1`, bez D1/KV/ASSETS/crona)
+- `ulaznice.domovina.ai` — puna aplikacija od 2026-11-23 (najava maknuta), ali **bez tajni** —
+  prodaja ne radi dok se ne postave (`docs/deploy-dug.md` #10)
 
 Mobilne aplikacije za **kupce** (iOS SwiftUI + Android Compose) su u `mobile/`
 — pričaju samo s Workerom, QR dolazi kroz `POST /api/ulaznice/:id/preuzmi`
