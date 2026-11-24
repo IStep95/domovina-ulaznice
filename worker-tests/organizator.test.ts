@@ -180,6 +180,87 @@ test("strojni kod iz baze prolazi, sirova poruka baze ne", async () => {
   assert.ok(!b.text.includes("duplicate key"));
 });
 
+test("galerija i alt naslovne prolaze do events-organizer, smeće umjesto galerije ne", async () => {
+  t = testEnv();
+  const galerija = [{ url: "https://x/1.webp", alt: "Prva" }];
+  await callJson(t, "/api/organizator/dogadjaj", {
+    headers: auth(),
+    body: { ...noviDogadjaj, cover_image_alt: "Naslovna", gallery: galerija },
+  });
+  const poslano = JSON.parse(t.calls.find((c) => c.url.includes("events-organizer"))!.body);
+  assert.equal(poslano.cover_image_alt, "Naslovna");
+  assert.deepEqual(poslano.gallery, galerija);
+
+  for (const gallery of ["https://x/1.webp", Array.from({ length: 21 }, () => ({ url: "https://x" }))]) {
+    const { status, body } = await callJson<{ error: string }>(t, "/api/organizator/dogadjaj", {
+      headers: auth(),
+      body: { ...noviDogadjaj, gallery },
+    });
+    assert.equal(status, 400);
+    assert.equal(body.error, "invalid_gallery");
+  }
+  assert.equal(t.calls.filter((c) => c.url.includes("events-organizer")).length, 1);
+});
+
+// --------------------------------------------------------------- upload slike
+
+const UID = "33333333-3333-4333-8333-333333333333";
+const jwtS = (sub: string) =>
+  `h.${Buffer.from(JSON.stringify({ sub, role: "authenticated" })).toString("base64url")}.potpis`;
+const slika = (o: { jwt?: string; vrsta?: string; raw?: string } = {}) =>
+  callJson<{ url?: string; error?: string }>(t, "/api/organizator/slika", {
+    headers: { ...auth(o.jwt ?? jwtS(UID)), "content-type": o.vrsta ?? "image/webp" },
+    raw: o.raw ?? "RIFF....WEBP",
+  });
+
+test("upload slike ide JWT-om u korisnikovu mapu u pinka-covers i vraća javni URL", async () => {
+  t = testEnv();
+  const { status, body } = await slika();
+  assert.equal(status, 200);
+  const poziv = t.calls.find((c) => c.url.includes("/storage/v1/object/"))!;
+  assert.match(poziv.url, new RegExp(`/storage/v1/object/pinka-covers/${UID}/[0-9a-f-]{36}\\.webp$`));
+  assert.equal(poziv.headers.authorization, `Bearer ${jwtS(UID)}`);
+  assert.equal(poziv.headers.apikey, ANON_KEY);
+  assert.equal(body.url, poziv.url.replace("/object/pinka-covers/", "/object/public/pinka-covers/"));
+});
+
+test("upload bez prijave, s krivom vrstom ili bez sub-a ne ide u Storage", async () => {
+  t = testEnv();
+  const bezPrijave = await callJson(t, "/api/organizator/slika", { headers: { "content-type": "image/png" }, raw: "x" });
+  assert.equal(bezPrijave.status, 401);
+  const svg = await slika({ vrsta: "image/svg+xml" });
+  assert.equal(svg.status, 415);
+  assert.equal(svg.body.error, "slika_vrsta");
+  const prazno = await slika({ raw: "" });
+  assert.equal(prazno.body.error, "slika_vrsta");
+  const bezSub = await slika({ jwt: "nije.jwt.uopce" });
+  assert.equal(bezSub.status, 401);
+  assert.equal(t.calls.filter((c) => c.url.includes("/storage/")).length, 0);
+});
+
+test("RLS Storagea (identitet nije provjeren) → 403 nema_prava_slike, sirova poruka ne izlazi", async () => {
+  t = testEnv();
+  t.api.slikaStatus = 400;
+  t.api.slikaOdgovor = '{"statusCode":"403","error":"Unauthorized","message":"new row violates row-level security policy"}';
+  const a = await slika();
+  assert.equal(a.status, 403);
+  assert.equal(a.body.error, "nema_prava_slike");
+
+  t.api.slikaOdgovor = '{"statusCode":"403","error":"Unauthorized","message":"JWS Protected Header is invalid"}';
+  const istekao = await slika();
+  assert.equal(istekao.status, 401, "nevaljan JWT je istek prijave, ne manjak prava");
+
+  t.api.slikaOdgovor = '{"statusCode":"413","error":"Payload too large","message":"The object exceeded the maximum allowed size"}';
+  const b = await slika();
+  assert.equal(b.body.error, "slika_prevelika");
+
+  t.api.slikaStatus = 500;
+  t.api.slikaOdgovor = "interna greška s detaljima";
+  const c = await slika();
+  assert.equal(c.status, 502);
+  assert.ok(!c.text.includes("detaljima"));
+});
+
 // -------------------------------------------------------------------- pregled
 
 test("pregled bez tokena → 401", async () => {

@@ -14,14 +14,17 @@
 // može preskočiti prvi nevaljani korak). `event_id` je dio nacrta, pa ponovno
 // slanje nakon greške mreže ili refresha ne pravi duplikat (`create_event` je
 // idempotentan po id-u). Tko smije kreirati odlučuje baza (admin računa +
-// provjeren identitet); objava, uređivanje i galerija još nisu ovdje.
+// provjeren identitet); objava i uređivanje još nisu ovdje. Korak 3 od
+// 2026-11-24 ima upload naslovne i galeriju (Korak3 niže).
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type SubmitEvent } from "react";
-import { dohvatiPregled, jeIstekla, kreirajDogadjaj, type OrgPregled } from "../lib/auth.ts";
+import { dohvatiPregled, jeIstekla, kreirajDogadjaj, ucitajSliku, type OrgPregled } from "../lib/auth.ts";
 import { opisVremena, predlozeniKraj } from "../lib/birac-datuma.ts";
 import {
   BROJ_KORAKA,
   KORACI,
+  NAJDULJI_ALT,
   NAJVISE_TIEROVA,
+  NAJVISE_U_GALERIJI,
   VRSTE,
   centiIzUnosa,
   korakPolja,
@@ -35,12 +38,14 @@ import {
   zahtjev,
   type Greske,
   type Korak,
+  type SlikaUnosa,
   type UnosDogadjaja,
   type UnosTiera,
 } from "../lib/editor.ts";
 import { eur } from "../lib/format.ts";
 import { korakIzUpita, korakIzUrla, obrisiNacrt, spremiNacrt, ucitajNacrt, urlKoraka } from "../lib/nacrt.ts";
-import { kodIzGreske, porukaIzGreske } from "../lib/poruke.ts";
+import { kodIzGreske, porukaIzGreske, porukaOrganizatora } from "../lib/poruke.ts";
+import { GreskaSlike, NAJVECA_STRANICA, PRIHVACA, pripremiSliku } from "../lib/slika.ts";
 import Banner from "./Banner.tsx";
 import Ikona from "./Ikona.tsx";
 import KalendarPolje from "./KalendarPolje.tsx";
@@ -241,7 +246,7 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
 
   const dopusteni = najdaljiDopusteni(unos);
   const opisKoraka = KORACI[korak - 1]!;
-  const korak3Prazan = !unos.opis.trim() && !unos.slika.trim();
+  const korak3Prazan = !unos.opis.trim() && !unos.slika.trim() && unos.galerija.length === 0;
   const tekstDalje =
     korak === BROJ_KORAKA ? (salje ? "Spremam…" : "Spremi kao skicu") : korak === 3 && korak3Prazan ? "Preskoči" : "Dalje";
 
@@ -322,7 +327,16 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
 
           {korak === 1 && <Korak1 unos={unos} greske={greske} racuni={racuni} postavi={postavi} />}
           {korak === 2 && <Korak2 unos={unos} greske={greske} postavi={postavi} />}
-          {korak === 3 && <Korak3 unos={unos} greske={greske} postavi={postavi} />}
+          {korak === 3 && (
+            <Korak3
+              unos={unos}
+              greske={greske}
+              postavi={postavi}
+              promijeni={setUnos}
+              token={sesija.access_token}
+              istekla={istekla}
+            />
+          )}
           {korak === 4 && <Korak4 unos={unos} greske={greske} postavi={postavi} postaviTier={postaviTier} />}
           {korak === 5 && (
             <Korak5 unos={unos} greske={greske} postavi={postavi} imeRacuna={imeRacuna} idi={idi}>
@@ -538,8 +552,70 @@ function Korak2({ unos, greske, postavi }: KorakProps) {
 }
 
 // ── 3. Opis i slika ──────────────────────────────────────────────────────────
+//
+// Naslovna i galerija: link ili upload (lib/slika.ts smanji, Worker spremi u
+// Storage `pinka-covers`). Upload traži provjeren identitet, kao i spremanje
+// skice; bez njega ostaje link. Više uploada odjednom mijenja unos funkcijom
+// (`promijeni`), da se slike koje stignu u isto vrijeme ne pregaze.
 
-function Korak3({ unos, greske, postavi }: KorakProps) {
+type Promijeni = (f: (u: UnosDogadjaja) => UnosDogadjaja) => void;
+
+function Korak3({
+  unos,
+  greske,
+  postavi,
+  promijeni,
+  token,
+  istekla,
+}: KorakProps & { promijeni: Promijeni; token: string; istekla: () => void }) {
+  const [ucitava, setUcitava] = useState<"naslovna" | "galerija" | null>(null);
+  const [greskaUploada, setGreskaUploada] = useState<string | null>(null);
+  const [noviUrl, setNoviUrl] = useState("");
+  const [greskaUrla, setGreskaUrla] = useState<string | null>(null);
+  const slobodno = NAJVISE_U_GALERIJI - unos.galerija.length;
+
+  const ucitaj = async (datoteke: File[], cilj: "naslovna" | "galerija") => {
+    if (datoteke.length === 0) return;
+    setGreskaUploada(null);
+    setUcitava(cilj);
+    try {
+      for (const d of datoteke) {
+        const { url } = await ucitajSliku(token, await pripremiSliku(d));
+        if (cilj === "naslovna") promijeni((u) => ({ ...u, slika: url }));
+        else
+          promijeni((u) =>
+            u.galerija.length < NAJVISE_U_GALERIJI ? { ...u, galerija: [...u.galerija, { url, alt: "" }] } : u,
+          );
+      }
+    } catch (e) {
+      if (jeIstekla(e)) istekla();
+      else setGreskaUploada(e instanceof GreskaSlike ? porukaOrganizatora(e.kod) : porukaIzGreske(e));
+    } finally {
+      setUcitava(null);
+    }
+  };
+
+  const dodajUrl = () => {
+    const url = noviUrl.trim();
+    if (!/^https:\/\/\S+$/i.test(url)) return setGreskaUrla("Link slike mora počinjati s https://.");
+    if (unos.galerija.some((s) => s.url === url)) return setGreskaUrla("Ta slika je već u galeriji.");
+    postavi("galerija", [...unos.galerija, { url, alt: "" }]);
+    setNoviUrl("");
+    setGreskaUrla(null);
+  };
+
+  const postaviStavku = (i: number, izmjena: Partial<SlikaUnosa>) =>
+    postavi(
+      "galerija",
+      unos.galerija.map((s, j) => (j === i ? { ...s, ...izmjena } : s)),
+    );
+  const pomakni = (i: number, smjer: -1 | 1) => {
+    const g = [...unos.galerija];
+    [g[i], g[i + smjer]] = [g[i + smjer]!, g[i]!];
+    postavi("galerija", g);
+  };
+  const naslovnaPrikaz = /^https:\/\/\S+$/i.test(unos.slika.trim()) ? unos.slika.trim() : null;
+
   return (
     <div className={css.polja}>
       <div className={polje.polje}>
@@ -558,17 +634,197 @@ function Korak3({ unos, greske, postavi }: KorakProps) {
           Prazan red odvaja odlomke; „- ” na početku retka je stavka popisa.
         </span>
       </div>
-      <Polje
-        id="nd-slika"
-        oznaka="Naslovna slika: link (neobavezno)"
-        type="url"
-        value={unos.slika}
-        placeholder="https://…"
-        greska={greske.slika}
-        pomoc={greske.slika ? undefined : "Kvadratna ili vodoravna slika, barem 1200 px. Vidi se u pregledu kartice."}
-        onChange={(e) => postavi("slika", e.target.value)}
-      />
+
+      {greskaUploada && <Banner ton="error">{greskaUploada}</Banner>}
+
+      <fieldset className={css.skupina}>
+        <legend className={css.legenda}>Naslovna slika (neobavezno)</legend>
+        <div className={css.polja}>
+          {naslovnaPrikaz && (
+            <div className={css.naslovnaRed}>
+              <img className={css.naslovnaSlika} src={naslovnaPrikaz} alt="" />
+              <button
+                type="button"
+                className={`${gumb.gumb} ${gumb.sekundarni}`}
+                onClick={() => {
+                  postavi("slika", "");
+                  postavi("slikaAlt", "");
+                }}
+              >
+                Ukloni
+              </button>
+            </div>
+          )}
+          <div className={css.redSGumbom}>
+            <Polje
+              id="nd-slika"
+              oznaka="Link slike"
+              type="url"
+              value={unos.slika}
+              placeholder="https://…"
+              greska={greske.slika}
+              pomoc={greske.slika ? undefined : "Vodoravna slika, barem 1200 px. Vidi se na kartici i vrhu stranice."}
+              onChange={(e) => postavi("slika", e.target.value)}
+            />
+            <GumbZaDatoteke
+              id="nd-slika-datoteka"
+              tekst={ucitava === "naslovna" ? "Učitavam…" : "Učitaj sliku"}
+              disabled={ucitava !== null}
+              onOdabir={(d) => ucitaj(d.slice(0, 1), "naslovna")}
+            />
+          </div>
+          {unos.slika.trim() && (
+            <Polje
+              id="nd-slikaAlt"
+              oznaka="Što je na slici (za čitače zaslona)"
+              value={unos.slikaAlt}
+              placeholder="npr. Zbor na pozornici pod plavim svjetlima"
+              maxLength={NAJDULJI_ALT}
+              greska={greske.slikaAlt}
+              onChange={(e) => postavi("slikaAlt", e.target.value)}
+            />
+          )}
+        </div>
+      </fieldset>
+
+      <fieldset className={css.skupina}>
+        <legend className={css.legenda}>
+          Galerija (neobavezno) · {unos.galerija.length}/{NAJVISE_U_GALERIJI}
+        </legend>
+        <div className={css.polja}>
+          {greske.galerija && <Banner ton="error">{greske.galerija}</Banner>}
+          {unos.galerija.length > 0 && (
+            <ol className={css.galerija}>
+              {unos.galerija.map((s, i) => {
+                const gUrl = greske[`galerija.${i}.url`];
+                return (
+                  <li key={s.url + i} className={css.stavkaGalerije}>
+                    {/^https:\/\/\S+$/i.test(s.url) ? (
+                      <img className={css.slicica} src={s.url} alt="" loading="lazy" />
+                    ) : (
+                      <span className={`${css.slicica} ${polje.greska}`}>{gUrl}</span>
+                    )}
+                    <input
+                      id={`nd-galerija-${i}-alt`}
+                      className={`${polje.unos} ${css.unosCelije}`}
+                      value={s.alt}
+                      placeholder="Opis (neobavezno)"
+                      aria-label={`Opis slike ${i + 1}`}
+                      maxLength={NAJDULJI_ALT}
+                      onChange={(e) => postaviStavku(i, { alt: e.target.value })}
+                    />
+                    <div className={css.akcijeSlike}>
+                      <button
+                        type="button"
+                        className={css.ukloni}
+                        disabled={i === 0}
+                        aria-label={`Pomakni sliku ${i + 1} ulijevo`}
+                        title="Ranije"
+                        onClick={() => pomakni(i, -1)}
+                      >
+                        ←
+                      </button>
+                      <button
+                        type="button"
+                        className={css.ukloni}
+                        disabled={i === unos.galerija.length - 1}
+                        aria-label={`Pomakni sliku ${i + 1} udesno`}
+                        title="Kasnije"
+                        onClick={() => pomakni(i, 1)}
+                      >
+                        →
+                      </button>
+                      <button
+                        type="button"
+                        className={css.ukloni}
+                        aria-label={`Ukloni sliku ${i + 1}`}
+                        title="Ukloni"
+                        onClick={() => postavi("galerija", unos.galerija.filter((_, j) => j !== i))}
+                      >
+                        <Ikona ime="x-krug" velicina={20} />
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+          <div className={css.redSGumbom}>
+            <Polje
+              id="nd-galerija-url"
+              oznaka="Dodaj link slike"
+              type="url"
+              value={noviUrl}
+              placeholder="https://…"
+              greska={greskaUrla ?? undefined}
+              disabled={slobodno <= 0}
+              onChange={(e) => setNoviUrl(e.target.value)}
+            />
+            <button
+              type="button"
+              className={`${gumb.gumb} ${gumb.sekundarni}`}
+              disabled={slobodno <= 0 || !noviUrl.trim()}
+              onClick={dodajUrl}
+            >
+              Dodaj
+            </button>
+            <GumbZaDatoteke
+              id="nd-galerija-datoteke"
+              tekst={ucitava === "galerija" ? "Učitavam…" : "Učitaj slike"}
+              visestruko
+              disabled={ucitava !== null || slobodno <= 0}
+              onOdabir={(d) => ucitaj(d.slice(0, slobodno), "galerija")}
+            />
+          </div>
+          <span className={css.mutno}>
+            Slike se na stranici događaja prikazuju ovim redom, nakon naslovne. Prije slanja smanjujemo ih na{" "}
+            {NAJVECA_STRANICA} px.
+          </span>
+        </div>
+      </fieldset>
     </div>
+  );
+}
+
+/** Gumb koji otvara odabir datoteke (sam `<input type=file>` je skriven, ali dostupan tipkovnici kroz gumb). */
+function GumbZaDatoteke({
+  id,
+  tekst,
+  disabled,
+  visestruko = false,
+  onOdabir,
+}: {
+  id: string;
+  tekst: string;
+  disabled: boolean;
+  visestruko?: boolean;
+  onOdabir: (datoteke: File[]) => void;
+}) {
+  const ulaz = useRef<HTMLInputElement>(null);
+  return (
+    <>
+      <input
+        ref={ulaz}
+        id={id}
+        type="file"
+        accept={PRIHVACA}
+        multiple={visestruko}
+        hidden
+        onChange={(e) => {
+          onOdabir([...(e.target.files ?? [])]);
+          e.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        className={`${gumb.gumb} ${gumb.sekundarni}`}
+        disabled={disabled}
+        aria-busy={tekst === "Učitavam…" || undefined}
+        onClick={() => ulaz.current?.click()}
+      >
+        {tekst}
+      </button>
+    </>
   );
 }
 
@@ -703,7 +959,7 @@ function Korak5({
     [
       3,
       "Opis i slika",
-      [unos.opis.trim() ? `opis (${unos.opis.trim().length} znakova)` : "bez opisa", unos.slika.trim() ? "sa slikom" : "bez slike"].join(
+      [unos.opis.trim() ? `opis (${unos.opis.trim().length} znakova)` : "bez opisa", unos.slika.trim() ? "sa slikom" : "bez slike", ...(unos.galerija.length ? [`galerija (${unos.galerija.length})`] : [])].join(
         " · ",
       ),
     ],

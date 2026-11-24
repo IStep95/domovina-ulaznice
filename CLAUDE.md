@@ -13,7 +13,8 @@ Status: **U1 ✅ živ na `api.domovina.ai` · U2 ✅ deployan na staging · U3/U
 djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; Connect onboarding i
 `domovina_fiskal` ne). **Editor događaja je tek začet** (Ivan, 2026-11-20; od S8 wizard u Astru):
 `/organizator/novi` sprema novu *privatnu skicu* s ulaznicama kroz `events-organizer`
-(treba admin računa + provjeren identitet). Objava, uređivanje, galerija i
+(treba admin računa + provjeren identitet); od 2026-11-24 i naslovnu i galeriju (link ili
+upload u Storage `pinka-covers`, jezgra grana `events-media`). Objava, uređivanje i
 koordinate još idu kao dosad: organizator događaj priprema na svoj način (Google
 Forms, FIRA `Config.gs`…), a agent ga u chatu formalizira u seed — pravila
 mapiranja: `docs/2026-09-28-unos-dogadjaja-kroz-chat.md`. Na **stagingu prodaja radi**

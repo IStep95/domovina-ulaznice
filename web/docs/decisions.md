@@ -748,3 +748,34 @@ na `.tierovi`, prag 520 px). Od 1024 px srednji stupac je uži (~290 px sadržaj
 Ispod praga vrste su kartice; izmjereno CDP-om na 1000/1100/1280/1440/390 bez vodoravnog
 scrolla, „Naziv” 170–518 px.
 Revizija: nema.
+
+**819. Upload slike ide kroz glavni Worker u Supabase Storage, ne u R2** (paket izvan lanca,
+Ivan, 24. 11.). `POST /api/organizator/slika` tijelo je sama slika; Worker je šalje u bucket
+`pinka-covers` (`{auth.uid()}/{uuid}.{ext}`) korisnikovim JWT-om, nikad service ključem.
+Bucket i RLS već postoje u jezgri (`20260611120000_pinka_campaign_hardening`): javno čitanje,
+upis samo u vlastitu mapu i samo uz provjeren identitet, isti uvjet kao `create_event`. Nema
+novog spremišta ni tajne. `sub` se iz JWT-a čita bez provjere potpisa: krivi `sub` samo
+završi na RLS-u. Limit 60 uploada / 10 min po IP-u (`slika`).
+Revizija: nema.
+
+**820. Preglednik sliku smanji prije slanja** (`web/src/lib/slika.ts`): dulja stranica
+≤ 1600 px, WebP 0,85 (JPEG gdje canvas ne zna WebP). Mala slika (≤ 1 MB, ≤ 1600 px) u vrsti
+koju bucket prima ide kakva jest. Lokalno: 6016 px JPEG od 10 MB → WebP od 203 kB.
+Revizija: nema.
+
+**821. Galerija i alt naslovne u jezgri bez promjene RPC potpisa.** `events-organizer` (grana
+`domovina-api` `events-media`) prima `cover_image_alt` i `gallery` i upiše ih izravnim
+`update pinka_finance.events` korisnikovim klijentom nakon `create_event`/`update_event`,
+kao seed za venue_geo i galeriju. RLS `events_write` i check `events_gallery_shape` vrijede;
+oblik (≤ 20, https ≤ 1000, alt ≤ 300) se provjerava prije RPC-a. Novi kodovi:
+`invalid_cover_alt`, `invalid_gallery`, `invalid_gallery_url` (korak 3).
+Revizija: nema.
+
+**822. Korak 3 wizarda: naslovna i galerija, link ili upload.** Naslovna: pregled, link,
+„Učitaj sliku”, opis za čitače zaslona (šalje se samo uz naslovnu). Galerija: do 20 slika,
+redoslijed strelicama, opis po slici, „Dodaj” link ili „Učitaj slike” (više odjednom).
+Nacrt nosi `slikaAlt` i `galerija` (stari nacrt bez njih → prazno, `v` ostaje 1). Poznato:
+lokalno Storage vraća `http://` URL, pa ga validacija koraka 3 odbije (na stagingu je
+`https://api.domovina.ai`); na 1440×900 korak 3 sada ima scroll stranice; na mobitelu gumbi
+„Učitaj…” padaju u svoj red. Izgled ide na Ivanovo oko.
+Revizija: po potrebi u feedback sesiji.

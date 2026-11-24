@@ -347,6 +347,11 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   api_rest_error: SUSTAV_NE_ODGOVARA,
   api_bad_json: SUSTAV_NE_ODGOVARA,
   api_error: "Događaj nismo uspjeli spremiti. Pokušaj ponovno.",
+  nema_prava_slike:
+    "Sliku može učitati samo korisnik s provjerenim identitetom (eOsobna) na domovina.ai. Umjesto toga zalijepi link slike.",
+  slika_vrsta: "Ta datoteka nije slika koju možemo učitati. Pokušaj s JPG, PNG ili WebP.",
+  slika_prevelika: "Slika je prevelika (najviše 5 MB).",
+  slika_nije_spremljena: "Sliku nismo uspjeli spremiti. Pokušaj ponovno.",
   nema_prava_kreiranja:
     "Ne možeš kreirati događaj za ovog organizatora. Trebaš biti administrator i imati provjeren identitet (eOsobna) na domovina.ai.",
 
@@ -358,6 +363,9 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   invalid_dates: "Kraj događaja mora biti nakon početka.",
   invalid_cover_url: "Link naslovne slike nije ispravan.",
   invalid_description: "Opis je predug.",
+  invalid_cover_alt: "Opis naslovne slike je predug (najviše 300 znakova).",
+  invalid_gallery: "Galerija nije ispravna (najviše 20 slika, opis do 300 znakova).",
+  invalid_gallery_url: "Link slike u galeriji nije ispravan (mora počinjati s https://).",
   invalid_tier_title: "Svaka ulaznica treba naziv (najviše 160 znakova).",
   invalid_tier_price: "Cijena ulaznice nije ispravna.",
   invalid_tier_inventory: "Količina ulaznica nije ispravna.",

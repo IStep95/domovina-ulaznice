@@ -530,6 +530,81 @@ button.malaPoveznica {
   gap: var(--space-3);
 }
 
+/* ── korak 3: naslovna i galerija ── */
+
+.redSGumbom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.redSGumbom > :first-child {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+/* gumbi u visini polja, ne oznake iznad njega */
+.redSGumbom > button {
+  margin-top: 26px;
+}
+
+.naslovnaRed {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.naslovnaSlika {
+  width: 200px;
+  max-width: 60%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-bg);
+}
+
+.galerija {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stavkaGalerije {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.slicica {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-bg);
+  font-size: var(--font-size-xs);
+  overflow: hidden;
+}
+
+.akcijeSlike {
+  display: flex;
+  justify-content: space-between;
+}
+
+.akcijeSlike .ukloni:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.akcijeSlike .ukloni:disabled:hover {
+  color: inherit;
+}
+
 @media (min-width: 720px) {
   .sredina {
     padding: 28px 32px;

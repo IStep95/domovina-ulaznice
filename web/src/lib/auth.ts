@@ -275,6 +275,14 @@ export const kreirajDogadjaj = (
 ): Promise<{ id: string; slug: string; existing: boolean }> =>
   zahtjev("/api/organizator/dogadjaj", { method: "POST", body: JSON.stringify(tijelo) }, token);
 
+/**
+ * Upload slike iz editora (`POST /api/organizator/slika` → Storage
+ * `pinka-covers`). Tijelo je sama slika (već smanjena, `lib/slika.ts`);
+ * vraća javni URL koji ide u `cover_image_url` ili galeriju.
+ */
+export const ucitajSliku = (token: string, slika: Blob): Promise<{ url: string }> =>
+  zahtjev("/api/organizator/slika", { method: "POST", body: slika, headers: { "content-type": slika.type } }, token);
+
 /** Izvoz sudionika (CSV); s tokenom, pa se datoteka dohvaća fetchom, ne linkom. */
 export async function preuzmiHoldere(token: string, campaignId: string): Promise<Blob> {
   const res = await fetch(`/api/organizator/holderi.csv?campaign_id=${encodeURIComponent(campaignId)}`, {

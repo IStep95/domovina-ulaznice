@@ -600,6 +600,68 @@ export async function kreirajDogadjaj(
   return parsed as { id: string; slug: string; existing: boolean };
 }
 
+/** Što bucket `pinka-covers` prima (jezgra: `allowed_mime_types`) → nastavak datoteke. */
+export const VRSTE_SLIKA: Record<string, string> = {
+  "image/webp": "webp",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/avif": "avif",
+};
+
+/** Limit bucketa `pinka-covers` (5 MB). */
+export const NAJVECA_SLIKA = 5 * 1024 * 1024;
+
+/** `sub` iz JWT-a bez provjere potpisa: putanju ionako provjerava RLS Storagea. */
+function korisnikIzJwt(jwt: string): string | null {
+  try {
+    const dio = jwt.split(".")[1] ?? "";
+    const p = JSON.parse(atob(dio.replace(/-/g, "+").replace(/_/g, "/"))) as { sub?: unknown };
+    return typeof p.sub === "string" && UUID_RE.test(p.sub) ? p.sub : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Slika iz editora → Supabase Storage, korisnikovim JWT-om (nikad service
+ * ključem). RLS bucketa traži da putanja počinje s `auth.uid()` i provjeren
+ * identitet; lažan `sub` u JWT-u samo završi odbijanjem. Vraća javni URL.
+ */
+export async function ucitajSliku(
+  env: Env,
+  jwt: string,
+  bajtovi: ArrayBuffer,
+  vrsta: string,
+): Promise<{ url: string }> {
+  const uid = korisnikIzJwt(jwt);
+  if (!uid) throw new HttpError(401, "nije_prijavljen");
+  const putanja = `${uid}/${crypto.randomUUID()}.${VRSTE_SLIKA[vrsta] ?? "bin"}`;
+  const res = await fetch(`${env.DOMOVINA_API_URL}/storage/v1/object/pinka-covers/${putanja}`, {
+    method: "POST",
+    headers: {
+      apikey: anonKey(env),
+      Authorization: `Bearer ${jwt}`,
+      "content-type": vrsta,
+      "cache-control": "max-age=31536000",
+      "x-upsert": "false",
+    },
+    body: bajtovi,
+  });
+  if (!res.ok) {
+    // Storage RLS i istek JWT-a vraća kao 400 s `statusCode` i porukom u tijelu.
+    const text = await res.text();
+    if (/row-level security/i.test(text)) throw new HttpError(403, "nema_prava_slike");
+    // nevaljan ili istekao JWT: „jwt expired”, „JWS Protected Header is invalid”…
+    if (res.status === 401 || res.status === 403 || /jwt|jws|token|"Unauthorized"/i.test(text)) {
+      throw new HttpError(401, "nije_prijavljen");
+    }
+    if (res.status === 413 || /too large|maximum allowed size/i.test(text)) throw new HttpError(413, "slika_prevelika");
+    if (/mime/i.test(text)) throw new HttpError(415, "slika_vrsta");
+    throw new HttpError(502, "slika_nije_spremljena", `storage: ${res.status} ${text.slice(0, 200)}`);
+  }
+  return { url: `${env.DOMOVINA_API_URL}/storage/v1/object/public/pinka-covers/${putanja}` };
+}
+
 /**
  * Zabilježi povrat u jezgri: narudžba → `refunded`, izdane ulaznice → `void`,
  * inventory se vraća u prodaju, audit zapis ostaje.

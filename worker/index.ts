@@ -679,7 +679,9 @@ app.get("/api/organizator/holderi.csv", async (c) => {
 /**
  * Editor događaja: nova privatna skica. Worker propušta samo poznata polja i
  * odbija očito smeće prije mreže; prava validacija (i tko smije) je u
- * `create_event` u bazi. Galerija, koordinate i objava još nisu ovdje.
+ * `create_event` u bazi. Galeriju i alt naslovne upisuje `events-organizer`
+ * nakon `create_event` (jezgra, grana `events-media`). Koordinate i objava još
+ * nisu ovdje.
  */
 app.post("/api/organizator/dogadjaj", async (c) => {
   const jwt = bearer(c);
@@ -694,14 +696,39 @@ app.post("/api/organizator/dogadjaj", async (c) => {
   if (!UUID_RE.test(String(body.event_id ?? ""))) return fail("invalid_event_id");
   if (!UUID_RE.test(String(body.account_id ?? ""))) return fail("invalid_account_id");
   if (!Array.isArray(body.tiers) || body.tiers.length === 0) return fail("invalid_tiers");
+  // galerija: oblik i https provjerava events-organizer; ovdje samo da smeće ne ide na mrežu
+  if ("gallery" in body && (!Array.isArray(body.gallery) || body.gallery.length > 20)) return fail("invalid_gallery");
 
   const POLJA = [
     "event_id", "account_id", "title", "event_type", "starts_at", "ends_at", "timezone",
     "venue_name", "venue_address", "venue_city", "description_hr", "cover_image_url",
-    "organizer_name", "organizer_email", "organizer_web", "tiers",
+    "cover_image_alt", "gallery", "organizer_name", "organizer_email", "organizer_web", "tiers",
   ];
   const podaci = Object.fromEntries(POLJA.filter((k) => k in body).map((k) => [k, body[k]]));
   return c.json(await api.kreirajDogadjaj(c.env, jwt, podaci));
+});
+
+/**
+ * Upload slike za editor (naslovna ili galerija) → Supabase Storage
+ * `pinka-covers/{uid}/{uuid}.{ext}`, korisnikovim JWT-om. Bucket i njegov RLS
+ * su iz jezgre (`pinka_campaign_hardening`): javno čitanje, upis samo u vlastitu
+ * mapu i samo uz provjeren identitet — isti uvjet kao `create_event`. Browser
+ * sliku prije slanja smanji (web/src/lib/slika.ts), pa je 5 MB rezerva.
+ */
+app.post("/api/organizator/slika", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const rl = await consume(c.env, "slika", clientIp(c.req.raw));
+  if (!rl.allowed) return fail("previse_pokusaja", 429, { retry_after: rl.retryAfter });
+
+  const vrsta = (c.req.header("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+  if (!(vrsta in api.VRSTE_SLIKA)) return fail("slika_vrsta", 415);
+  if (Number(c.req.header("content-length") ?? 0) > api.NAJVECA_SLIKA) return fail("slika_prevelika", 413);
+  const bajtovi = await c.req.arrayBuffer();
+  if (bajtovi.byteLength === 0) return fail("slika_vrsta", 415);
+  if (bajtovi.byteLength > api.NAJVECA_SLIKA) return fail("slika_prevelika", 413);
+
+  return c.json(await api.ucitajSliku(c.env, jwt, bajtovi, vrsta));
 });
 
 app.post("/api/skener/sken", async (c) => {

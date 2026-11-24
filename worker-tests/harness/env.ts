@@ -68,6 +68,9 @@ export interface ApiState {
   /** `events-organizer` create: status i tijelo odgovora; pozivi za provjeru. */
   kreiranjeStatus: number;
   kreiranje: Record<string, unknown>;
+  /** Storage `pinka-covers` (upload slike iz editora): status i tijelo odgovora. */
+  slikaStatus: number;
+  slikaOdgovor: string;
   /** `organizer_payment_rails.invoice_provider` — tko izdaje račun kupcu. */
   invoiceProvider: string;
   /** Odgovor FIRA API-ja. */
@@ -106,6 +109,8 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     checkin: { status: "checked_in", serial: "SUS-000004", holder_name: "Ana Anić", tier_title: "Redovna", checked_in_count: 1 },
     checkinStatus: 200,
     kreiranjeStatus: 200,
+    slikaStatus: 200,
+    slikaOdgovor: '{"Key":"pinka-covers/x"}',
     kreiranje: { id: "dogadjaj-id", slug: "novi-dogadjaj", existing: false, event_created: true },
     organizerOverview: { accounts: [{ id: "acc-1", name: "Test udruga", allowlisted: true, has_record: true }], events: [] },
     invoiceProvider: "organizator",
@@ -324,6 +329,14 @@ function installFetchStub(state: ApiState) {
         throw new Error("events-organizer pozvan BEZ Authorization headera");
       }
       return json(state.kreiranje, state.kreiranjeStatus);
+    }
+
+    // ---- domovina-api: Storage (upload slike; korisnikov JWT, nikad service)
+    if (url.includes("/storage/v1/object/")) {
+      if (!headers.authorization?.startsWith("Bearer ")) {
+        throw new Error("Storage pozvan BEZ Authorization headera");
+      }
+      return new Response(state.slikaOdgovor, { status: state.slikaStatus });
     }
 
     // ---- domovina-api: events-checkin (traži Authorization, za razliku od ostalih)

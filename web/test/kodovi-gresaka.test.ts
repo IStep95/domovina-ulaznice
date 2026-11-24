@@ -178,6 +178,10 @@ const IZVAN_KUPNJE: Readonly<Record<string, string>> = {
   api_error: "api.ts kreirajDogadjaj — /api/organizator/dogadjaj (editor)",
   nije_prijavljen: "api.ts korisnickiRpc/korisnickiRest — organizator i skener",
   api_rail_update_failed: "api.ts upsertOrganizerRail — webhooks.ts (account.updated)",
+  nema_prava_slike: "api.ts ucitajSliku — /api/organizator/slika (editor)",
+  slika_prevelika: "api.ts ucitajSliku — /api/organizator/slika (editor)",
+  slika_vrsta: "api.ts ucitajSliku — /api/organizator/slika (editor)",
+  slika_nije_spremljena: "api.ts ucitajSliku — /api/organizator/slika (editor)",
 };
 
 const sviKodovi = new Set([
@@ -345,6 +349,7 @@ const RUTE_ORGANIZATORA = [
   'app.get("/api/organizator/pregled"',
   'app.get("/api/organizator/holderi.csv"',
   'app.post("/api/organizator/dogadjaj"',
+  'app.post("/api/organizator/slika"',
   'app.post("/api/skener/sken"',
 ];
 const organizator = RUTE_ORGANIZATORA.map((r) => kodoviPoziva(blok(index, r), "fail", 0));
@@ -366,11 +371,16 @@ const HTTP_ORGANIZATORA = [
   "api_bad_json",
   "nema_prava_kreiranja",
   "api_error",
+  "nema_prava_slike",
+  "slika_prevelika",
+  "slika_vrsta",
+  "slika_nije_spremljena",
 ];
 /**
  * Kodovi jezgre koje api.ts prosljeđuje dinamički (`code`): events-organizer
  * (create_event, validacija editora) i events-checkin (redeem_ticket). Ručno,
- * iz src/lib/api.ts PORUKE (SPA) — domovina-api nije u ovom repou.
+ * iz src/lib/api.ts PORUKE (SPA) — domovina-api nije u ovom repou. Galerija i
+ * alt naslovne (invalid_cover_alt, invalid_gallery*) su iz grane `events-media`.
  */
 const JEZGRA_ORGANIZATORA = [
   "invalid_title",
@@ -379,6 +389,9 @@ const JEZGRA_ORGANIZATORA = [
   "invalid_event_type",
   "invalid_dates",
   "invalid_cover_url",
+  "invalid_cover_alt",
+  "invalid_gallery",
+  "invalid_gallery_url",
   "invalid_description",
   "invalid_tier_title",
   "invalid_tier_price",

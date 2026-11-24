@@ -101,6 +101,22 @@ test("nacrt: najviše 50 tierova iz storagea", () => {
   assert.equal(nacrtIzTeksta(nacrtUTekst(n), EMAIL)!.unos.tieri.length, 50);
 });
 
+test("nacrt: galerija i alt preživljavaju; stari nacrt bez njih daje praznu galeriju", () => {
+  const galerija = [{ url: "https://x.hr/1.webp", alt: "Prva" }];
+  const n = nacrt({ unos: { ...valjan(), slika: "https://x.hr/a.webp", slikaAlt: "Zbor", galerija } });
+  assert.deepEqual(nacrtIzTeksta(nacrtUTekst(n), EMAIL)!.unos.galerija, galerija);
+  assert.equal(nacrtIzTeksta(nacrtUTekst(n), EMAIL)!.unos.slikaAlt, "Zbor");
+  const stari = nacrtIzTeksta(JSON.stringify({ v: 1, email: EMAIL, eventId: ID, unos: { slika: "https://x" } }), EMAIL)!;
+  assert.deepEqual(stari.unos.galerija, []);
+  assert.equal(stari.unos.slikaAlt, "");
+  const pokvaren = nacrtIzTeksta(
+    JSON.stringify({ v: 1, email: EMAIL, eventId: ID, unos: { galerija: [null, { url: 5 }, ...Array(30).fill({ url: "https://x" })] } }),
+    EMAIL,
+  )!;
+  assert.equal(pokvaren.unos.galerija.length, 20);
+  assert.deepEqual(pokvaren.unos.galerija[0], { url: "", alt: "" });
+});
+
 test("spremi, učitaj, obriši kroz storage", () => {
   const s = memorija();
   assert.equal(ucitajNacrt(EMAIL, s), null);

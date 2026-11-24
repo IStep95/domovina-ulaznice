@@ -32,6 +32,8 @@ export const DEFAULT_RULES: Record<string, Rule> = {
   // sken na ulazu: velikodušno — na vratima se skenira u naletima, a
   // autorizacija je ionako server-side pri svakom skenu.
   sken: { limit: 600, windowSeconds: 60 },
+  // upload slike u editoru: naslovna + do 20 u galeriji, uz ponavljanja
+  slika: { limit: 60, windowSeconds: 600 },
 };
 
 /** Zapis "koliko/sekundi" iz env varijable ("10/600"). */

@@ -56,6 +56,8 @@ const unos = (izmjene: Partial<UnosDogadjaja> = {}): UnosDogadjaja => ({
   grad: "Zagreb",
   opis: "",
   slika: "",
+  slikaAlt: "",
+  galerija: [],
   organizator: "",
   email: "",
   web: "",
@@ -87,15 +89,17 @@ test("zahtjev: centi, UTC, prazna polja kao null, količina prazna = neograniče
   assert.deepEqual(z.tiers, [{ title: "Parter", price_cents: 2550, inventory_total: null, imenska: true }]);
 });
 
-test("zahtjev: točno ista polja kao SPA (ugovor s events-organizer)", () => {
+test("zahtjev: polja SPA-e + alt naslovne i galerija (ugovor s events-organizer)", () => {
   const z = zahtjev(unos({ adresa: " Maksimirska 1 ", opis: "Opis", slika: "https://x.hr/a.jpg", web: "primjer.hr" }), "id-2");
   assert.deepEqual(Object.keys(z).sort(), [
     "account_id",
+    "cover_image_alt",
     "cover_image_url",
     "description_hr",
     "ends_at",
     "event_id",
     "event_type",
+    "gallery",
     "organizer_email",
     "organizer_name",
     "organizer_web",
@@ -112,6 +116,41 @@ test("zahtjev: točno ista polja kao SPA (ugovor s events-organizer)", () => {
   assert.equal(z.organizer_name, null);
   assert.deepEqual(z.tiers, [{ title: "Ulaz", price_cents: 1500, inventory_total: 200, imenska: false }]);
   assert.equal(zahtjev(unos({ kraj: "" }), "id-3").ends_at, null);
+});
+
+test("zahtjev: galerija redom, prazan alt se ne šalje, alt naslovne samo uz naslovnu", () => {
+  const z = zahtjev(
+    unos({
+      slika: "https://x.hr/a.webp",
+      slikaAlt: " Zbor na pozornici ",
+      galerija: [
+        { url: " https://x.hr/1.webp ", alt: " Prva " },
+        { url: "https://x.hr/2.webp", alt: "  " },
+      ],
+    }),
+    "id-4",
+  );
+  assert.equal(z.cover_image_alt, "Zbor na pozornici");
+  assert.deepEqual(z.gallery, [{ url: "https://x.hr/1.webp", alt: "Prva" }, { url: "https://x.hr/2.webp" }]);
+  assert.equal(zahtjev(unos({ slikaAlt: "ostao od maknute slike" }), "id-5").cover_image_alt, null);
+  assert.deepEqual(zahtjev(unos(), "id-6").gallery, []);
+});
+
+test("provjera galerije: samo https, najviše 20, alt do 300 znakova; sve je korak 3", () => {
+  const g = provjeri(
+    unos({
+      slikaAlt: "a".repeat(301),
+      galerija: [
+        { url: "http://x.hr/1.jpg", alt: "" },
+        { url: "https://x.hr/2.jpg", alt: "b".repeat(301) },
+      ],
+    }),
+  );
+  assert.deepEqual(Object.keys(g).sort(), ["galerija.0.url", "galerija.1.alt", "slikaAlt"]);
+  for (const k of Object.keys(g)) assert.equal(korakPolja(k), 3, k);
+  const puno = Array.from({ length: 21 }, (_, i) => ({ url: `https://x.hr/${i}.jpg`, alt: "" }));
+  assert.ok(provjeri(unos({ galerija: puno })).galerija);
+  for (const kod of ["invalid_gallery", "invalid_gallery_url", "invalid_cover_alt"]) assert.equal(korakZaKod(kod), 3, kod);
 });
 
 // ── validacija po koraku ────────────────────────────────────────────────────
