@@ -639,3 +639,98 @@ Astro, javne samo `ulaznice(-staging).domovina.ai`. S8 seli organizatora, skener
 (s wizardom iz stavke 4), S9 gasi SPA-u i domene `ulaznice-web(-staging)`.
 Revizija: nema.
 
+
+## S8 (2026-11-24)
+
+**800. Greške organizatora su `ApiError` iz `web/src/lib/api.ts`** (`6dacfb6`); `AuthError` iz
+SPA-e ne postoji u `web/`. `jeIstekla(e)` gleda kod (`nije_prijavljen`, `not_authenticated`),
+ne status: 401 vraćaju i `prijava_neuspjela` i `kod_neispravan`. Svaki 401 i dalje briše
+spremljenu sesiju, kao u SPA-i.
+Revizija: nema.
+
+**801. Sesija ostaje `sessionStorage["ulaznice.sesija"]`**, isti ključ kao u SPA-i (prijelaz
+između SPA-e i Astra tijekom deploya ne odjavljuje); refresh token se ne sprema. SSR ne zna
+za sesiju, web ostaje bez tajni (odluka 4).
+Revizija: nema.
+
+**802. Google povratak bez kose crte na kraju:** `adresaGooglePrijave` skida završni `/` iz
+`povratak`, jer Workerov regex (`/api/organizator/google`) prihvaća samo `/organizator`,
+`/organizator/novi` i `/skener`. Token iz fragmenta preuzima otok (`web/src/lib/auth.ts`).
+Revizija: nema.
+
+**803. Poruke organizatora su zasebna tablica `PORUKE_ORGANIZATORA`** u `web/src/lib/poruke.ts`
+(`porukaOrganizatora`, `porukaIzGreske`), preuzeta iz SPA `PORUKE` uz `auth_greska`,
+`api_error`, `invalid_account_id`, `invalid_event_id`, `api_*`. `kodovi-gresaka.test.ts`
+provjerava i rute organizatora/skenera; kodovi jezgre su ručni popis `JEZGRA_ORGANIZATORA`.
+Revizija: nema.
+
+**804. `SaPrijavom` je zajednički omot otoka** (render-prop `{ sesija, odjava, istekla }`);
+istek sesije vraća prijavu s „Prijava je istekla”. `Zaglavlje.astro` se ne mijenja: naslov,
+e-mail i „Odjava” su u `TrakaSesije` unutar otoka.
+Revizija: nema.
+
+**805. Skener:** ikone `kvacica`/`x-krug` umjesto emojija; vrijeme prvog ulaska u zoni
+Europe/Zagreb („16. 4. u 9:12”), SPA je koristila zonu preglednika. Safari i dalje bez
+`BarcodeDetector` (ručni unos).
+Revizija: nema.
+
+**806. Pregled prodaje:** „zauzeto: N” umjesto „N ulaznica” (bez množine), datum u meta
+retku, „Skica” u tonu čekanja, zastavice računa kao oznake. Ime CSV-a očišćeno od opasnih
+znakova, bez sluga `sudionici-dogadjaj.csv`.
+Revizija: nema.
+
+**807. Stranice organizatora:** otoci `client:only="react"` s fallbackom „Učitavanje…” i
+`<noscript>`, `noindex`, `cache-control: no-store` (`CACHE_ORGANIZATOR` u `stranica.ts`),
+bez SSR poziva prema API-ju.
+Revizija: nema.
+
+**808. Lighthouse sitnice iz 705** (`8d397d2`): `inlineStylesheets: "always"`; preload samo
+latin Figtree woff2; `og:image:width/height` samo uz zadanu sliku (mjere u `OG_ZADANA_MJERE`,
+test ih čita iz PNG-a); `og:image:type` iz nastavka; JSON-LD `image` = naslovna, inače
+`og-zadana.png`.
+Revizija: nema.
+
+**809. Worker bez `SPA_STRANICE`** (`2059ebf`): `/organizator*` i `/skener` idu na `WEB`,
+nepoznato pod `/organizator/` dobiva Astrov 404. Bez `WEB` bindinga sve ide u `ASSETS`
+(rezerva do S9). Deploy: prvo `web`, pa glavni Worker (`docs/deploy-dug.md` #13).
+Revizija: S9 (brisanje `ASSETS`).
+
+**810. Wizard `/organizator/novi`** (`62359dc`, `ui-feedback.md` stavka 4): 5 koraka, logika u
+`web/src/lib/editor.ts` (`validirajKorak`, `provjeri` = unija koraka, `prviNevaljaniKorak`,
+`najdaljiDopusteni`, `korakZaKod`), payload prema `events-organizer` isti kao u SPA-i.
+Na 1440×900 svih 5 koraka bez scrolla (scrollHeight 900, najtješnji korak 5, ~70 px rezerve);
+1280×800 korak 5 ima 30 px scrolla. Snimke: `web/docs/research/2026-11-24-s8-wizard/`.
+Revizija: nema.
+
+**811. Birač datuma je `web/src/lib/birac-datuma.ts`**: `kalendar.ts` u `web/` već radi
+„Dodaj u kalendar” (.ics). Odabrani dan je `--color-ink`, ne naglasna boja.
+Revizija: nema.
+
+**812. `Osnovni.astro` dobiva `sirina="puna"` (1280 px) i prop `aplikacija`:** bez podnožja,
+`<main>` je flex stupac koji ispuni prozor. Vrijedi za cijelu `/organizator/novi`.
+Revizija: nema.
+
+**813. Nacrt u `localStorage["ulaznice.nacrt-dogadjaja"]`** (`v: 1`, e-mail, `eventId`,
+unos, najdalji posjećeni korak). Tuđi nacrt (drugi e-mail) se ne učitava; `eventId` u
+nacrtu znači da ponovno slanje nakon refresha ili isteka prijave ne pravi duplikat
+(idempotencija jezgre). „Odbaci nacrt” traži `confirm` i daje novi `event_id`.
+Revizija: nema.
+
+**814. Navigacija wizarda:** korak u `?korak=N` (`pushState`, `popstate`); stepper, URL i
+„naprijed” idu najdalje do min(najdalji posjećeni, prvi nevaljani). „Natrag” u traci radi
+`pushState` na prethodni korak, ne `history.back()` (nakon reloada bi izašao sa stranice).
+Greške polja se vide tek nakon prvog „Dalje” na koraku, fokus na prvo nevaljano. U koraku 3
+„Dalje” piše „Preskoči” dok su opis i slika prazni.
+Revizija: nema.
+
+**815. Greška jezgre nakon spremanja vodi na svoj korak** (`korakZaKod`: `slug_collision` → 1,
+`invalid_tier_*` → 4). Nova pravila po koraku (duljina mjesta 160, grada 80, vrsta iz popisa)
+samo ponavljaju jezgru. Ime organizatora u pregledu kartice je naziv događaja kad je polje
+prazno, kao `coalesce(organizer_name, title)` u `create_event`.
+Revizija: nema.
+
+**816. S8 provjeren na pravom lokalnom stacku** (:8788 → `WEB` :8792, jezgra, Mailpit):
+prijava kodom i spremanje skice rade, skica je u `pinka_finance.campaigns` (`draft`).
+Recept: `web/docs/research/2026-11-24-s8-wizard.md`. Google prijava nije isprobana uživo
+(povratak pokrivaju `web/test/auth.test.ts` i `worker-tests/web-binding.test.ts`).
+Revizija: nema.
