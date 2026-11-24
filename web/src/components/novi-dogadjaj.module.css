@@ -1,0 +1,652 @@
+/* Wizard novog događaja (NoviDogadjaj.tsx, S8, ui-feedback stavka 4).
+ * Mobitel prvi: jedan stupac, traka napretka iznad, Natrag/Dalje prilijepljeni
+ * na dno. Od 1024 px tri stupca (stepper · polja · živi pregled) i traka na
+ * dnu; visina stane u 1440×900 bez scrolla stranice (Osnovni `aplikacija`). */
+.wizard {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.tijelo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+/* ── stepper (samo računalo) ── */
+.stepper,
+.pregled {
+  display: none;
+}
+
+.koraci {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.koraci li {
+  position: relative;
+}
+
+/* okomita crta između krugova */
+.koraci li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 46px;
+  bottom: -6px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--color-border);
+}
+
+.korak {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 0;
+  padding: 8px 8px 14px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+}
+
+button.korak:hover {
+  background: var(--color-surface);
+}
+
+button.korak:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.krug {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.korakTekst {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-top: 3px;
+}
+
+.korakNaziv {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.korakOpis {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.trenutni .krug {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+
+.trenutni .korakNaziv {
+  font-weight: 800;
+}
+
+.gotov .krug {
+  border-color: var(--color-ok);
+  background: var(--color-ok-bg);
+  color: var(--color-ok);
+}
+
+.gotov .korakOpis {
+  color: var(--color-ok);
+}
+
+.zatvoren .korakNaziv {
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.stepperDno {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin-top: var(--space-4);
+  padding: var(--space-4) 8px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.stepperDno .napomena {
+  margin-bottom: var(--space-2);
+}
+
+.malaPoveznica {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+button.malaPoveznica {
+  min-height: 32px;
+}
+
+.malaPoveznica:hover {
+  color: var(--color-text);
+}
+
+/* ── sredina: polja koraka ── */
+.sredina {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  padding: 20px 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* „2/5 · Kada i gdje” (mobitel i tablet) */
+.napredak {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.napredak b {
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.crta {
+  flex-basis: 100%;
+  height: 4px;
+  margin-top: 6px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--color-neutral-bg);
+}
+
+.crta span {
+  display: block;
+  height: 100%;
+  background: var(--color-ink);
+  transition: width 0.2s ease;
+}
+
+.naslovBlok {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.naslovKoraka {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.naslovKoraka:focus {
+  outline: none;
+}
+
+.podnaslov,
+.mutno,
+.napomena {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.napomena {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.polja {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.red {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.skupina {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.skupina > legend {
+  margin-bottom: 8px;
+  padding: 0;
+}
+
+.legenda {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.izbornik {
+  padding-right: 10px;
+}
+
+/* Vrsta: radio kao pilule */
+.vrste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.vrsta {
+  position: relative;
+  display: inline-flex;
+}
+
+.vrsta input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.vrsta span {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  padding: 0 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.vrsta span:hover {
+  border-color: var(--color-text-muted);
+}
+
+.vrsta input:checked + span {
+  border-color: var(--color-ink);
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+  font-weight: 600;
+}
+
+.vrsta input:focus-visible + span {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.opis {
+  min-height: 180px;
+  padding: 12px 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* ── 4. ulaznice: tablica ── */
+.tierovi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.zaglavljeTablice {
+  display: none;
+}
+
+.tijeloTablice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.redTiera {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "naziv naziv"
+    "cijena kolicina"
+    "imenska ukloni";
+  gap: 10px var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.celija {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.c_naziv { grid-area: naziv; }
+.c_cijena { grid-area: cijena; }
+.c_kolicina { grid-area: kolicina; }
+.c_imenska { grid-area: imenska; }
+.c_ukloni { grid-area: ukloni; align-items: flex-end; }
+
+.oznakaCelije {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.unosCelije {
+  min-height: var(--tap-min);
+  padding: 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.c_imenska {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  font-size: var(--font-size-sm);
+  cursor: pointer;
+}
+
+.c_imenska input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-ink);
+}
+
+.ukloni {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.ukloni:hover {
+  color: var(--color-error);
+}
+
+.dodajRed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+
+/* ── 5. pregled: sažetak ── */
+.sazetak {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.sazetakRed {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "dt uredi"
+    "dd uredi";
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: 8px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.sazetakRed dt {
+  grid-area: dt;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.sazetakRed dd {
+  grid-area: dd;
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.uredi {
+  grid-area: uredi;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.uredi:hover {
+  background: var(--color-surface-2);
+}
+
+.samoMobitel {
+  display: block;
+}
+
+/* ── traka Natrag · Korak · Dalje ── */
+.traka {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  margin: auto calc(-1 * var(--space-4)) 0;
+  padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.trakaKorak {
+  display: none;
+}
+
+.trakaDesno {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.trakaDesno button {
+  width: 100%;
+}
+
+.strelica {
+  font-weight: 400;
+}
+
+/* ── gotovo ── */
+.gotovo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.gumbi {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+@media (min-width: 720px) {
+  .sredina {
+    padding: 28px 32px;
+  }
+  .red {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .zaglavljeTablice,
+  .redTiera {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 112px 104px 72px 44px;
+    grid-template-areas: none;
+    gap: var(--space-2);
+  }
+  .zaglavljeTablice {
+    padding: 0 2px;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .zaglavljeTablice span:nth-child(4) {
+    text-align: center;
+  }
+  .redTiera {
+    align-items: start;
+    padding: 0 2px;
+    border: 0;
+    border-radius: 0;
+  }
+  .c_naziv,
+  .c_cijena,
+  .c_kolicina,
+  .c_imenska,
+  .c_ukloni {
+    grid-area: auto;
+  }
+  .c_imenska {
+    justify-content: center;
+  }
+  .c_ukloni {
+    align-items: center;
+  }
+  .tijeloTablice {
+    gap: var(--space-2);
+  }
+  .oznakaCelije,
+  .oznakaImenska,
+  .ukloniTekst {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .ukloni {
+    width: 44px;
+    padding: 0;
+  }
+  .sazetakRed {
+    grid-template-columns: 128px minmax(0, 1fr) auto;
+    grid-template-areas: "dt dd uredi";
+    padding: 3px 0;
+  }
+  .traka {
+    position: static;
+    grid-template-columns: 1fr auto 1fr;
+    margin: 0;
+    padding: var(--space-4) 0 0;
+    background: transparent;
+  }
+  .trakaKorak {
+    display: block;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .trakaDesno button {
+    width: auto;
+    min-width: 168px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tijelo {
+    flex: 1 0 auto;
+    display: grid;
+    grid-template-columns: 208px minmax(0, 1fr) minmax(280px, 340px);
+    align-items: start;
+    gap: 40px;
+  }
+  .stepper {
+    display: flex;
+    flex-direction: column;
+  }
+  .pregled {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-1);
+  }
+  .pregledOznaka {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .napredak,
+  .samoMobitel {
+    display: none;
+  }
+  /* više od ~6 vrsta: scrolla samo tablica, stranica ne */
+  .tijeloTablice {
+    max-height: 340px;
+    overflow-y: auto;
+    margin: -4px;
+    padding: 4px;
+  }
+}

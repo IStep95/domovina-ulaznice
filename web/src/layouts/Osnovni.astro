@@ -36,8 +36,16 @@ interface Props {
   canonical?: string | null;
   /** `brand.accent_color`; undefined = platformske boje iz tokens.css. */
   naglasak?: string | null;
-  /** Najveća širina sadržaja: uska 760 (narudžba), srednja 960 (popis), siroka 1040 (događaj, kupnja). */
-  sirina?: "uska" | "srednja" | "siroka";
+  /**
+   * Najveća širina sadržaja: uska 760 (narudžba), srednja 960 (popis), siroka 1040
+   * (događaj, kupnja), puna 1280 (wizard novog događaja: tri stupca).
+   */
+  sirina?: "uska" | "srednja" | "siroka" | "puna";
+  /**
+   * Stranica-alat (wizard /organizator/novi): bez podnožja, a <main> je flex stupac
+   * koji ispuni visinu prozora, da traka „Natrag · Dalje” sjedne na dno bez scrolla.
+   */
+  aplikacija?: boolean;
   /**
    * noindex dok produkcija ne smije izgledati kao prodaja (odluka 24); obje
    * postojeće stranice ga imaju od S1. Ukida ga zasebna odluka, ne S2.
@@ -55,9 +63,10 @@ const {
   naglasak,
   sirina = "siroka",
   noindex = true,
+  aplikacija = false,
 } = Astro.props;
 
-const SIRINE = { uska: "760px", srednja: "960px", siroka: "1040px" } as const;
+const SIRINE = { uska: "760px", srednja: "960px", siroka: "1040px", puna: "1280px" } as const;
 const maxSirina = SIRINE[sirina];
 const stil = naglasak !== undefined ? naglasakStil(naglasak) : undefined;
 const ogTip = ogSlika ? (ogSlikaMjere?.tip ?? ogTipSlike(ogSlika)) : null;
@@ -91,10 +100,10 @@ const ogTip = ogSlika ? (ogSlikaMjere?.tip ?? ogTipSlike(ogSlika)) : null;
   <body>
     <a class="preskoci" href="#sadrzaj">Preskoči na sadržaj</a>
     <Zaglavlje />
-    <main id="sadrzaj" class="sadrzaj" style={`max-width: ${maxSirina}`}>
+    <main id="sadrzaj" class:list={["sadrzaj", { aplikacija }]} style={`max-width: ${maxSirina}`}>
       <slot />
     </main>
-    <Podnozje sirina={maxSirina} />
+    {!aplikacija && <Podnozje sirina={maxSirina} />}
     <slot name="dno" />
   </body>
 </html>
@@ -110,9 +119,18 @@ const ogTip = ogSlika ? (ogSlikaMjere?.tip ?? ogTipSlike(ogSlika)) : null;
     margin: 0 auto;
     padding: 40px var(--space-6) 72px;
   }
+  .aplikacija {
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-6);
+  }
   @media (max-width: 719px) {
     .sadrzaj {
       padding: var(--space-4) var(--space-4) var(--space-8);
+    }
+    .aplikacija {
+      padding-bottom: 0;
     }
   }
   .preskoci {

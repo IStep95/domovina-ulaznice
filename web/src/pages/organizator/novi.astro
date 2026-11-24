@@ -1,15 +1,15 @@
 ---
-// Novi događaj (S8): ljuska + otok NoviDogadjaj (`client:only`), isti obrazac
-// kao /organizator. Otok je zasad privremen (prijava + obavijest); wizard iz
-// ui-feedback.md stavke 4 dolazi u njega. Payload prema events-organizer ide
-// kroz kreirajDogadjaj (src/lib/auth.ts).
+// Novi događaj (S8): ljuska + otok NoviDogadjaj (`client:only`), wizard iz
+// ui-feedback.md stavke 4. Široka ljuska bez podnožja (`aplikacija`): na
+// računalu tri stupca i traka „Natrag · Dalje” na dnu, bez scrolla na 1440×900.
+// Payload prema events-organizer ide kroz kreirajDogadjaj (src/lib/auth.ts).
 import Osnovni from "../../layouts/Osnovni.astro";
 import NoviDogadjaj from "../../components/NoviDogadjaj.tsx";
 import { CACHE_ORGANIZATOR } from "../../lib/stranica.ts";
 
 Astro.response.headers.set("cache-control", CACHE_ORGANIZATOR);
 ---
-<Osnovni title="Novi događaj · Ulaznice" opis="Novi događaj za organizatore." sirina="srednja" noindex>
+<Osnovni title="Novi događaj · Ulaznice" opis="Novi događaj za organizatore." sirina="puna" aplikacija noindex>
   <NoviDogadjaj client:only="react">
     <p slot="fallback" class="ucitavanje" role="status">Učitavanje…</p>
   </NoviDogadjaj>

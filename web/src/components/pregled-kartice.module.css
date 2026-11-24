@@ -1,0 +1,148 @@
+/* Živi pregled kartice (PregledKartice.tsx): kopija mjera iz KarticaDogadjaja.astro,
+ * GrupaPoDatumu.astro (datum iznad, kao na mobitelu) i DatumskaPlocica.astro
+ * („boja”, l = 112 px). Kad se kartica promijeni tamo, mijenja se i ovdje. */
+.grupa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.datum {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.datum b {
+  font-weight: 700;
+}
+
+.dan {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.kartica {
+  display: flex;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.tekst {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.termin {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.naslov {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+/* Zamjenski naslov dok organizator ne upiše svoj. */
+.zamjena {
+  color: var(--color-text-muted);
+}
+
+.organizator,
+.mjesto {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.mjesto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mjesto svg {
+  flex: none;
+}
+
+.oznake {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.slika {
+  flex: none;
+  width: 112px;
+  height: 112px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  background: var(--color-neutral-bg);
+}
+
+.plocica {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 112px;
+  height: 112px;
+  border-radius: var(--radius-md);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  line-height: 1;
+}
+
+.plocicaMjesec {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.plocicaDan {
+  font-size: 40px;
+  font-weight: 800;
+}
+
+.plocicaGodina {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+}
+
+@media (max-width: 719px) {
+  .kartica {
+    gap: var(--space-3);
+    padding: 14px;
+  }
+  .naslov {
+    font-size: 17px;
+  }
+  .slika,
+  .plocica {
+    width: 76px;
+    height: 76px;
+  }
+  .plocicaMjesec {
+    font-size: 11px;
+  }
+  .plocicaDan {
+    font-size: var(--font-size-2xl);
+  }
+  .plocicaGodina {
+    display: none;
+  }
+}
