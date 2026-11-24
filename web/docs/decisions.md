@@ -734,3 +734,9 @@ prijava kodom i spremanje skice rade, skica je u `pinka_finance.campaigns` (`dra
 Recept: `web/docs/research/2026-11-24-s8-wizard.md`. Google prijava nije isprobana uživo
 (povratak pokrivaju `web/test/auth.test.ts` i `worker-tests/web-binding.test.ts`).
 Revizija: nema.
+
+**817. Gumb „Nastavi s Googleom” je iz dizajnerskog sustava** (`gumb.sekundarni gumb.velik
+gumb.blok`, `web/src/components/Prijava.tsx`), ne kopija SPA-e (plavi tekst, svijetli rub,
+`src/styles.css` `.prijava__google`). Agent ga je u S8 preslikao bez zapisa; Ivan je 24. 11.
+potvrdio da zasad ostaje tako. Logo je isti SVG.
+Revizija: po potrebi u feedback sesiji.
