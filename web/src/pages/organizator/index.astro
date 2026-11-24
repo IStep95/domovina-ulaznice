@@ -1,0 +1,25 @@
+---
+// Pregled prodaje (S8): ljuska iz dizajnerskog sustava + otok PregledProdaje
+// (`client:only`). SSR ne zna za sesiju i ne zove API (odluka 4): token je samo
+// u sessionStorageu preglednika, a otok zove relativni /api/organizator/*.
+// Bez sesije otok prikazuje prijavu; Google prijava se vraća ovamo s tokenom
+// u fragmentu (`/api/organizator/google?povratak=/organizator`).
+import Osnovni from "../../layouts/Osnovni.astro";
+import PregledProdaje from "../../components/PregledProdaje.tsx";
+import { CACHE_ORGANIZATOR } from "../../lib/stranica.ts";
+
+Astro.response.headers.set("cache-control", CACHE_ORGANIZATOR);
+---
+<Osnovni title="Pregled prodaje · Ulaznice" opis="Pregled prodaje ulaznica za organizatore." sirina="srednja" noindex>
+  <PregledProdaje client:only="react">
+    <p slot="fallback" class="ucitavanje" role="status">Učitavanje…</p>
+  </PregledProdaje>
+  <noscript><p class="ucitavanje">Za prijavu i pregled prodaje potreban je JavaScript.</p></noscript>
+</Osnovni>
+
+<style>
+  .ucitavanje {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+</style>

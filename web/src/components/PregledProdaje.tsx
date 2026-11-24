@@ -1,0 +1,180 @@
+// Pregled prodaje za organizatora (S8): otok `client:only` na /organizator.
+// Prenesen iz src/pages/Organizator.tsx (SPA, rezerva do S9). Novi događaj je
+// zasebna stranica (/organizator/novi); uređivanje postojećeg još ne postoji.
+//
+// Namjerno uzak opseg: organizator mora moći vidjeti koliko je prodano i
+// izvesti popis sudionika bez da nas zove. Uređivanje događaja, Stripe
+// onboarding i DAC7 obrazac su U3 i traže puno više.
+//
+// Brojevi dolaze iz `organizer_overview` RPC-a, pozvanog S KORISNIKOVIM JWT-om
+// — RLS odlučuje što ovaj korisnik smije vidjeti. Ovdje nema filtriranja po
+// accountu u kodu, i to je namjerno: filter u klijentu je ukras, ne zaštita.
+// „Zauzeto” (ne „prodano”) uključuje i rezervacije: v. zbrojDogadjaja.
+import { useEffect, useState } from "react";
+import { dohvatiPregled, jeIstekla, preuzmiHoldere, type OrgEvent, type OrgPregled } from "../lib/auth.ts";
+import { eur } from "../lib/format.ts";
+import { datumDogadjaja, imeCsvDatoteke, stanjeDogadjaja, zbrojDogadjaja } from "../lib/organizator.ts";
+import { porukaIzGreske } from "../lib/poruke.ts";
+import Banner from "./Banner.tsx";
+import SaPrijavom, { type SesijaOtoka } from "./SaPrijavom.tsx";
+import TrakaSesije from "./TrakaSesije.tsx";
+import gumb from "./gumb.module.css";
+import oznaka from "./oznaka.module.css";
+import css from "./pregled-prodaje.module.css";
+
+export default function PregledProdaje() {
+  return <SaPrijavom naslov="Pregled prodaje">{(s) => <Pregled {...s} />}</SaPrijavom>;
+}
+
+function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
+  const [pregled, postaviPregled] = useState<OrgPregled | null>(null);
+  const [greska, postaviGresku] = useState<string | null>(null);
+
+  useEffect(() => {
+    let vazi = true;
+    dohvatiPregled(sesija.access_token)
+      .then((p) => vazi && postaviPregled(p))
+      .catch((e) => {
+        if (!vazi) return;
+        if (jeIstekla(e)) istekla();
+        else postaviGresku(porukaIzGreske(e));
+      });
+    return () => {
+      vazi = false;
+    };
+  }, [sesija.access_token, istekla]);
+
+  return (
+    <div className={css.pregled}>
+      <TrakaSesije naslov="Pregled prodaje" email={sesija.email} odjava={odjava}>
+        <a className={`${gumb.gumb} ${gumb.primarni}`} href="/organizator/novi">
+          + Novi događaj
+        </a>
+      </TrakaSesije>
+
+      {greska && <Banner ton="error">{greska}</Banner>}
+      {!pregled && !greska && (
+        <p className={css.mutno} role="status">
+          Učitavanje…
+        </p>
+      )}
+
+      {pregled && pregled.accounts.length > 0 && (
+        <section className={css.odjeljak} aria-labelledby="pregled-organizatori">
+          <h2 id="pregled-organizatori" className={css.podnaslov}>
+            Organizatori
+          </h2>
+          {pregled.accounts.map((a) => (
+            <div key={a.id} className={css.racun}>
+              <strong>{a.name}</strong>
+              <div className={css.oznake}>
+                <span className={`${oznaka.oznaka} ${a.allowlisted ? oznaka.ok : oznaka.wait}`}>
+                  {a.allowlisted ? "objava dopuštena" : "objava još nije odobrena"}
+                </span>
+                <span className={`${oznaka.oznaka} ${a.has_record ? oznaka.ok : oznaka.wait}`}>
+                  {a.has_record ? "podaci izdavatelja upisani" : "nedostaju podaci izdavatelja (DAC7)"}
+                </span>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {pregled && (
+        <section className={css.odjeljak} aria-labelledby="pregled-dogadjaji">
+          <h2 id="pregled-dogadjaji" className={css.podnaslov}>
+            Događaji
+          </h2>
+          {pregled.events.length === 0 && <p className={css.mutno}>Nemate nijedan događaj.</p>}
+          {pregled.events.map((d) => (
+            <Dogadjaj key={d.campaign_id} d={d} token={sesija.access_token} istekla={istekla} />
+          ))}
+        </section>
+      )}
+
+      <p className={css.napomena}>
+        Isplate i računi kartičnih uplata su na vašem Stripe računu — platforma ne drži vaš novac i ne naplaćuje
+        naknadu na prodaju.
+      </p>
+    </div>
+  );
+}
+
+function Dogadjaj({ d, token, istekla }: { d: OrgEvent; token: string; istekla: () => void }) {
+  const [radi, postaviRadi] = useState(false);
+  const [greska, postaviGresku] = useState<string | null>(null);
+  const { zauzeto, prihod, imenskih } = zbrojDogadjaja(d);
+  const stanje = stanjeDogadjaja(d.state);
+  const meta = [datumDogadjaja(d), d.event?.venue_city].filter(Boolean).join(" · ");
+
+  async function preuzmi() {
+    postaviGresku(null);
+    postaviRadi(true);
+    try {
+      const blob = await preuzmiHoldere(token, d.campaign_id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = imeCsvDatoteke(d);
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      if (jeIstekla(e)) istekla();
+      else postaviGresku(porukaIzGreske(e));
+    } finally {
+      postaviRadi(false);
+    }
+  }
+
+  return (
+    <article className={css.kartica} aria-labelledby={`dogadjaj-${d.campaign_id}`}>
+      <div className={css.vrh}>
+        <div className={css.naslovBlok}>
+          <h3 id={`dogadjaj-${d.campaign_id}`} className={css.naslov}>
+            {d.title}
+          </h3>
+          <div className={css.meta}>
+            <span className={`${oznaka.oznaka} ${oznaka[stanje.ton]}`}>{stanje.tekst}</span>
+            {meta && <span>{meta}</span>}
+          </div>
+        </div>
+        <div className={css.zbroj}>
+          <strong className={css.iznos}>{eur(prihod)}</strong>
+          <span className={css.mutno}>zauzeto: {zauzeto}</span>
+        </div>
+      </div>
+
+      {d.tiers.length === 0 ? (
+        <p className={css.mutno}>Cjenik još nije objavljen.</p>
+      ) : (
+        <ul className={css.tierovi}>
+          {d.tiers.map((t) => (
+            <li key={t.id} className={css.tier}>
+              <span>{t.title}</span>
+              <span className={css.brojke}>
+                {t.inventory_claimed}
+                {t.inventory_total !== null ? ` / ${t.inventory_total}` : ""} · {eur(t.price_cents)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {greska && <Banner ton="error">{greska}</Banner>}
+
+      {imenskih && (
+        <div>
+          <button
+            type="button"
+            className={`${gumb.gumb} ${gumb.sekundarni}`}
+            disabled={radi}
+            aria-busy={radi || undefined}
+            onClick={preuzmi}
+          >
+            {radi ? "Pripremam…" : "Preuzmi popis sudionika (CSV)"}
+          </button>
+        </div>
+      )}
+    </article>
+  );
+}

@@ -1,0 +1,24 @@
+---
+// Skener ulaza (S8): ljuska + otok Skener (`client:only`: kamera,
+// BarcodeDetector, ručni unos). Isti obrazac kao /organizator: bez SSR poziva,
+// bez sesije na serveru, noindex i no-store. Uska širina jer se koristi na
+// mobitelu na ulazu.
+import Osnovni from "../layouts/Osnovni.astro";
+import Skener from "../components/Skener.tsx";
+import { CACHE_ORGANIZATOR } from "../lib/stranica.ts";
+
+Astro.response.headers.set("cache-control", CACHE_ORGANIZATOR);
+---
+<Osnovni title="Skener ulaza · Ulaznice" opis="Skener ulaznica na ulazu." sirina="uska" noindex>
+  <Skener client:only="react">
+    <p slot="fallback" class="ucitavanje" role="status">Učitavanje…</p>
+  </Skener>
+  <noscript><p class="ucitavanje">Za prijavu i skeniranje potreban je JavaScript.</p></noscript>
+</Osnovni>
+
+<style>
+  .ucitavanje {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+</style>

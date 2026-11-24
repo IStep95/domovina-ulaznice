@@ -1,0 +1,94 @@
+/* Prijava organizatora i skenera (S8): jedna kartica 420 px po sredini, kao
+ * kartice kupnje (bijela površina, obrub, --radius-lg). Platformske boje, bez
+ * naglasne boje organizatora. */
+.prijava {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  margin: var(--space-6) auto 0;
+}
+
+.nadnaslov {
+  padding-left: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.kartica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 28px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.naslov {
+  font-size: var(--font-size-xl);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.uvod {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+}
+
+.uvod strong {
+  color: var(--color-text);
+}
+
+.forma {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* „ILI” između Googlea i e-maila: crta – tekst – crta. */
+.ili {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.ili::before,
+.ili::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--color-border);
+}
+
+/* Šest znamenki iz maila: veće, razmaknute, poravnate po sredini. */
+.kod {
+  font-size: var(--font-size-xl);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.3em;
+  text-align: center;
+}
+
+.veze {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+@media (max-width: 719px) {
+  .prijava {
+    margin-top: 0;
+  }
+  .kartica {
+    padding: 22px 18px;
+  }
+}

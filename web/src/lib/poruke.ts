@@ -305,3 +305,84 @@ export const PORUKE_POLJA = {
   imeKratko: "Upišite ime i prezime (najmanje 2 znaka).",
   imeDugo: "Ime je predugo (najviše 120 znakova).",
 } as const;
+
+// ── Organizator, prijava i skener: /api/organizator/*, /api/skener/sken (S8) ──
+//
+// Zasebna tablica iz istog razloga kao PORUKE_ULAZNICA: ovdje govorimo
+// organizatoru i osoblju na ulazu, ne kupcu (`invalid_buyer_email` je ovdje
+// e-mail za prijavu). Tekstovi su iz PORUKE u src/lib/api.ts (SPA), da prijelaz
+// SPA → Astro ne promijeni ni rečenicu. Izvori:
+//   worker/index.ts  rute /api/organizator/* i /api/skener/sken (fail("…")),
+//                    app.onError i 404 fallback
+//   worker/api.ts    prijava, posaljiKod, potvrdiKod, korisnickiRpc/Rest,
+//                    kreirajDogadjaj (events-organizer), checkin (events-checkin)
+//   jezgra           events-organizer (create_event) i events-checkin (redeem_ticket);
+//                    kroz Worker stižu kao 400/401/403 sa svojim kodom
+//   klijent          web/src/lib/api.ts (`neispravan_odgovor`) i KOD_MREZA
+
+const PRIJAVA_NEDOSTUPNA = "Prijava trenutačno nije dostupna. Pokušaj ponovno za koju minutu.";
+
+/** Kod → poruka za prijavu, pregled prodaje, izvoz sudionika, editor i skener. */
+export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
+  // ── worker/index.ts, /api/organizator/* i /api/skener/sken ──
+  previse_pokusaja: "Previše pokušaja — pokušajte za koju minutu.",
+  bad_json: ZAHTJEV_NIJE_POSLAN,
+  invalid_buyer_email: "Upiši ispravnu e-mail adresu.",
+  prijava_neuspjela: "Neispravna e-mail adresa ili lozinka.",
+  kod_neispravan: "Kod nije ispravan ili je istekao. Zatraži novi.",
+  nije_prijavljen: "Prijava je istekla. Prijavite se ponovno.",
+  invalid_campaign_id: ZAHTJEV_NIJE_POSLAN,
+  invalid_event_id: ZAHTJEV_NIJE_POSLAN,
+  invalid_account_id: "Odaberi organizatora za koji se događaj stvara.",
+  invalid_tiers: "Dodaj barem jednu vrstu ulaznice (najviše 50).",
+  neispravan_qr: "To nije ulaznica ovog sustava.",
+  // app.onError i 404 fallback za nepostojeću /api/ rutu
+  greska_servera: GENERICKA_PORUKA,
+  not_found: ZAHTJEV_NIJE_POSLAN,
+
+  // ── worker/api.ts ──
+  anon_key_missing: "Prijava trenutačno nije dostupna (nedostaje konfiguracija).",
+  auth_greska: PRIJAVA_NEDOSTUPNA,
+  api_rpc_error: SUSTAV_NE_ODGOVARA,
+  api_rest_error: SUSTAV_NE_ODGOVARA,
+  api_bad_json: SUSTAV_NE_ODGOVARA,
+  api_error: "Događaj nismo uspjeli spremiti. Pokušaj ponovno.",
+  nema_prava_kreiranja:
+    "Ne možeš kreirati događaj za ovog organizatora. Trebaš biti administrator i imati provjeren identitet (eOsobna) na domovina.ai.",
+
+  // ── jezgra: events-organizer (create_event), editor događaja ──
+  invalid_title: "Naziv događaja nije ispravan.",
+  invalid_venue_name: "Naziv mjesta nije ispravan (najviše 160 znakova).",
+  invalid_venue_city: "Grad nije ispravan (najviše 80 znakova).",
+  invalid_event_type: "Vrsta događaja nije ispravna.",
+  invalid_dates: "Kraj događaja mora biti nakon početka.",
+  invalid_cover_url: "Link naslovne slike nije ispravan.",
+  invalid_description: "Opis je predug.",
+  invalid_tier_title: "Svaka ulaznica treba naziv (najviše 160 znakova).",
+  invalid_tier_price: "Cijena ulaznice nije ispravna.",
+  invalid_tier_inventory: "Količina ulaznica nije ispravna.",
+  campaign_rate_limited: "Previše novih događaja u kratkom vremenu. Pokušaj za koju minutu.",
+  slug_collision: "Događaj s tim nazivom već postoji. Promijeni naziv.",
+
+  // ── jezgra: events-checkin (redeem_ticket), skener ──
+  not_authorized: "Nemate ovlasti za ovaj događaj.",
+  not_authenticated: "Prijava je istekla. Prijavite se ponovno.",
+
+  // ── klijent ──
+  google_neuspjelo: "Prijava Googleom nije uspjela. Pokušaj ponovno ili koristi kod na e-mail.",
+  neispravan_odgovor: PORUKE_NARUDZBE.neispravan_odgovor!,
+  [KOD_MREZA]: PORUKE_NARUDZBE[KOD_MREZA]!,
+};
+
+/** Kao porukaGreske, ali iz PORUKE_ORGANIZATORA (prijava, pregled prodaje, editor, skener). */
+export function porukaOrganizatora(kod: string): string {
+  if (Object.hasOwn(PORUKE_ORGANIZATORA, kod)) return PORUKE_ORGANIZATORA[kod]!;
+  const http = /^http_(\d{3})$/.exec(kod);
+  if (http && Number(http[1]) >= 500) return HTTP_5XX;
+  return GENERICKA_PORUKA;
+}
+
+/** Bilo što bačeno iz poziva u src/lib/auth.ts → poruka za banner otoka. */
+export function porukaIzGreske(e: unknown): string {
+  return porukaOrganizatora(kodIzGreske(e).kod);
+}

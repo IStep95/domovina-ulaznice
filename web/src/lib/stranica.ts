@@ -27,3 +27,10 @@ export const CACHE_ICS = "public, max-age=300";
 export function ogZadanaSlika(origin: string): string {
   return new URL("/og-zadana.png", origin).toString();
 }
+
+/**
+ * Organizator, editor i skener (S8): stranica je ljuska s otokom `client:only`,
+ * podatke dohvaća preglednik s tokenom iz sessionStorage. Ne kešira se nigdje:
+ * nakon odjave „natrag” ne smije pokazati staru stranicu iz keša.
+ */
+export const CACHE_ORGANIZATOR = "no-store";

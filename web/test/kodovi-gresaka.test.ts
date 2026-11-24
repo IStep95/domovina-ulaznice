@@ -9,12 +9,22 @@
 // bez poruke u poruke.ts ruši ovaj test. Bez mreže, samo fs.
 //
 // S5: isto za `/api/ulaznice/*` (stanje narudžbe, ponovna dostava, preuzimanje)
-// i PORUKE_ULAZNICA.
+// i PORUKE_ULAZNICA. S8: `/api/organizator/*` i `/api/skener/sken` (prijava,
+// pregled prodaje, editor, skener) i PORUKE_ORGANIZATORA.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { GENERICKA_PORUKA, KOD_MREZA, PORUKE_NARUDZBE, PORUKE_ULAZNICA, porukaGreske, porukaUlaznica } from "../src/lib/poruke.ts";
+import {
+  GENERICKA_PORUKA,
+  KOD_MREZA,
+  PORUKE_NARUDZBE,
+  PORUKE_ORGANIZATORA,
+  PORUKE_ULAZNICA,
+  porukaGreske,
+  porukaOrganizatora,
+  porukaUlaznica,
+} from "../src/lib/poruke.ts";
 
 const izvor = (ime: string) => readFileSync(new URL(`../../worker/${ime}`, import.meta.url), "utf8");
 
@@ -163,9 +173,9 @@ const IZVAN_KUPNJE: Readonly<Record<string, string>> = {
   anon_key_missing: "api.ts anonKey — prijava organizatora i skener",
   prijava_neuspjela: "api.ts prijava — /api/organizator/prijava",
   auth_greska: "api.ts prijava — /api/organizator/prijava",
-  kod_neispravan: "api.ts potvrdiKod — /api/organizator/potvrdi (SPA, ne Astro)",
-  nema_prava_kreiranja: "api.ts kreirajDogadjaj — /api/organizator/dogadjaj (SPA editor)",
-  api_error: "api.ts kreirajDogadjaj — /api/organizator/dogadjaj (SPA editor)",
+  kod_neispravan: "api.ts potvrdiKod — /api/organizator/potvrdi",
+  nema_prava_kreiranja: "api.ts kreirajDogadjaj — /api/organizator/dogadjaj (editor)",
+  api_error: "api.ts kreirajDogadjaj — /api/organizator/dogadjaj (editor)",
   nije_prijavljen: "api.ts korisnickiRpc/korisnickiRest — organizator i skener",
   api_rail_update_failed: "api.ts upsertOrganizerRail — webhooks.ts (account.updated)",
 };
@@ -324,4 +334,94 @@ test("PORUKE_ULAZNICA nema zastarjelih kodova (svaki ključ dolazi iz Workera, j
   const poznati = new Set([...kodoviUlaznica, ...JEZGRA_ULAZNICA, ...KLIJENT]);
   const visak = Object.keys(PORUKE_ULAZNICA).filter((k) => !poznati.has(k));
   assert.deepEqual(visak, [], `ključevi koje /api/ulaznice/* ne vraća: ${visak.join(", ")}`);
+});
+
+// ── organizator, prijava i skener: /api/organizator/*, /api/skener/sken (S8) ─
+
+const RUTE_ORGANIZATORA = [
+  'app.post("/api/organizator/prijava"',
+  'app.post("/api/organizator/kod"',
+  'app.post("/api/organizator/potvrdi"',
+  'app.get("/api/organizator/pregled"',
+  'app.get("/api/organizator/holderi.csv"',
+  'app.post("/api/organizator/dogadjaj"',
+  'app.post("/api/skener/sken"',
+];
+const organizator = RUTE_ORGANIZATORA.map((r) => kodoviPoziva(blok(index, r), "fail", 0));
+
+/**
+ * HttpError iz api.ts na putu organizatora: prijava, posaljiKod, potvrdiKod,
+ * korisnickiRpc/Rest, kreirajDogadjaj i checkin (+ anonKey). Popisano ručno jer
+ * api.ts ima i kupčeve putove; svaki mora postojati u api.ts (test niže).
+ */
+const HTTP_ORGANIZATORA = [
+  "anon_key_missing",
+  "prijava_neuspjela",
+  "auth_greska",
+  "previse_pokusaja",
+  "kod_neispravan",
+  "nije_prijavljen",
+  "api_rpc_error",
+  "api_rest_error",
+  "api_bad_json",
+  "nema_prava_kreiranja",
+  "api_error",
+];
+/**
+ * Kodovi jezgre koje api.ts prosljeđuje dinamički (`code`): events-organizer
+ * (create_event, validacija editora) i events-checkin (redeem_ticket). Ručno,
+ * iz src/lib/api.ts PORUKE (SPA) — domovina-api nije u ovom repou.
+ */
+const JEZGRA_ORGANIZATORA = [
+  "invalid_title",
+  "invalid_venue_name",
+  "invalid_venue_city",
+  "invalid_event_type",
+  "invalid_dates",
+  "invalid_cover_url",
+  "invalid_description",
+  "invalid_tier_title",
+  "invalid_tier_price",
+  "invalid_tier_inventory",
+  "campaign_rate_limited",
+  "slug_collision",
+  "not_authorized",
+  "not_authenticated",
+];
+/** Klijent: api.ts, kodIzGreske i Googleov povratak (src/lib/auth.ts). */
+const KLIJENT_ORGANIZATORA = [...KLIJENT, "google_neuspjelo"];
+
+const kodoviOrganizatora = new Set([
+  ...organizator.flatMap((o) => [...o.kodovi]),
+  ...onError.kodovi,
+  ...fallback.kodovi,
+  ...HTTP_ORGANIZATORA,
+]);
+
+test("ekstrakcija: rute organizatora i skenera daju poznate kodove, svi kao literali", () => {
+  for (const k of ["bad_json", "prijava_neuspjela", "kod_neispravan", "nije_prijavljen", "invalid_campaign_id", "neispravan_qr", "previse_pokusaja"]) {
+    assert.ok(kodoviOrganizatora.has(k), `ekstrakcija nije našla ${k}`);
+  }
+  for (const [i, o] of organizator.entries()) assert.deepEqual(o.dinamicni, [], RUTE_ORGANIZATORA[i]);
+  // blok() staje na sljedećem `app.`: kodovi kupnje ne smiju procuriti ovamo
+  assert.ok(!organizator.some((o) => o.kodovi.has("tier_sold_out")));
+});
+
+test("HTTP_ORGANIZATORA: svaki kod stvarno postoji u worker/api.ts", () => {
+  for (const k of HTTP_ORGANIZATORA) assert.ok(httpApi.kodovi.has(k), `${k} više nije u worker/api.ts`);
+});
+
+test("svaki kod organizatora i skenera ima poruku u PORUKE_ORGANIZATORA", () => {
+  const bez = [...kodoviOrganizatora, ...JEZGRA_ORGANIZATORA, ...KLIJENT_ORGANIZATORA].filter(
+    (k) => !Object.hasOwn(PORUKE_ORGANIZATORA, k),
+  );
+  assert.deepEqual(bez, [], `kodovi bez poruke u PORUKE_ORGANIZATORA (web/src/lib/poruke.ts): ${bez.join(", ")}`);
+  const genericki = [...kodoviOrganizatora].filter((k) => k !== "greska_servera" && porukaOrganizatora(k) === GENERICKA_PORUKA);
+  assert.deepEqual(genericki, [], `kodovi s generičkom porukom: ${genericki.join(", ")}`);
+});
+
+test("PORUKE_ORGANIZATORA nema zastarjelih kodova", () => {
+  const poznati = new Set([...kodoviOrganizatora, ...JEZGRA_ORGANIZATORA, ...KLIJENT_ORGANIZATORA]);
+  const visak = Object.keys(PORUKE_ORGANIZATORA).filter((k) => !poznati.has(k));
+  assert.deepEqual(visak, [], `ključevi koje organizator ne dobiva: ${visak.join(", ")}`);
 });
