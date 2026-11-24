@@ -53,7 +53,11 @@ export default defineConfig({
   // Prerenderirane stranice (/uvjeti, /privatnost) kao uvjeti.html, ne uvjeti/index.html:
   // Cloudflare assets (html_handling „auto-trailing-slash”) bi inače /uvjeti 307 preusmjerio
   // na /uvjeti/, a linkovi i kanonski URL-ovi su bez kose crte.
-  build: { format: "file" },
+  //
+  // inlineStylesheets „always” (S8, odluka 705): CSS stranice je malen (oko 3 kB po
+  // datoteci), pa ide u <style> umjesto <link>; nestaju dva round-tripa prije prvog
+  // iscrtavanja (Lighthouse render-blocking-insight).
+  build: { format: "file", inlineStylesheets: "always" },
   integrations: [react(), komponenteSamoUDevu],
   server: { port: 4321 },
   vite: {
