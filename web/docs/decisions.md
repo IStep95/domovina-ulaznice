@@ -763,18 +763,19 @@ Revizija: nema.
 koju bucket prima ide kakva jest. Lokalno: 6016 px JPEG od 10 MB → WebP od 203 kB.
 Revizija: nema.
 
-**821. Galerija i alt naslovne u jezgri bez promjene RPC potpisa.** `events-organizer` (grana
-`domovina-api` `events-media`) prima `cover_image_alt` i `gallery` i upiše ih izravnim
-`update pinka_finance.events` korisnikovim klijentom nakon `create_event`/`update_event`,
-kao seed za venue_geo i galeriju. RLS `events_write` i check `events_gallery_shape` vrijede;
-oblik (≤ 20, https ≤ 1000, alt ≤ 300) se provjerava prije RPC-a. Novi kodovi:
-`invalid_cover_alt`, `invalid_gallery`, `invalid_gallery_url` (korak 3).
+**821. Galerija u jezgri bez promjene RPC potpisa.** `events-organizer` (grana `domovina-api`
+`events-media`) prima `gallery` (`[{url}]`) i upiše je izravnim `update pinka_finance.events`
+korisnikovim klijentom nakon `create_event`/`update_event`, kao seed za venue_geo i galeriju.
+RLS `events_write` i check `events_gallery_shape` vrijede; oblik (≤ 20, https ≤ 1000) se
+provjerava prije RPC-a. Novi kodovi: `invalid_gallery`, `invalid_gallery_url` (korak 3).
+**Bez alt teksta** ni za naslovnu ni za galeriju (Ivan, 24. 11.: „ne treba nam”); stranica
+događaja alt i dalje složi iz naslova (`slikeGalerije`), a `cover_image_alt` iz seeda ostaje.
 Revizija: nema.
 
 **822. Korak 3 wizarda: naslovna i galerija, link ili upload.** Naslovna: pregled, link,
-„Učitaj sliku”, opis za čitače zaslona (šalje se samo uz naslovnu). Galerija: do 20 slika,
-redoslijed strelicama, opis po slici, „Dodaj” link ili „Učitaj slike” (više odjednom).
-Nacrt nosi `slikaAlt` i `galerija` (stari nacrt bez njih → prazno, `v` ostaje 1). Poznato:
+„Učitaj sliku”. Galerija: do 20 slika, redoslijed strelicama, „Dodaj” link ili „Učitaj
+slike” (više odjednom). Bez opisa slika (odluka 821). Nacrt nosi `galerija` kao listu linkova
+(stari nacrt bez nje → prazno, `v` ostaje 1). Poznato:
 lokalno Storage vraća `http://` URL, pa ga validacija koraka 3 odbije (na stagingu je
 `https://api.domovina.ai`); na 1440×900 korak 3 sada ima scroll stranice; na mobitelu gumbi
 „Učitaj…” padaju u svoj red. Izgled ide na Ivanovo oko.

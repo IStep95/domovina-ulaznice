@@ -79,17 +79,8 @@ export interface UnosTiera {
   imenska: boolean;
 }
 
-/** Slika u galeriji; `alt` je neobavezan (stranica ga tada složi iz naslova). */
-export interface SlikaUnosa {
-  url: string;
-  alt: string;
-}
-
 /** Najviše slika u galeriji (jezgra: check `events_gallery_shape`); naslovna nije među njima. */
 export const NAJVISE_U_GALERIJI = 20;
-
-/** Najdulji alt tekst (jezgra: `cover_image_alt` i `alt` u galeriji ≤ 300). */
-export const NAJDULJI_ALT = 300;
 
 export interface UnosDogadjaja {
   accountId: string;
@@ -102,9 +93,8 @@ export interface UnosDogadjaja {
   grad: string;
   opis: string;
   slika: string;
-  /** Opis naslovne slike za čitače zaslona i `og:image:alt`. */
-  slikaAlt: string;
-  galerija: SlikaUnosa[];
+  /** Linkovi slika galerije, redom prikaza (bez alt teksta, Ivan 24. 11.). */
+  galerija: string[];
   organizator: string;
   email: string;
   web: string;
@@ -124,7 +114,6 @@ export const prazanUnos = (): UnosDogadjaja => ({
   grad: "",
   opis: "",
   slika: "",
-  slikaAlt: "",
   galerija: [],
   organizator: "",
   email: "",
@@ -183,11 +172,9 @@ export function validirajKorak(n: Korak, u: UnosDogadjaja): Greske {
       break;
     case 3:
       if (u.slika.trim() && !HTTPS.test(u.slika.trim())) g.slika = "Link slike mora počinjati s https://.";
-      if (u.slikaAlt.trim().length > NAJDULJI_ALT) g.slikaAlt = `Opis slike je predug (najviše ${NAJDULJI_ALT} znakova).`;
       if (u.galerija.length > NAJVISE_U_GALERIJI) g.galerija = `Najviše ${NAJVISE_U_GALERIJI} slika u galeriji.`;
-      u.galerija.forEach((s, i) => {
-        if (!HTTPS.test(s.url.trim())) g[`galerija.${i}.url`] = "Link slike mora počinjati s https://.";
-        if (s.alt.trim().length > NAJDULJI_ALT) g[`galerija.${i}.alt`] = `Opis je predug (najviše ${NAJDULJI_ALT} znakova).`;
+      u.galerija.forEach((url, i) => {
+        if (!HTTPS.test(url.trim())) g[`galerija.${i}`] = "Link slike mora počinjati s https://.";
       });
       break;
     case 4:
@@ -226,7 +213,7 @@ export function korakPolja(kljuc: string): Korak {
   const polje = kljuc.split(".")[0]!;
   if (polje === "tier" || polje === "tieri") return 4;
   if (["pocetak", "kraj", "mjesto", "adresa", "grad"].includes(polje)) return 2;
-  if (["opis", "slika", "slikaAlt", "galerija"].includes(polje)) return 3;
+  if (["opis", "slika", "galerija"].includes(polje)) return 3;
   if (["organizator", "email", "web"].includes(polje)) return 5;
   return 1;
 }
@@ -238,9 +225,7 @@ export function korakPolja(kljuc: string): Korak {
 export function korakZaKod(kod: string): Korak | null {
   if (["invalid_title", "slug_collision", "invalid_account_id", "invalid_event_type"].includes(kod)) return 1;
   if (["invalid_venue_name", "invalid_venue_city", "invalid_dates"].includes(kod)) return 2;
-  if (["invalid_cover_url", "invalid_cover_alt", "invalid_description", "invalid_gallery", "invalid_gallery_url"].includes(kod)) {
-    return 3;
-  }
+  if (["invalid_cover_url", "invalid_description", "invalid_gallery", "invalid_gallery_url"].includes(kod)) return 3;
   if (kod === "invalid_tiers" || kod.startsWith("invalid_tier_")) return 4;
   return null;
 }
@@ -261,8 +246,7 @@ export function zahtjev(u: UnosDogadjaja, eventId: string): Record<string, unkno
     venue_city: u.grad.trim(),
     description_hr: prazno(u.opis),
     cover_image_url: prazno(u.slika),
-    cover_image_alt: u.slika.trim() ? prazno(u.slikaAlt) : null,
-    gallery: u.galerija.map((s) => (s.alt.trim() ? { url: s.url.trim(), alt: s.alt.trim() } : { url: s.url.trim() })),
+    gallery: u.galerija.map((url) => ({ url: url.trim() })),
     organizer_name: prazno(u.organizator),
     organizer_email: prazno(u.email),
     organizer_web: prazno(u.web),

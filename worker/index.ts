@@ -702,7 +702,7 @@ app.post("/api/organizator/dogadjaj", async (c) => {
   const POLJA = [
     "event_id", "account_id", "title", "event_type", "starts_at", "ends_at", "timezone",
     "venue_name", "venue_address", "venue_city", "description_hr", "cover_image_url",
-    "cover_image_alt", "gallery", "organizer_name", "organizer_email", "organizer_web", "tiers",
+    "gallery", "organizer_name", "organizer_email", "organizer_web", "tiers",
   ];
   const podaci = Object.fromEntries(POLJA.filter((k) => k in body).map((k) => [k, body[k]]));
   return c.json(await api.kreirajDogadjaj(c.env, jwt, podaci));

@@ -15,7 +15,6 @@ import {
   prazanUnos,
   type Korak,
   NAJVISE_U_GALERIJI,
-  type SlikaUnosa,
   type UnosDogadjaja,
   type UnosTiera,
 } from "./editor.ts";
@@ -78,12 +77,7 @@ export function nacrtIzTeksta(sirovo: string | null, email: string): Nacrt | nul
         return { naziv: tekst(r.naziv, 200), cijena: tekst(r.cijena, 40), kolicina: tekst(r.kolicina, 40), imenska: r.imenska === true };
       })
     : zadano.tieri;
-  const galerija: SlikaUnosa[] = Array.isArray(u.galerija)
-    ? u.galerija.slice(0, NAJVISE_U_GALERIJI).map((s) => {
-        const r = (s && typeof s === "object" ? s : {}) as Record<string, unknown>;
-        return { url: tekst(r.url, 2000), alt: tekst(r.alt, 400) };
-      })
-    : [];
+  const galerija = Array.isArray(u.galerija) ? u.galerija.slice(0, NAJVISE_U_GALERIJI).map((url) => tekst(url, 2000)) : [];
   const unos: UnosDogadjaja = {
     accountId: tekst(u.accountId, 100),
     naslov: tekst(u.naslov, 400),
@@ -95,7 +89,6 @@ export function nacrtIzTeksta(sirovo: string | null, email: string): Nacrt | nul
     grad: tekst(u.grad, 200),
     opis: tekst(u.opis, 20_000),
     slika: tekst(u.slika, 2000),
-    slikaAlt: tekst(u.slikaAlt, 400),
     galerija,
     organizator: tekst(u.organizator, 400),
     email: tekst(u.email, 400),

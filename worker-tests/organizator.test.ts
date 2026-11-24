@@ -180,15 +180,14 @@ test("strojni kod iz baze prolazi, sirova poruka baze ne", async () => {
   assert.ok(!b.text.includes("duplicate key"));
 });
 
-test("galerija i alt naslovne prolaze do events-organizer, smeće umjesto galerije ne", async () => {
+test("galerija prolazi do events-organizer, smeće umjesto galerije ne", async () => {
   t = testEnv();
-  const galerija = [{ url: "https://x/1.webp", alt: "Prva" }];
+  const galerija = [{ url: "https://x/1.webp" }];
   await callJson(t, "/api/organizator/dogadjaj", {
     headers: auth(),
-    body: { ...noviDogadjaj, cover_image_alt: "Naslovna", gallery: galerija },
+    body: { ...noviDogadjaj, gallery: galerija },
   });
   const poslano = JSON.parse(t.calls.find((c) => c.url.includes("events-organizer"))!.body);
-  assert.equal(poslano.cover_image_alt, "Naslovna");
   assert.deepEqual(poslano.gallery, galerija);
 
   for (const gallery of ["https://x/1.webp", Array.from({ length: 21 }, () => ({ url: "https://x" }))]) {

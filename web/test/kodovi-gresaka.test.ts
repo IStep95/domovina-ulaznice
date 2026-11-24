@@ -380,7 +380,7 @@ const HTTP_ORGANIZATORA = [
  * Kodovi jezgre koje api.ts prosljeđuje dinamički (`code`): events-organizer
  * (create_event, validacija editora) i events-checkin (redeem_ticket). Ručno,
  * iz src/lib/api.ts PORUKE (SPA) — domovina-api nije u ovom repou. Galerija i
- * alt naslovne (invalid_cover_alt, invalid_gallery*) su iz grane `events-media`.
+ * kodovi invalid_gallery* su iz grane `events-media`.
  */
 const JEZGRA_ORGANIZATORA = [
   "invalid_title",
@@ -389,7 +389,6 @@ const JEZGRA_ORGANIZATORA = [
   "invalid_event_type",
   "invalid_dates",
   "invalid_cover_url",
-  "invalid_cover_alt",
   "invalid_gallery",
   "invalid_gallery_url",
   "invalid_description",

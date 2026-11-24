@@ -22,7 +22,6 @@ import { opisVremena, predlozeniKraj } from "../lib/birac-datuma.ts";
 import {
   BROJ_KORAKA,
   KORACI,
-  NAJDULJI_ALT,
   NAJVISE_TIEROVA,
   NAJVISE_U_GALERIJI,
   VRSTE,
@@ -38,7 +37,6 @@ import {
   zahtjev,
   type Greske,
   type Korak,
-  type SlikaUnosa,
   type UnosDogadjaja,
   type UnosTiera,
 } from "../lib/editor.ts";
@@ -553,7 +551,7 @@ function Korak2({ unos, greske, postavi }: KorakProps) {
 
 // ── 3. Opis i slika ──────────────────────────────────────────────────────────
 //
-// Naslovna i galerija: link ili upload (lib/slika.ts smanji, Worker spremi u
+// Naslovna i galerija: link ili upload, bez alt teksta (Ivan, 24. 11.) (lib/slika.ts smanji, Worker spremi u
 // Storage `pinka-covers`). Upload traži provjeren identitet, kao i spremanje
 // skice; bez njega ostaje link. Više uploada odjednom mijenja unos funkcijom
 // (`promijeni`), da se slike koje stignu u isto vrijeme ne pregaze.
@@ -584,7 +582,7 @@ function Korak3({
         if (cilj === "naslovna") promijeni((u) => ({ ...u, slika: url }));
         else
           promijeni((u) =>
-            u.galerija.length < NAJVISE_U_GALERIJI ? { ...u, galerija: [...u.galerija, { url, alt: "" }] } : u,
+            u.galerija.length < NAJVISE_U_GALERIJI ? { ...u, galerija: [...u.galerija, url] } : u,
           );
       }
     } catch (e) {
@@ -598,17 +596,12 @@ function Korak3({
   const dodajUrl = () => {
     const url = noviUrl.trim();
     if (!/^https:\/\/\S+$/i.test(url)) return setGreskaUrla("Link slike mora počinjati s https://.");
-    if (unos.galerija.some((s) => s.url === url)) return setGreskaUrla("Ta slika je već u galeriji.");
-    postavi("galerija", [...unos.galerija, { url, alt: "" }]);
+    if (unos.galerija.includes(url)) return setGreskaUrla("Ta slika je već u galeriji.");
+    postavi("galerija", [...unos.galerija, url]);
     setNoviUrl("");
     setGreskaUrla(null);
   };
 
-  const postaviStavku = (i: number, izmjena: Partial<SlikaUnosa>) =>
-    postavi(
-      "galerija",
-      unos.galerija.map((s, j) => (j === i ? { ...s, ...izmjena } : s)),
-    );
   const pomakni = (i: number, smjer: -1 | 1) => {
     const g = [...unos.galerija];
     [g[i], g[i + smjer]] = [g[i + smjer]!, g[i]!];
@@ -646,10 +639,7 @@ function Korak3({
               <button
                 type="button"
                 className={`${gumb.gumb} ${gumb.sekundarni}`}
-                onClick={() => {
-                  postavi("slika", "");
-                  postavi("slikaAlt", "");
-                }}
+                onClick={() => postavi("slika", "")}
               >
                 Ukloni
               </button>
@@ -673,17 +663,6 @@ function Korak3({
               onOdabir={(d) => ucitaj(d.slice(0, 1), "naslovna")}
             />
           </div>
-          {unos.slika.trim() && (
-            <Polje
-              id="nd-slikaAlt"
-              oznaka="Što je na slici (za čitače zaslona)"
-              value={unos.slikaAlt}
-              placeholder="npr. Zbor na pozornici pod plavim svjetlima"
-              maxLength={NAJDULJI_ALT}
-              greska={greske.slikaAlt}
-              onChange={(e) => postavi("slikaAlt", e.target.value)}
-            />
-          )}
         </div>
       </fieldset>
 
@@ -695,24 +674,13 @@ function Korak3({
           {greske.galerija && <Banner ton="error">{greske.galerija}</Banner>}
           {unos.galerija.length > 0 && (
             <ol className={css.galerija}>
-              {unos.galerija.map((s, i) => {
-                const gUrl = greske[`galerija.${i}.url`];
-                return (
-                  <li key={s.url + i} className={css.stavkaGalerije}>
-                    {/^https:\/\/\S+$/i.test(s.url) ? (
-                      <img className={css.slicica} src={s.url} alt="" loading="lazy" />
+              {unos.galerija.map((url, i) => (
+                  <li key={url + i} className={css.stavkaGalerije}>
+                    {/^https:\/\/\S+$/i.test(url) ? (
+                      <img className={css.slicica} src={url} alt="" loading="lazy" />
                     ) : (
-                      <span className={`${css.slicica} ${polje.greska}`}>{gUrl}</span>
+                      <span className={`${css.slicica} ${polje.greska}`}>{greske[`galerija.${i}`]}</span>
                     )}
-                    <input
-                      id={`nd-galerija-${i}-alt`}
-                      className={`${polje.unos} ${css.unosCelije}`}
-                      value={s.alt}
-                      placeholder="Opis (neobavezno)"
-                      aria-label={`Opis slike ${i + 1}`}
-                      maxLength={NAJDULJI_ALT}
-                      onChange={(e) => postaviStavku(i, { alt: e.target.value })}
-                    />
                     <div className={css.akcijeSlike}>
                       <button
                         type="button"
@@ -745,8 +713,7 @@ function Korak3({
                       </button>
                     </div>
                   </li>
-                );
-              })}
+              ))}
             </ol>
           )}
           <div className={css.redSGumbom}>
