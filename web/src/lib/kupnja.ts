@@ -96,7 +96,7 @@ export function provjeriFormu(s: StanjeForme): ProvjeraForme {
   return { valjano: nedostaje.length === 0, email, imena, nedostaje };
 }
 
-/** Tijelo `POST /api/narudzba`, isto kao SPA (src/pages/Kupnja.tsx). */
+/** Tijelo `POST /api/narudzba`, isto kao SPA (src/pages/Kupnja.tsx, bivši SPA, obrisan u S7). */
 export function tijeloNarudzbe(campaignId: string, s: StanjeForme & { tier: TierZaKupnju }): CreateOrderRequest {
   return {
     campaign_id: campaignId,

@@ -71,10 +71,17 @@ Matija prati fork kroz remote `ivan` (`git fetch ivan && git log origin/main..iv
 
 ## Stack
 
-- Worker + Hono + D1 (operativni podaci) + KV (rate limit) + React SPA → Cloudflare
-  - `npm test` (97 testova, node:test, **nikad na mrežu**), `npm run build`, `npm run api`
+- Worker + Hono + D1 (operativni podaci) + KV (rate limit) → Cloudflare
+  - **stranice kupaca** (popis, događaj, kupnja, narudžba, uvjeti/privatnost) su
+    Astro u `web/`; glavni Worker ih prosljeđuje kroz service binding `WEB`
+    (`idePremaWebu()` u `worker/index.ts`), a Astro SSR zove `/api/*` natrag kroz
+    binding `API` (`web/src/lib/api-ssr.ts`)
+  - **React SPA u `src/`** drži samo organizatora (`/organizator`, `/organizator/novi`),
+    skener (`/skener`) i prijavu; servira se iz `ASSETS` (`/assets/*`)
+  - `npm test` (129 testova, node:test, **nikad na mrežu**), `npm run build`, `npm run api`;
+    za `web/`: `npm --prefix web run check` (astro check + 137 testova + build)
   - `scripts/lokalno/pokreni.sh` — cijela kupnja lokalno (jezgra + lažni Stripe + inbox),
-    app na `:8788`, inbox na `:8901/inbox`; v. `docs/2026-08-04-…` §9
+    app na `:8788` (Astro iza njega na `:8792`), inbox na `:8901/inbox`; v. `docs/2026-08-04-…` §9
 - Mobilno: `mobile/ios` (XcodeGen, `xcodegen generate`), `mobile/android`
   (`./gradlew :app:assembleDebug`, JDK 17), `node mobile/mock-api.mjs` (port 8797)
 - Ticketing: `domovina-api` edge funkcije `events-*`

@@ -10,7 +10,8 @@
 ```mermaid
 flowchart TB
   subgraph WEB["domovina-ulaznice (ovaj repo) — Cloudflare"]
-    SPA["React SPA<br/>javna prodaja · organizator · skener"]
+    AS["Astro (web/)<br/>stranice kupaca: popis · događaj · kupnja · narudžba"]
+    SPA["React SPA (src/)<br/>organizator · skener · prijava"]
     WK["Worker + Hono<br/>stripe.ts · webhooks.ts · mail.ts · fiskal.ts"]
   end
 
@@ -26,8 +27,11 @@ flowchart TB
     MA["e-mail (Resend/MailChannels)"]
   end
 
-  SPA --> WK
-  SPA -->|katalog, ulaznice| FN
+  WK -->|binding WEB| AS
+  AS -->|SSR /api/*, binding API| WK
+  WK -->|ASSETS| SPA
+  SPA -->|/api/organizator/*| WK
+  WK -->|katalog, ulaznice| FN
   WK -->|Checkout Session<br/>Stripe-Account: acct_…| ST
   ST -->|webhook| WK
   WK -->|potvrdi narudžbu| FN
@@ -35,8 +39,24 @@ flowchart TB
   WK -.->|opcionalno| FI
 
   classDef new fill:#eafbea,stroke:#2f855a,color:#14331f
-  class SPA,WK new
+  class AS,SPA,WK new
 ```
+
+### 1.1 Podjela putanja na domeni (od S7 lanca `web/`)
+
+Obje domene (`ulaznice-staging.domovina.ai`, `ulaznice.domovina.ai`) gleda **glavni
+Worker** (`worker/index.ts`; od 23. 11. 2026. ista podjela i na produkciji; `NAJAVA=1` je vraća na statičnu najavu). On sam odgovara na `/api/*`, `/webhook/*` i
+`/.well-known/*` (AASA, assetlinks), a iz `ASSETS` servira React SPA iz `src/` samo za
+`/organizator`, `/organizator/*`, `/skener` i njezinu statiku `/assets/*`
+(`SPA_STRANICE`, `SPA_PREFIKSI`, `idePremaWebu()`). **Sve ostalo** — popis, događaj,
+kupnja, narudžba, uvjeti, privatnost, Astrova statika (`/_astro/*`, `/favicon.svg`…) i
+nepoznate putanje (pravi 404) — ide nepromijenjeno na Astro iz `web/` kroz service
+binding `WEB`. Astro SSR podatke čita iz istog Workera kroz service binding `API`
+(`web/src/lib/api-ssr.ts`), ne javnim URL-om, i nema vlastitih tajni ni baze.
+Testovi podjele: `worker-tests/web-binding.test.ts`.
+
+Planirano je da se i organizator i skener presele u Astro, nakon čega glavni Worker
+ostaje bez SPA-e i `ASSETS` (`web/docs/ui-feedback.md`, stavka 7).
 
 **Pravilo koje sve drži na okupu:** `domovina-api` je jedini izvor istine o
 događajima i ulaznicama. Ovaj repo ne drži vlastitu kopiju ulaznica — ni u D1, ni
@@ -95,10 +115,14 @@ worker/
   api.ts          tanki klijent prema domovina-api edge funkcijama
   mail.ts         dostava ulaznica (PDF/QR) i podsjetnika
   fiskal.ts       InvoiceProvider: domovina-fiskal | fira | organizator-sam
-src/
-  pages/public/   event landing, checkout, "moje ulaznice" (po tokenu iz maila)
-  pages/organizer/ onboarding, event editor, prodaja, isplate
-  pages/scan/     check-in PWA
+web/              Astro (zaseban Worker, binding WEB): stranice kupaca
+  src/pages/      popis, događaj (+ .ics), kupnja, narudžba (/ulaznice/:id), uvjeti, privatnost
+  src/lib/api-ssr.ts  SSR klijent prema /api/* kroz binding API
+src/              React SPA (ASSETS): samo organizator, skener i prijava
+  pages/Organizator.tsx   pregled prodaje, CSV
+  pages/NoviDogadjaj.tsx  editor nove skice događaja (/organizator/novi)
+  pages/Skener.tsx        check-in na ulazu
+  pages/Prijava.tsx       prijava kodom na e-mail / Googleom
 ```
 
 ## 4. Tok kupnje (Stripe rail)
@@ -150,7 +174,8 @@ Rubni slučajevi koje tok mora izdržati (svi imaju presedan u
 
 | Komponenta          | Kako                                                                                  |
 | ------------------- | -------------------------------------------------------------------------------------- |
-| Worker + SPA        | `npx wrangler deploy` / `wrangler pages deploy` (Cloudflare račun D.O.M.)              |
+| Astro (`web/`)      | `npm --prefix web run deploy:staging` — **prije** glavnog Workera (binding `WEB` traži servis) |
+| Worker + SPA        | `npm run deploy` (staging) / `npm run deploy:prod` (Cloudflare račun D.O.M.)           |
 | Migracije + funkcije| `domovina-api/scripts/db-migrate.sh --dry-run` → `db-migrate.sh` → `deploy-functions.sh --only=<fn>` (SSH preduvjet) |
 | Tajne               | `wrangler secret put STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / DOMOVINA_API_SERVICE_KEY` |
 

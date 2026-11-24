@@ -7,12 +7,13 @@ Stripe račun** (Connect, `application_fee_amount = 0`), ulaznica je QR koji se
 skenira na ulazu. Platforma nikad ne drži novac i ne uzima proviziju s ulaznice.
 
 > Status: **U1 ✅ (živ u produkciji) · U2 ✅ (deployan na staging)**.
-> U1 je u `domovina-api` (Stripe rail u ticketing jezgri), U2 je ovaj Worker + SPA.
+> U1 je u `domovina-api` (Stripe rail u ticketing jezgri), U2 je ovaj Worker s
+> Astro stranicama za kupce (`web/`) i SPA-om za organizatora (`src/`).
 >
 > | Okruženje | URL | Stanje |
 > | --- | --- | --- |
 > | staging | `ulaznice-staging.domovina.ai` | puna aplikacija, Stripe sandbox |
-> | produkcija | `ulaznice.domovina.ai` | **samo najava** — prodaja nije otvorena |
+> | produkcija | `ulaznice.domovina.ai` | puna aplikacija od 23. 11. 2026.; Stripe live još nije Connect platforma, mail bez `RESEND_API_KEY` (`docs/deploy-dug.md` #10) |
 >
 > Preostalo za prvu test kupnju: Express onboarding + `STRIPE_SECRET_KEY` i
 > `STRIPE_WEBHOOK_SECRET` (`wrangler secret put … --env staging`).
@@ -30,7 +31,9 @@ worker/          Cloudflare Worker (Hono): Stripe rail, webhook, e-mail, cron
   mail.ts        dostava ulaznica (QR kao PNG privitak)
   qr.ts          QR → PNG bez native ovisnosti (radi i u Workeru i u testu)
   reconcile.ts   cron: propušteni webhookovi, neisporučene ulaznice, povrati
-src/             React SPA: događaj → kupnja → "moje ulaznice"
+web/             Astro (zaseban Worker, binding WEB): stranice kupaca — popis, događaj,
+                 kupnja, narudžba, uvjeti; v. web/docs/plan.md
+src/             React SPA: samo organizator (/organizator, /organizator/novi), skener, prijava
 migrations/      D1 — samo operativni trag (webhook log, mailovi, brand stranice)
 worker-tests/    node:test nad PRAVIM Workerom; nijedan test ne ide na mrežu
 ```
@@ -38,9 +41,10 @@ worker-tests/    node:test nad PRAVIM Workerom; nijedan test ne ide na mrežu
 ```bash
 npm install
 npm run api          # wrangler dev (Worker) na :8787
-npm run dev          # Vite (SPA) na :5174, /api proxy na Worker
-npm test             # 50 testova, bez mreže
+npm run dev          # Vite (SPA organizatora) na :5174, /api proxy na Worker
+npm test             # 129 testova, bez mreže
 npm run build        # tsc + vite build → dist/ (Worker ga servira preko ASSETS)
+npm --prefix web run check   # Astro: astro check + testovi + build
 ```
 
 Deploy i tajne: v. [U2 Zapisnik](docs/handoffs/u2-javna-prodaja-web.md#zapisnik-izvršenja).
@@ -93,7 +97,8 @@ platio i inače.
 ## Stack (planiran)
 
 - **Web** (ovaj repo): Cloudflare Worker + Hono (Stripe rail, webhook, e-mail) +
-  React SPA (javna prodaja, organizator dashboard, check-in PWA).
+  Astro u `web/` (javna prodaja, kroz service binding `WEB`) + React SPA u `src/`
+  (organizator dashboard, check-in, prijava).
 - **Ticketing jezgra**: `domovina-api` (self-hosted Supabase, shema `pinka_finance`)
   — postojeće edge funkcije `events-*` + nove `events-stripe-*`.
 - **Računi**: `domovina-fiskal` (ZKI/JIR) ili FIRA, iza `InvoiceProvider` sučelja.

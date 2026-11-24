@@ -1,7 +1,7 @@
 // Čekanje potvrde plaćanja (S5; Narudzba-390): React otok na /ulaznice/:id
 // samo kad je narudžba `pending` i URL ima `?placeno=1` (povratak sa Stripea).
 //
-// Ponašanje iz src/pages/Narudzba.tsx: GET /api/ulaznice/:id svake 2 s, najviše
+// Ponašanje iz src/pages/Narudzba.tsx (bivši SPA, obrisan u S7): GET /api/ulaznice/:id svake 2 s, najviše
 // 10 puta. Čim stanje više nije `pending`, stranica se ponovno učita, pa SSR
 // iscrta paid (ili expired/failed) s istim komponentama kao pri prvom otvaranju.
 // Nakon 20 s bez potvrde otok pokaže „Potvrda još nije stigla” i „Osvježi”.

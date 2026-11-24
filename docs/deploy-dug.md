@@ -64,7 +64,7 @@ Glavni staging Worker stranice kupaca (`/`, `/dogadjaj/*`, `/ulaznice/*`, `/uvje
 `/privatnost`, nepoznate putanje, Astrova statika) prosljeđuje Astro Workeru kroz service
 binding; `/api/*`, `/webhook/*`, `/.well-known/*`, `/organizator`, `/skener` i `/assets/*`
 (SPA) ostaju njegovi. Povratak sa Stripea (`success_url`) i link u mailu (`PUBLIC_BASE_URL`)
-time vode na Astro. Produkcija se ne mijenja (`NAJAVA=1`, bez bindinga).
+time vode na Astro. Produkcija od 23. 11. ima isti binding (`WEB` → `domovina-ulaznice-web`).
 
 1. **Prvo `web`**, s istog commita: `npm --prefix web ci && npm --prefix web run deploy:staging`.
    Binding na servis koji ne postoji ruši deploy glavnog Workera, a stari `web` bi kupcima

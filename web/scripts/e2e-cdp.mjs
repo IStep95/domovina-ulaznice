@@ -354,7 +354,7 @@ async function digniChrome() {
 
 // ---------------------------------------------------------------------------
 // Slučajevi. Tekstovi su iz web/src/pages/ (S5): ulaznice/[orderId].astro (naslovi stanja kao
-// u SPA-u, src/pages/Narudzba.tsx), uvjeti.astro, privatnost.astro, 404.astro. Web namjerno
+// u bivšem SPA-u, src/pages/Narudzba.tsx, obrisan u S7), uvjeti.astro, privatnost.astro, 404.astro. Web namjerno
 // ne prikazuje QR i ne zove /preuzmi (to radi samo mobilna aplikacija), pa ih e2e ne traži.
 
 function ocekuj(uvjet, poruka) {

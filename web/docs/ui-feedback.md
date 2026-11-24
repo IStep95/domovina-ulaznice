@@ -19,7 +19,8 @@ Gdje: `web` = Astro za kupce (`web/src/`) · `spa` = organizator/skener/prijava 
 | 3 | 2026-11-23 | worker + organizator + domovina-fiskal | arhitektura: račun i dostava e-maila | Račune izdaje **domovina Fiskal** (automatski, nakon uspješne naplate) i šalje ih mailom. Organizacija u domovina ulaznicama dodaje svoj **domovina Fiskal API ključ**. Slanje maila (Resend/SMTP) živi **u domovina Fiskalu**, ne ovdje. Ulaznica se generira ovdje (PDF u browseru), a mail može ići kroz domovina Fiskal kao privitak. | v. odjeljak „Arhitektura: račun i dostava kroz domovina Fiskal” ispod | P1 | novo, plan |
 | 4 | 2026-11-23 | spa | `/organizator/novi` (`src/pages/NoviDogadjaj.tsx`, `src/lib/editor.ts`) | Organizatori u 99,9 % slučajeva dodaju događaj **na desktopu**. Jedan stupac je super na mobitelu i neka tako ostane (mobile first). Na desktopu iskoristiti prostor lijevo i desno, idealno **bez vertikalnog scrolla**, kao **wizard od 1 do n koraka**: korisnik zna što ga čeka i vodi ga se korak po korak, da kreiranje bude što bezbolnije. | v. odjeljak „Wizard za novi događaj” ispod | P1 | novo, plan |
 | 5 | 2026-11-23 | web + spa + jezgra | kupnja `/dogadjaj/[slug]/kupnja` + editor događaja | Kupac pri kupnji popunjava **prilagodljivu formu** s podacima koje organizator treba (i za račun). Zajednička polja (ime, prezime, e-mail, telefon) **iz profila prijavljenog korisnika**, kao na Lumi. Organizator po događaju dodaje **vlastita polja** (npr. alergeni za catering). Treba **form builder ili barem predlošci**. Lista prijavljenih je organizatoru **mini CRM** — veoma važno. Pilot: međunarodni susret osoba otvorenih za katolički brak, Katolička udruga Prilika za susret; Ivan predaje postojeću Google formu. | v. odjeljak „Prilagodljiva forma prijave” ispod | P0 | novo, Google forma mapirana (ispod) |
-| 6 | 2026-11-23 | web + worker | staging `ulaznice-staging.domovina.ai/` | (nađeno pri deployu) Početna kroz glavni Worker → **503 „Pokušaj ponovno”**; `ulaznice-web-staging.domovina.ai/` radi. Log Astra: `dohvatiDogadjaje ApiError: neispravan_odgovor`. | Lanac glavni Worker → `WEB` → `fetch(API_BASE_URL)` = javni URL **istog** Workera; Cloudflare taj podzahtjev ne pušta do Workera (zaštita od petlje / isti zone), pa SSR dobije ne-JSON. Popravak: u `web/wrangler.jsonc` `env.staging` service binding `API` → `domovina-ulaznice-staging`, a `api-ssr.ts` zove `env.API.fetch()` kad binding postoji (javni URL ostaje za `ulaznice-web-staging` i dev). Uz test i zapis u `deploy-dug` #6. | P0 (staging) | novo |
+| 6 | 2026-11-23 | web + worker | staging `ulaznice-staging.domovina.ai/` | (nađeno pri deployu) Početna kroz glavni Worker → **503 „Pokušaj ponovno”**; `ulaznice-web-staging.domovina.ai/` radi. Log Astra: `dohvatiDogadjaje ApiError: neispravan_odgovor`. | Lanac glavni Worker → `WEB` → `fetch(API_BASE_URL)` = javni URL **istog** Workera; Cloudflare taj podzahtjev ne pušta do Workera (zaštita od petlje / isti zone), pa SSR dobije ne-JSON. Popravak: u `web/wrangler.jsonc` `env.staging` service binding `API` → `domovina-ulaznice-staging`, a `api-ssr.ts` zove `env.API.fetch()` kad binding postoji (javni URL ostaje za `ulaznice-web-staging` i dev). Uz test i zapis u `deploy-dug` #6. | P0 (staging) | gotovo (`bb9294a`) |
+| 7 | 2026-11-24 | web + worker + spa | sve rute; domene | **Sve na Astro**, i `/organizator` i ostale rute koje danas nisu. Aktivne samo domene `ulaznice-staging.domovina.ai` i `ulaznice.domovina.ai`. | v. odjeljak „Sve na Astro, dvije domene” ispod | P1 | novo, plan |
 
 ### Stavka 2 — dorada (Ivan, 2026-11-23)
 
@@ -39,6 +40,63 @@ Gdje: `web` = Astro za kupce (`web/src/`) · `spa` = organizator/skener/prijava 
   Moguće oboje: (1) kao zadano, (2) kao „nemam mail” fallback.
 - Dira `worker/mail.ts` (link u mailu) → izvan opsega `web/`, treba Matijino odobrenje
   i zapis u `docs/deploy-dug.md`.
+
+### Sve na Astro, dvije domene (stavka 7, Ivan, 2026-11-24)
+
+**Danas:** glavni Worker servira `/api/*`, `/webhook/*`, `/.well-known/*` i SPA (React +
+react-router, `src/`) za `/organizator`, `/organizator/novi`, `/skener` i `/assets/*`
+(`worker/index.ts:751` `SPA_STRANICE`, `SPA_PREFIKSI`); sve ostalo ide na Astro kroz `WEB`.
+Astro Workeri imaju i vlastite domene `ulaznice-web(-staging).domovina.ai`.
+
+**Cilj:** glavni Worker = samo API (`/api/*`, `/webhook/*`, `/.well-known/*`) + prosljeđivanje
+svega ostalog na `WEB`. Nema SPA-e, nema `ASSETS` u glavnom Workeru, nema `vite build`.
+Javne su samo `ulaznice-staging.domovina.ai` i `ulaznice.domovina.ai`.
+
+**Što se seli (SPA → Astro), ~1050 redaka React-a:**
+
+| SPA | Astro | Kako |
+| --- | --- | --- |
+| `Prijava.tsx` (205) | komponenta prijave (kod na e-mail, Google, lozinka) | React otok `client:only`; token ostaje u `sessionStorage` (`src/lib/auth.ts`), SSR ne zna za sesiju |
+| `Organizator.tsx` (168) | `/organizator` | Astro ljuska (layout, zaglavlje iz dizajnerskog sustava) + React otok za pregled prodaje i CSV |
+| `NoviDogadjaj.tsx` (332) + `src/lib/editor.ts` | `/organizator/novi` | React otok; **ovdje odmah wizard iz stavke 4** — ne seliti staru formu pa je prepisivati |
+| `Skener.tsx` (334) | `/skener` | React otok `client:only` (kamera, `BarcodeDetector`, ručni unos); `noindex` |
+| Popis, Dogadjaj, Kupnja, Narudzba, Pravno | — | već postoje u Astru → brišu se (to je S7) |
+
+Pravila: stranice organizatora/skenera `noindex`, `no-store`, bez SSR poziva s tokenom
+(web nema tajni ni sesije, odluka 4 ostaje). React otoci zovu `/api/organizator/*` istog
+origina kao danas — ugovor se ne mijenja. Google prijava: povratni URL (`/api/organizator/google`)
+mora sletjeti na Astro `/organizator` — provjeriti s PR #9.
+
+**Glavni Worker nakon seobe:**
+
+- `SPA_STRANICE`, `SPA_PREFIKSI`, `ASSETS` i grana `env.ASSETS.fetch` u `app.all("*")` se brišu;
+  bez `WEB` bindinga fallback vraća 404 (ili najavu kad je `NAJAVA=1`).
+- `wrangler.jsonc`: bez `assets` u oba okruženja; `npm run build` u korijenu više ne gradi SPA.
+- `src/`, `vite.config`, `index.html` i React ovisnosti u korijenu se brišu; `shared/` ostaje.
+- testovi: `worker-tests/web-binding.test.ts` — sve osim API putanja ide na WEB.
+
+**Domene:**
+
+- `web/wrangler.jsonc`: maknuti `routes` (custom domain) iz oba okruženja, `workers_dev: false`.
+  Astro je dostupan **samo kroz binding**. Provjeriti uklanja li `wrangler deploy` custom
+  domenu sama; ako ne, ručno u Cloudflareu (Workers → domovina-ulaznice-web(-staging) →
+  Domains). Redoslijed: prvo glavni Worker sve prosljeđuje, tek onda gašenje domena.
+- `API_BASE_URL` ostaje (host za URL kroz binding API, stavka 6).
+- Ažurirati sve što spominje `ulaznice-web(-staging)`: `docs/deploy-dug.md` (provjere #6),
+  `web/docs/plan.md`, `decisions.md` (odluke 22–24 → revizija), `CLAUDE.md`, `web/README`.
+- Lokalni dev: `:8788` (glavni Worker) + `:8792` (Astro kroz binding) ostaje; `:4321` za
+  brzo iteriranje Astra.
+
+**Paketi (prijedlog):**
+
+1. **S7** (već otvoren) proširen: brisanje kupačkih stranica iz SPA-e + mjerenje.
+2. **S8 — organizator i skener u Astru:** prijava, `/organizator`, `/skener` kao React otoci;
+   `/organizator/novi` odmah kao wizard (stavka 4). Worker i dalje ima SPA kao rezervu.
+3. **S9 — gašenje SPA-e i domena:** Worker bez `ASSETS`, brisanje `src/`, domene web Workera
+   ugašene, dokumentacija. Deploy: web → glavni Worker → provjere → gašenje domena.
+
+Rizik: mobilne aplikacije i Universal Links (`/.well-known/*`, `/ulaznice/<id>`) ostaju na
+glavnom Workeru/Astru na istim domenama — ne diraju se.
 
 ### Arhitektura: račun i dostava kroz domovina Fiskal (stavka 3, Ivan, 2026-11-23)
 

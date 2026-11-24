@@ -1,4 +1,5 @@
-/* Mobile-first, bez UI biblioteke — javna stranica mora biti brza (LCP < 2,5 s). */
+/* Mobile-first, bez UI biblioteke. SPA drži samo organizatora, skener i prijavu;
+   stranice kupaca imaju vlastiti stil u web/ (Astro). */
 :root {
   --zelena: #2f855a;
   --zelena-tamna: #14331f;
@@ -39,15 +40,6 @@ p { margin: 0 0 12px; }
 .meta { color: var(--siva); font-size: 15px; margin: 0 0 4px; }
 .mutno { color: var(--siva); font-size: 14px; }
 
-.hero {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  border-radius: var(--radius);
-  margin-bottom: 16px;
-  background: #e9ecef;
-}
-
 .tier {
   display: flex;
   gap: 12px;
@@ -58,8 +50,6 @@ p { margin: 0 0 12px; }
   padding: 14px;
   margin-bottom: 10px;
 }
-.tier--nedostupan { opacity: 0.6; }
-.tier__cijena { font-weight: 600; white-space: nowrap; }
 
 .oznaka {
   display: inline-block;
@@ -71,7 +61,6 @@ p { margin: 0 0 12px; }
   margin-left: 6px;
 }
 .oznaka--ok { background: #eafbea; color: var(--zelena); }
-.oznaka--lose { background: #fdecec; color: var(--crvena); }
 
 button, .gumb {
   display: inline-block;
@@ -117,18 +106,6 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--zelena); ou
 }
 
 .sazetak { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid var(--rub); }
-.sazetak--ukupno { font-weight: 700; font-size: 18px; }
-
-.ulaznica {
-  border: 1px solid var(--rub);
-  border-radius: 10px;
-  padding: 14px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-}
 
 .podnozje { text-align: center; color: var(--siva); font-size: 13px; margin-top: 32px; }
 
