@@ -43,7 +43,7 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | — | izvan lanca: prijava kodom, galerija, editor događaja | gotovo | a423316 | korijen 126, web 137 | Ivan, 2026-11-20; `docs/2026-11-20-prijava-kodom-galerija-editor.md`, deploy-dug #7–#9 |
 | S7 | mjerenje, čišćenje SPA-a, dokumentacija | gotovo | (ovaj commit) | korijen 129, web 137 | Ivan, 2026-11-24; odluke 700–706 |
 | S8 | organizator, skener, prijava u Astru (wizard) | gotovo | (ovaj commit) | korijen 131, web 195 | Ivan, 2026-11-24; odluke 800–816; stack :8788 provjeren |
-| — | (!) deploy S8 na staging | čeka | | | `docs/deploy-dug.md` #13: prvo `web`, pa glavni |
+| — | (!) deploy S8 na staging | gotovo | f56b290 | — | Ivan, 2026-11-24; automatske provjere #13 prošle, prijava i skica ručno |
 | S9 | gašenje SPA-e i domena `ulaznice-web(-staging)` | otvoreno | | | |
 
 ## Zajednička pravila (vrijede u svakoj sesiji)
