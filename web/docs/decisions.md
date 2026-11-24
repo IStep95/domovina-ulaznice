@@ -740,3 +740,11 @@ gumb.blok`, `web/src/components/Prijava.tsx`), ne kopija SPA-e (plavi tekst, svi
 `src/styles.css` `.prijava__google`). Agent ga je u S8 preslikao bez zapisa; Ivan je 24. 11.
 potvrdio da zasad ostaje tako. Logo je isti SVG.
 Revizija: po potrebi u feedback sesiji.
+
+**818. Tablica vrsta ulaznica u wizardu ovisi o širini stupca, ne prozora** (`@container`
+na `.tierovi`, prag 520 px). Od 1024 px srednji stupac je uži (~290 px sadržaja na
+1024–1100) nego na tabletu, a fiksni stupci (cijena, količina, imenska, ukloni) traže
+~364 px, pa je `@media (min-width: 720px)` „Naziv” stisnuo na nulu (Ivan, staging, 24. 11.).
+Ispod praga vrste su kartice; izmjereno CDP-om na 1000/1100/1280/1440/390 bez vodoravnog
+scrolla, „Naziv” 170–518 px.
+Revizija: nema.
