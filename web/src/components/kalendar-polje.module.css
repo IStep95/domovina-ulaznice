@@ -1,0 +1,176 @@
+/* Birač datuma i sata (KalendarPolje.tsx): gumb u izgledu polja i ploča s
+ * mjesecom. Tokeni iz tokens.css; odabrani dan je --color-ink (platformsko,
+ * kao primarni gumb), ne naglasna boja organizatora. */
+.kal {
+  position: relative;
+}
+
+.gumbPolja {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  text-align: left;
+}
+
+.gumbPolja svg {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.gumbPolja span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prazno {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.gumbPolja:hover {
+  border-color: var(--color-text-muted);
+}
+
+.gumbPolja:focus-visible {
+  border-color: var(--color-ink);
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.gumbPolja[aria-invalid="true"] {
+  border: 1.5px solid var(--color-error);
+}
+
+.ploca {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  padding: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(19, 23, 20, 0.14);
+}
+
+.vrh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.mjesec {
+  text-transform: capitalize;
+}
+
+.strelica {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.strelica:hover {
+  background: var(--color-surface-2);
+}
+
+.mreza {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.danTjedna {
+  padding: 4px 0;
+  font-size: var(--font-size-xs);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.dan {
+  aspect-ratio: 1;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.dan:hover:not(:disabled) {
+  background: var(--color-surface-2);
+}
+
+.dan:disabled {
+  color: var(--color-disabled-bg);
+  cursor: default;
+}
+
+.izvan {
+  color: var(--color-text-muted);
+}
+
+.danas {
+  box-shadow: inset 0 0 0 1px var(--color-border-strong);
+}
+
+.raspon {
+  border-radius: 0;
+  background: var(--color-neutral-bg);
+}
+
+.pocetak {
+  background: var(--color-neutral-bg);
+  box-shadow: inset 0 0 0 1.5px var(--color-ink);
+}
+
+.odabran,
+.odabran:hover:not(:disabled) {
+  background: var(--color-ink);
+  color: var(--color-on-ink);
+}
+
+.sat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-sm);
+}
+
+.sat select {
+  padding: 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+}
+
+.razmak {
+  flex: 1;
+}
+
+.sat button {
+  padding: 0 12px;
+  font-size: var(--font-size-sm);
+}

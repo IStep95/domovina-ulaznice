@@ -130,3 +130,5 @@ S2b (2026-11-20): migracija `events_venue_geo` u `domovina-api` (dva runa, drugi
 S4 (2026-11-20): `/dogadjaj/[slug]/kupnja` (SSR + React otok `KupnjaForma`), validacija u `kupnja.ts` zrcali Worker, `poruke.ts` s porukom za svih 27 kodova (test grepa Worker), 429 s odbrojavanjem, ponovno učitavanje raspoloživosti nakon odbijanja; mock vraća `sale_*` i prisilne kodove (`greska+<kod>@`). E2E kroz mock do `/ulaznice/<id>?placeno=1` u headless Chromeu. Sljedeće: S5.
 
 S7 (2026-11-24): staging i produkcija deployani (23. 11.), SSR kroz binding `API`; Lighthouse: Astro 0 B JS-a, LCP 0,82 s naspram 1,51 s SPA-e (`research/2026-11-24-lighthouse.md`); kupačke stranice obrisane iz `src/`, dokumentacija opisuje podjelu. Lanac nastavlja sa S8/S9 (sve na Astro, odluka 706).
+
+S8 (2026-11-24): `/organizator`, `/organizator/novi` (wizard u 5 koraka, bez scrolla na 1440×900) i `/skener` iz Astra kroz binding `WEB`; prijava kodom i spremanje skice provjereni na lokalnom stacku (`research/2026-11-24-s8-wizard.md`). Čeka deploy (`docs/deploy-dug.md` #13) prije S9.

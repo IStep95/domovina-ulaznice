@@ -12,7 +12,7 @@ import Ikona from "../components/Ikona.astro";
 import KarticaDogadjaja from "../components/KarticaDogadjaja.astro";
 import PraznoStanje from "../components/PraznoStanje.astro";
 import { ZADANA_ZONA, najnizaCijena, sigurniUrl, terminKartice, vrstaDogadjaja, zaglavljeGrupe, type ZaglavljeGrupe } from "../lib/format.ts";
-import { CACHE_GRESKA, CACHE_STRANICA, ogZadanaSlika } from "../lib/stranica.ts";
+import { CACHE_GRESKA, CACHE_STRANICA, OG_ZADANA_MJERE, ogZadanaSlika } from "../lib/stranica.ts";
 
 let dogadjaji: EventView[] | null = null;
 try {
@@ -39,7 +39,7 @@ for (const ev of poredani) {
 
 const canonical = new URL("/", Astro.url.origin).toString();
 ---
-<Osnovni title="Događaji · Ulaznice" sirina="srednja" canonical={canonical} ogSlika={ogZadanaSlika(Astro.url.origin)}>
+<Osnovni title="Događaji · Ulaznice" sirina="srednja" canonical={canonical} ogSlika={ogZadanaSlika(Astro.url.origin)} ogSlikaMjere={OG_ZADANA_MJERE}>
   <div class="popis">
     <div class="glavno">
       <header class="uvod">

@@ -1,4 +1,4 @@
-# Handoffi za sesije S1–S7 i S2b (web/)
+# Handoffi za sesije S1–S9 i S2b (web/)
 
 Plan je u [`../plan.md`](../plan.md), odluke u [`../decisions.md`](../decisions.md),
 radna lista u [`../../TODO.md`](../../TODO.md). Svaka sesija ima svoj handoff `SN.md`.
@@ -42,7 +42,8 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | — | (!) staging deploy | gotovo | 0d5f7dc | — | Ivan, 2026-11-23; i produkcija bez najave |
 | — | izvan lanca: prijava kodom, galerija, editor događaja | gotovo | a423316 | korijen 126, web 137 | Ivan, 2026-11-20; `docs/2026-11-20-prijava-kodom-galerija-editor.md`, deploy-dug #7–#9 |
 | S7 | mjerenje, čišćenje SPA-a, dokumentacija | gotovo | (ovaj commit) | korijen 129, web 137 | Ivan, 2026-11-24; odluke 700–706 |
-| S8 | organizator, skener, prijava u Astru (wizard) | otvoreno | | | |
+| S8 | organizator, skener, prijava u Astru (wizard) | gotovo | (ovaj commit) | korijen 131, web 195 | Ivan, 2026-11-24; odluke 800–816; stack :8788 provjeren |
+| — | (!) deploy S8 na staging | čeka | | | `docs/deploy-dug.md` #13: prvo `web`, pa glavni |
 | S9 | gašenje SPA-e i domena `ulaznice-web(-staging)` | otvoreno | | | |
 
 ## Zajednička pravila (vrijede u svakoj sesiji)

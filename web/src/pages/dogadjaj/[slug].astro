@@ -41,7 +41,7 @@ import { googleKalendarUrl } from "../../lib/kalendar.ts";
 import { adresa, koordinate, linkoviKarte, punoMjesto } from "../../lib/karta.ts";
 import { opisHtml, opisTekst } from "../../lib/opis.ts";
 import { eventJsonLd, jsonLdSkripta } from "../../lib/seo.ts";
-import { CACHE_GRESKA, CACHE_STRANICA, ogZadanaSlika } from "../../lib/stranica.ts";
+import { CACHE_GRESKA, CACHE_STRANICA, OG_ZADANA_MJERE, ogZadanaSlika } from "../../lib/stranica.ts";
 
 const slug = Astro.params.slug ?? "";
 let dogadjaj: EventView | null = null;
@@ -108,7 +108,8 @@ const jsonLd = dogadjaj
       url: canonical,
       urlKupnje: new URL(kupnja, origin).toString(),
       opis: opisKratko || null,
-      slika: naslovnaUrl,
+      // Google preporučuje `image` za Event (odluka 705): bez naslovne zadana slika.
+      slika: naslovnaUrl ?? ogZadanaSlika(origin),
       organizatorWeb,
     })
   : null;
@@ -146,6 +147,7 @@ const metaOpis =
       title={`${dogadjaj.title} · Ulaznice`}
       opis={metaOpis}
       ogSlika={naslovnaUrl ?? ogZadanaSlika(origin)}
+      ogSlikaMjere={naslovnaUrl ? null : OG_ZADANA_MJERE}
       ogSlikaAlt={naslovnaUrl ? naslovnaAlt : null}
       canonical={canonical}
       naglasak={dogadjaj.brand?.accent_color ?? null}

@@ -1,9 +1,10 @@
-// S6: ista domena kroz service binding `WEB` (Astro frontend za kupce, web/).
+// S6: ista domena kroz service binding `WEB` (Astro frontend, web/).
 //
-// Glavni Worker dijeli putanje: kupac ide na Astro, organizator/skener i
-// njihova statika na staru SPA (ASSETS), API/webhook/.well-known ostaju ovdje.
-// Pogrešna podjela znači ili kupca na staroj SPA ili organizatora na Astrovom
-// 404 — oboje se na stagingu vidi tek kad netko klikne, pa se drži ovdje.
+// Glavni Worker dijeli putanje: sve stranice (kupac, od S8 i organizator i
+// skener) idu na Astro, statika stare SPA (`/assets/*`) u ASSETS, a
+// API/webhook/.well-known ostaju ovdje. Pogrešna podjela znači ili stranicu na
+// staroj SPA ili SPA-in JS na Astrovom 404 — oboje se na stagingu vidi tek kad
+// netko klikne, pa se drži ovdje.
 import { strict as assert } from "node:assert";
 import { readdirSync } from "node:fs";
 import { afterEach, test } from "node:test";
@@ -70,16 +71,23 @@ const KUPAC = [
   "/og-zadana.png",
 ];
 
-// Nepoznato ide Astru: njegov 404 je pravi 404 (odluka 510), SPA bi dala 200.
-// `/organizatori` i `/assets` (bez kose crte) provjeravaju da SPA popis nije prefiks-zamka.
-const NEPOZNATO = ["/nesto", "/dogadjaj", "/ulaznice", "/robots.txt", "/index.html", "/organizatori", "/assets", "/api", "/webhook"];
-
-// Stara SPA (organizator, skener) i njezin Vite build (dist/assets/*).
-const SPA = [
+// Organizator, editor i skener (S8): Astro stranice s otokom `client:only`.
+// Kosa crta na kraju ide Astru kao i bez nje (Astro je sam svede).
+const ORGANIZATOR = [
   "/organizator",
   "/organizator/",
+  "/organizator/novi",
+  "/organizator/novi/",
   "/skener",
   "/skener/",
+];
+
+// Nepoznato ide Astru: njegov 404 je pravi 404 (odluka 510), SPA bi dala 200.
+// `/organizatori` i `/assets` (bez kose crte) provjeravaju da SPA popis nije prefiks-zamka.
+const NEPOZNATO = ["/nesto", "/dogadjaj", "/ulaznice", "/robots.txt", "/index.html", "/organizatori", "/organizator/nesto", "/assets", "/api", "/webhook"];
+
+// Stara SPA: samo njezin Vite build (dist/assets/*), rezerva do S9.
+const SPA = [
   "/assets/index-DY6l5GHK.js",
   "/assets/index-DUv2lCy0.css",
   // .well-known bez vlastite rute ide u ASSETS kao i prije S6
@@ -108,7 +116,46 @@ test("WEB: nepoznata putanja ide na Astro (pravi 404), ne na SPA index.html", as
   assert.equal(assets.zahtjevi.length, 0);
 });
 
-test("WEB: organizator, skener i SPA asseti ostaju u ASSETS", async () => {
+test("WEB: organizator, editor i skener (S8) idu na Astro, ne na SPA", async () => {
+  const { web, assets, t } = okolina();
+  for (const p of ORGANIZATOR) {
+    const { text } = await posalji(t, p);
+    assert.equal(text, "ASTRO", `${p} mora na WEB`);
+  }
+  assert.equal(web.zahtjevi.length, ORGANIZATOR.length);
+  assert.equal(assets.zahtjevi.length, 0, "SPA ne smije vidjeti stranice organizatora ni skenera");
+});
+
+test("WEB: Google prijava vraća na Astro stranicu, a povratak s tokenom ide na WEB", async () => {
+  const { web, assets, t } = okolina();
+  for (const [povratak, ocekivano] of [
+    ["/organizator", "/organizator"],
+    ["/organizator/novi", "/organizator/novi"],
+    ["/skener", "/skener"],
+    // sve ostalo (i kosa crta na kraju, i tuđa domena) svede se na /organizator
+    ["/skener/", "/organizator"],
+    ["https://zlo.example/organizator", "/organizator"],
+    ["", "/organizator"],
+  ] as const) {
+    const { res } = await posalji(t, `/api/organizator/google?povratak=${encodeURIComponent(povratak)}`);
+    assert.equal(res.status, 302, povratak);
+    const gotrue = new URL(res.headers.get("location")!);
+    assert.equal(gotrue.pathname, "/auth/v1/authorize");
+    assert.equal(gotrue.searchParams.get("provider"), "google");
+    const nazad = new URL(gotrue.searchParams.get("redirect_to")!);
+    assert.equal(nazad.origin, new URL(BASE_URL).origin, `${povratak}: povratak na istu domenu`);
+    assert.equal(nazad.pathname, ocekivano, povratak);
+
+    // GoTrue vraća na redirect_to s tokenom u fragmentu; fragment ne ide na
+    // server, pa Worker vidi samo putanju i mora je dati Astru (otok preuzme token).
+    const { text } = await posalji(t, nazad.pathname);
+    assert.equal(text, "ASTRO", `${nazad.pathname} nakon Googlea mora na WEB`);
+  }
+  assert.equal(assets.zahtjevi.length, 0);
+  assert.ok(web.zahtjevi.every((r) => !new URL(r.url).pathname.startsWith("/api/")), "API ne ide na WEB");
+});
+
+test("WEB: SPA asseti ostaju u ASSETS (rezerva do S9)", async () => {
   const { web, assets, t } = okolina();
   for (const p of SPA) {
     const { text } = await posalji(t, p);
@@ -192,10 +239,10 @@ test("WEB: NAJAVA i dalje presreće sve, binding se ne zove", async () => {
   assert.equal(assets.zahtjevi.length, 0);
 });
 
-test("bez WEB bindinga sve kao prije S6: kupačke i nepoznate putanje iz ASSETS", async () => {
+test("bez WEB bindinga sve kao prije S6: kupac, organizator, skener i nepoznato iz ASSETS", async () => {
   const { assets, t } = okolina({ web: false });
   assert.equal(t.env.WEB, undefined);
-  const sve = [...KUPAC, ...NEPOZNATO.filter((p) => p !== "/api" && p !== "/webhook"), ...SPA, "/api", "/webhook"];
+  const sve = [...KUPAC, ...ORGANIZATOR, ...NEPOZNATO.filter((p) => p !== "/api" && p !== "/webhook"), ...SPA, "/api", "/webhook"];
   for (const p of sve) {
     const { text } = await posalji(t, p);
     assert.equal(text, "SPA", `${p} bez WEB-a ide u ASSETS`);

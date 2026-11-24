@@ -1,0 +1,128 @@
+/* Pregled prodaje (S8): traka sesije, organizatori, kartica po događaju s
+ * redovima tierova. Kartice kao na kupnji (bijela površina, obrub, --radius-lg). */
+.pregled {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.odjeljak {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.podnaslov {
+  font-size: var(--font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.racun,
+.kartica {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: 18px 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.kartica {
+  gap: var(--space-4);
+  padding: 22px 24px;
+}
+
+.oznake {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vrh {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.naslovBlok {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.naslov {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.zbroj {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.iznos {
+  font-size: var(--font-size-lg);
+  font-variant-numeric: tabular-nums;
+}
+
+.tierovi {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.tier {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 15px;
+}
+
+.brojke {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.mutno {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.napomena {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 719px) {
+  .kartica {
+    padding: 18px 16px;
+  }
+  .zbroj {
+    align-items: flex-start;
+    text-align: left;
+  }
+}

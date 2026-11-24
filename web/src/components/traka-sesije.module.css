@@ -1,0 +1,53 @@
+/* Vrh stranica organizatora: naslov i akcija lijevo, e-mail i odjava desno;
+ * na mobitelu jedno ispod drugog. */
+.traka {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.lijevo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  min-width: 0;
+}
+
+.naslov {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.desno {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.email {
+  overflow: hidden;
+  max-width: 260px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 719px) {
+  .traka {
+    flex-direction: column-reverse;
+    gap: var(--space-3);
+  }
+  .naslov {
+    font-size: var(--font-size-2xl);
+  }
+  .desno {
+    align-self: stretch;
+    justify-content: space-between;
+  }
+}

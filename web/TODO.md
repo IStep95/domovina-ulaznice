@@ -52,11 +52,11 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 
 ## F3 — sve na Astro (Ivan, 2026-11-24, `docs/ui-feedback.md` stavka 7)
 
-- [ ] prijava (kod na e-mail, Google, lozinka) kao React otok u Astru → S8
-- [ ] `/organizator` (pregled prodaje, CSV) u Astru → S8
-- [ ] `/organizator/novi` kao wizard (stavka 4) u Astru → S8
-- [ ] `/skener` u Astru (`client:only`, kamera) → S8
-- [ ] sitnice iz Lighthousea: inline CSS, preload fonta, `og:image:width/height`, `image` u JSON-LD → S8
+- [x] prijava (kod na e-mail, Google, lozinka) kao React otok u Astru → S8
+- [x] `/organizator` (pregled prodaje, CSV) u Astru → S8
+- [x] `/organizator/novi` kao wizard (stavka 4) u Astru → S8
+- [x] `/skener` u Astru (`client:only`, kamera) → S8
+- [x] sitnice iz Lighthousea: inline CSS, preload fonta, `og:image:width/height`, `image` u JSON-LD → S8
 - [ ] glavni Worker bez SPA-e i `ASSETS`; `src/` obrisan → S9
 - [ ] domene `ulaznice-web(-staging).domovina.ai` ugašene, Astro samo kroz binding → S9
 
