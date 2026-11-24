@@ -45,7 +45,7 @@ flowchart TB
 ### 1.1 Podjela putanja na domeni (od S7 lanca `web/`)
 
 Obje domene (`ulaznice-staging.domovina.ai`, `ulaznice.domovina.ai`) gleda **glavni
-Worker** (`worker/index.ts`; produkcija je dok traje najava samo `NAJAVA=1`). On sam odgovara na `/api/*`, `/webhook/*` i
+Worker** (`worker/index.ts`; od 23. 11. 2026. ista podjela i na produkciji; `NAJAVA=1` je vraća na statičnu najavu). On sam odgovara na `/api/*`, `/webhook/*` i
 `/.well-known/*` (AASA, assetlinks), a iz `ASSETS` servira React SPA iz `src/` samo za
 `/organizator`, `/organizator/*`, `/skener` i njezinu statiku `/assets/*`
 (`SPA_STRANICE`, `SPA_PREFIKSI`, `idePremaWebu()`). **Sve ostalo** — popis, događaj,

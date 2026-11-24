@@ -13,7 +13,7 @@ skenira na ulazu. Platforma nikad ne drži novac i ne uzima proviziju s ulaznice
 > | Okruženje | URL | Stanje |
 > | --- | --- | --- |
 > | staging | `ulaznice-staging.domovina.ai` | puna aplikacija, Stripe sandbox |
-> | produkcija | `ulaznice.domovina.ai` | **samo najava** — prodaja nije otvorena |
+> | produkcija | `ulaznice.domovina.ai` | puna aplikacija od 23. 11. 2026.; Stripe live još nije Connect platforma, mail bez `RESEND_API_KEY` (`docs/deploy-dug.md` #10) |
 >
 > Preostalo za prvu test kupnju: Express onboarding + `STRIPE_SECRET_KEY` i
 > `STRIPE_WEBHOOK_SECRET` (`wrangler secret put … --env staging`).
