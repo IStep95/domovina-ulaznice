@@ -564,10 +564,12 @@ app.post("/api/organizator/prijava", async (c) => {
 });
 
 // Prijava Googleom: preusmjerenje na GoTrue `/authorize` (implicit flow).
-// GoTrue nakon Googlea vraća na `redirect_to` s tokenom u fragmentu, a SPA ga
-// preuzme (`src/lib/auth.ts`). Origin mora biti u `ADDITIONAL_REDIRECT_URLS`
-// jezgre (dodani ulaznice i ulaznice-staging 2026-11-23), inače GoTrue vrati
-// na SITE_URL. Povratak je ograničen na stranice s prijavom.
+// GoTrue nakon Googlea vraća na `redirect_to` s tokenom u fragmentu, a otok
+// stranice ga preuzme (`web/src/lib/auth.ts`; od S8 su to Astro stranice, SPA
+// `src/lib/auth.ts` radi isto dok je rezerva). Origin mora biti u
+// `ADDITIONAL_REDIRECT_URLS` jezgre (dodani ulaznice i ulaznice-staging
+// 2026-11-23), inače GoTrue vrati na SITE_URL. Povratak je ograničen na
+// stranice s prijavom; svaka od njih ima Astro stranicu (web/test/auth.test.ts).
 app.get("/api/organizator/google", (c) => {
   const povratak = c.req.query("povratak") ?? "";
   const put = /^\/(organizator|organizator\/novi|skener)$/.test(povratak) ? povratak : "/organizator";
@@ -729,26 +731,24 @@ app.post("/webhook/stripe", async (c) => {
   return handleStripeWebhook(c.req.raw, c.env);
 });
 
-// ------------------------------------------------- kupci (WEB) ili SPA (ASSETS)
+// ------------------------------------------------- Astro (WEB) ili SPA (ASSETS)
 
 /**
  * Putanje koje i uz Astro (binding `WEB`) ostaju staroj SPA iz `dist/`.
  *
- * Popis je namjerno eksplicitan i kratak: SPA danas služi samo organizatoru i
- * skeneru, a sve što vidi kupac (`/`, `/dogadjaj/*` s `.ics` i `/kupnja`,
- * `/ulaznice/*` s `?placeno=1`, `/uvjeti`, `/privatnost`, `/_astro/*`,
- * `/favicon.svg`, `/og-zadana.png`) je Astrovo. Zato se popisuje manja strana.
+ * Od S8 lanca web/ Astro služi SVE stranice: kupca (`/`, `/dogadjaj/*` s `.ics`
+ * i `/kupnja`, `/ulaznice/*`, `/uvjeti`, `/privatnost`), organizatora
+ * (`/organizator`, `/organizator/novi`), skener (`/skener`) i svoju statiku
+ * (`/_astro/*`, `web/public/`). SPA ostaje samo kao rezerva do S9:
  *
- *   /organizator, /skener   stranice SPA (src/main.tsx); /x/… pokriva i kosu crtu
- *   /assets/                Viteov build.assetsDir (dist/assets/*), JS i CSS SPA-a
+ *   /assets/   Viteov build.assetsDir (dist/assets/*), JS i CSS SPA-e; treba ih
+ *              index.html SPA-e kad nema WEB bindinga (fallback ispod)
  *
  * Bez heuristike („ima ekstenziju → statika”, „WEB vrati 404 → probaj ASSETS”):
  * obje bi tiho sakrile sudar. Ovako je pravilo jedno: statična datoteka u
- * korijenu domene pripada Astru (web/public/), a SPA ima samo `/assets/`. Ako
- * SPA jednom dobije vlastiti `public/favicon.svg`, Astrov ga zasjenjuje — to je
- * svjesno, kupac mora vidjeti istu ikonu na svim svojim stranicama.
+ * korijenu domene pripada Astru (web/public/), a SPA ima samo `/assets/`.
+ * Gašenje SPA-e i ASSETS-a: S9 (web/docs/ui-feedback.md, stavka 7).
  */
-const SPA_STRANICE = ["/organizator", "/skener"];
 const SPA_PREFIKSI = ["/assets/"];
 
 /**
@@ -764,13 +764,14 @@ const SPA_PREFIKSI = ["/assets/"];
 function idePremaWebu(path: string): boolean {
   if (path.startsWith("/.well-known/")) return false;
   if (SPA_PREFIKSI.some((p) => path.startsWith(p))) return false;
-  if (SPA_STRANICE.some((p) => path === p || path.startsWith(`${p}/`))) return false;
   return true;
 }
 
 // Fallback — sve što nije /api ili /webhook: Astro (ako je binding tu) ili SPA.
 // Request se prosljeđuje nepromijenjen (metoda, headeri, query, Host): Astro
 // tako gradi kanonske i og: URL-ove na domeni na kojoj ga je kupac otvorio.
+// Bez WEB bindinga (lokalno bez Astra, ili ako binding padne iz konfiguracije)
+// sve ide u ASSETS kao prije S6, pa SPA i dalje služi organizatora i skener.
 app.all("*", async (c) => {
   if (c.req.path.startsWith("/api/") || c.req.path.startsWith("/webhook/")) return fail("not_found", 404);
   if (c.env.WEB && idePremaWebu(c.req.path)) return c.env.WEB.fetch(c.req.raw);
