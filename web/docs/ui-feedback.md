@@ -23,6 +23,7 @@ Gdje: `web` = Astro za kupce (`web/src/`) · `spa` = organizator/skener/prijava 
 | 7 | 2026-11-24 | web + worker + spa | sve rute; domene | **Sve na Astro**, i `/organizator` i ostale rute koje danas nisu. Aktivne samo domene `ulaznice-staging.domovina.ai` i `ulaznice.domovina.ai`. | v. odjeljak „Sve na Astro, dvije domene” ispod | P1 | novo, plan |
 | 8 | 2026-11-24 | web + worker + jezgra | `/organizator/novi`, korak 3 | Naslovna slika **upload ili URL**, i **galerija** (upload ili URL). | Plan A (upload kroz Worker u Storage `pinka-covers`) i B (galerija i alt kroz `events-organizer`, grana `domovina-api` `events-media`); odluke 819–822, `docs/2026-11-24-upload-slika-i-galerija.md` | P1 | gotovo (ovaj commit; jezgra čeka Matiju, `deploy-dug` #15) |
 | 9 | 2026-11-24 | web | `/organizator/novi`, korak 1, izbor organizatora | (agent, uz stavku 8) Osobni računi (`is_personal`) se nude kao organizator. | Filtrirati `is_personal` iz popisa; `organizer_overview` ga već vraća. | P2 | novo, čeka Ivana |
+| 10 | 2026-11-24 | web + worker + jezgra | `/organizator` (pregled prodaje), `/organizator/novi` | Dodaj opciju **obriši skicu** i **uredi skicu**. | Odluke 823–824: wizard `?uredi=<id>`, `delete_event_draft` u jezgri (grana `events-media`) | P1 | gotovo (ovaj commit; jezgra čeka Matiju, `deploy-dug` #16) |
 
 ### Stavka 2 — dorada (Ivan, 2026-11-23)
 

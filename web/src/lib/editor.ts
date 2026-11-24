@@ -77,6 +77,8 @@ export interface UnosTiera {
   cijena: string;
   kolicina: string;
   imenska: boolean;
+  /** Postojeća vrsta u jezgri (uređivanje skice); nova vrsta ga nema. */
+  id?: string;
 }
 
 /** Najviše slika u galeriji (jezgra: check `events_gallery_shape`); naslovna nije među njima. */
@@ -256,6 +258,121 @@ export function zahtjev(u: UnosDogadjaja, eventId: string): Record<string, unkno
       inventory_total: t.kolicina.trim() ? Number(t.kolicina.trim()) : null,
       imenska: t.imenska,
     })),
+  };
+}
+
+// ── Uređivanje skice ─────────────────────────────────────────────────────────
+
+/** Skica kako je vraća `GET /api/organizator/dogadjaj/:id` (Worker, PostgREST embed). */
+export interface Skica {
+  campaign_id: string;
+  account_id: string;
+  slug: string;
+  title: string;
+  state: string;
+  event: {
+    event_type?: string | null;
+    venue_name?: string | null;
+    venue_address?: string | null;
+    venue_city?: string | null;
+    starts_at?: string | null;
+    ends_at?: string | null;
+    timezone?: string | null;
+    description_hr?: string | null;
+    cover_image_url?: string | null;
+    gallery?: Array<{ url?: unknown }> | null;
+    organizer_name?: string | null;
+    organizer_email?: string | null;
+    organizer_web?: string | null;
+  } | null;
+  tiers: Array<{ id: string; title: string; price_cents: number; inventory_total: number | null; imenska: boolean }>;
+}
+
+/** ISO trenutak → zidno vrijeme za birač („2027-05-10T20:00”) u zoni događaja; obrat `zidnoVrijemeUUtc`. */
+export function utcUZidnoVrijeme(iso: string | null | undefined, zona = ZONA): string {
+  const t = iso ? Date.parse(iso) : NaN;
+  if (!Number.isFinite(t)) return "";
+  const d = Object.fromEntries(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone: zona,
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+      .formatToParts(new Date(t))
+      .map((p) => [p.type, p.value]),
+  );
+  return `${d.year}-${d.month}-${d.day}T${d.hour}:${d.minute}`;
+}
+
+/** Cijeli centi → unos cijene kakav organizator piše (2550 → „25,50”, 1500 → „15”); obrat `centiIzUnosa`. */
+export function unosIzCenti(centi: number): string {
+  if (!Number.isSafeInteger(centi) || centi < 0) return "";
+  const eura = Math.floor(centi / 100);
+  const ostatak = centi % 100;
+  return ostatak ? `${eura},${String(ostatak).padStart(2, "0")}` : String(eura);
+}
+
+/** Skica iz jezgre → unos forme; vrste nose svoj `id`, pa ih izmjena mijenja umjesto da doda nove. */
+export function unosIzSkice(s: Skica): UnosDogadjaja {
+  const e = s.event ?? {};
+  const zona = e.timezone || ZONA;
+  const tekst = (x: string | null | undefined) => x ?? "";
+  return {
+    accountId: s.account_id,
+    naslov: s.title,
+    vrsta: e.event_type || "ostalo",
+    pocetak: utcUZidnoVrijeme(e.starts_at, zona),
+    kraj: utcUZidnoVrijeme(e.ends_at, zona),
+    mjesto: tekst(e.venue_name),
+    adresa: tekst(e.venue_address),
+    grad: tekst(e.venue_city),
+    opis: tekst(e.description_hr),
+    slika: tekst(e.cover_image_url),
+    galerija: (Array.isArray(e.gallery) ? e.gallery : [])
+      .map((g) => (typeof g?.url === "string" ? g.url : ""))
+      .filter(Boolean),
+    organizator: e.organizer_name && e.organizer_name !== s.title ? e.organizer_name : "",
+    email: tekst(e.organizer_email),
+    web: tekst(e.organizer_web),
+    tieri: s.tiers.length
+      ? s.tiers.map((t) => ({
+          id: t.id,
+          naziv: t.title,
+          cijena: unosIzCenti(t.price_cents),
+          kolicina: t.inventory_total === null ? "" : String(t.inventory_total),
+          imenska: t.imenska,
+        }))
+      : [prazanTier()],
+  };
+}
+
+/**
+ * Tijelo za PUT /api/organizator/dogadjaj/:id (`update_event`). Razlike od
+ * `zahtjev`: u izmjeni `null` znači „ne diraj”, pa se ispražnjeno neobavezno
+ * polje šalje kao "" (jezgra ga briše); vrste nose `id` i `sort`, a maknute
+ * idu u `remove_tier_ids`. Kraj događaja i ime organizatora jezgra ne zna
+ * obrisati (`coalesce`), pa prazno polje tamo ostavlja staru vrijednost.
+ */
+export function zahtjevIzmjene(u: UnosDogadjaja, izvorniTierIds: readonly string[]): Record<string, unknown> {
+  const { event_id: _e, account_id: _a, tiers, ...z } = zahtjev(u, "");
+  const ostaju = new Set(u.tieri.map((t) => t.id).filter(Boolean));
+  return {
+    ...z,
+    venue_address: u.adresa.trim(),
+    description_hr: u.opis.trim(),
+    cover_image_url: u.slika.trim(),
+    organizer_email: u.email.trim(),
+    organizer_web: u.web.trim(),
+    tiers: (tiers as Array<Record<string, unknown>>).map((t, i) => ({
+      ...(u.tieri[i]!.id ? { id: u.tieri[i]!.id } : {}),
+      ...t,
+      sort: i,
+    })),
+    remove_tier_ids: izvorniTierIds.filter((id) => !ostaju.has(id)),
   };
 }
 

@@ -58,6 +58,13 @@ Stack kao u `docs/2026-08-04-…` §9, ali shim funkcija s granom jezgre:
 `https://`, pa se lokalno učitana slika ne može spremiti u skicu. Na stagingu je URL
 `https://api.domovina.ai/…`.
 
+## Dopuna: uredi i obriši skicu (isti dan)
+
+Odluke 823–824, `deploy-dug` #16. Ista grana jezgre (`events-media`): migracija
+`20261124170000_events_delete_draft` i `events-organizer` akcija `delete` + `remove_tier_ids`
+u `update`. Worker: `GET`/`PUT`/`DELETE /api/organizator/dogadjaj/:id`. Wizard:
+`/organizator/novi?uredi=<id>` (`UcitajSkicu`, `unosIzSkice`, `zahtjevIzmjene`).
+
 ## Otvoreno
 
 - Matija: merge `events-media`, migracija prije `events-feed` i `events-organizer`.

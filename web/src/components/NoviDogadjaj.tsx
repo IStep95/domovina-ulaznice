@@ -14,10 +14,20 @@
 // može preskočiti prvi nevaljani korak). `event_id` je dio nacrta, pa ponovno
 // slanje nakon greške mreže ili refresha ne pravi duplikat (`create_event` je
 // idempotentan po id-u). Tko smije kreirati odlučuje baza (admin računa +
-// provjeren identitet); objava i uređivanje još nisu ovdje. Korak 3 od
+// provjeren identitet). `?uredi=<id>` otvara istu formu nad postojećom skicom
+// (učita je iz jezgre, sprema `update`, nudi „Obriši skicu”); objava još nije ovdje. Korak 3 od
 // 2026-11-24 ima upload naslovne i galeriju (Korak3 niže).
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type SubmitEvent } from "react";
-import { dohvatiPregled, jeIstekla, kreirajDogadjaj, ucitajSliku, type OrgPregled } from "../lib/auth.ts";
+import {
+  azurirajDogadjaj,
+  dohvatiPregled,
+  dohvatiSkicu,
+  jeIstekla,
+  kreirajDogadjaj,
+  obrisiSkicu,
+  ucitajSliku,
+  type OrgPregled,
+} from "../lib/auth.ts";
 import { opisVremena, predlozeniKraj } from "../lib/birac-datuma.ts";
 import {
   BROJ_KORAKA,
@@ -33,8 +43,10 @@ import {
   prazanTier,
   prazanUnos,
   provjeri,
+  unosIzSkice,
   validirajKorak,
   zahtjev,
+  zahtjevIzmjene,
   type Greske,
   type Korak,
   type UnosDogadjaja,
@@ -56,7 +68,64 @@ import polje from "./polje.module.css";
 import css from "./novi-dogadjaj.module.css";
 
 export default function NoviDogadjaj() {
-  return <SaPrijavom naslov="Novi događaj">{(s) => <Wizard {...s} />}</SaPrijavom>;
+  // `?uredi=<campaign_id>`: ista forma nad postojećom skicom (pregled prodaje → „Uredi”)
+  const uredi = new URLSearchParams(location.search).get("uredi");
+  return (
+    <SaPrijavom naslov={uredi ? "Uredi skicu" : "Novi događaj"}>
+      {(s) => (uredi ? <UcitajSkicu {...s} id={uredi} /> : <Wizard {...s} />)}
+    </SaPrijavom>
+  );
+}
+
+/** Skica koja se uređuje: id u jezgri, unos iz nje i id-evi vrsta kakve su bile pri učitavanju. */
+interface Uredjivanje {
+  campaignId: string;
+  tierIds: string[];
+  unos: UnosDogadjaja;
+}
+
+/** Učita skicu iz jezgre pa otvori wizard nad njom; lokalni nacrt novog događaja se ne dira. */
+function UcitajSkicu({ id, ...s }: SesijaOtoka & { id: string }) {
+  const [skica, setSkica] = useState<Uredjivanje | null>(null);
+  const [greska, setGreska] = useState<string | null>(null);
+  const { istekla } = s;
+  useEffect(() => {
+    let vazi = true;
+    dohvatiSkicu(s.sesija.access_token, id)
+      .then((sk) => {
+        if (!vazi) return;
+        if (sk.state !== "draft") setGreska("Uređivati se može samo skica. Ovaj događaj je već objavljen.");
+        else setSkica({ campaignId: sk.campaign_id, tierIds: sk.tiers.map((t) => t.id), unos: unosIzSkice(sk) });
+      })
+      .catch((e) => {
+        if (!vazi) return;
+        if (jeIstekla(e)) istekla();
+        else setGreska(porukaIzGreske(e));
+      });
+    return () => {
+      vazi = false;
+    };
+  }, [s.sesija.access_token, id, istekla]);
+  if (skica) return <Wizard {...s} uredi={skica} />;
+  return (
+    <div className={css.gotovo}>
+      <TrakaSesije naslov="Uredi skicu" email={s.sesija.email} odjava={s.odjava} />
+      {greska ? (
+        <>
+          <Banner ton="error">{greska}</Banner>
+          <div className={css.gumbi}>
+            <a className={`${gumb.gumb} ${gumb.sekundarni}`} href="/organizator">
+              Na pregled događaja
+            </a>
+          </div>
+        </>
+      ) : (
+        <p className={css.mutno} role="status">
+          Učitavam skicu…
+        </p>
+      )}
+    </div>
+  );
 }
 
 type Racuni = OrgPregled["accounts"];
@@ -64,13 +133,15 @@ type Racuni = OrgPregled["accounts"];
 /** Id elementa za ključ greške (`tier.0.cijena` → `nd-tier-0-cijena`). */
 const idPolja = (kljuc: string) => `nd-${kljuc.replace(/\./g, "-")}`;
 
-function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
+function Wizard({ sesija, odjava, istekla, uredi }: SesijaOtoka & { uredi?: Uredjivanje }) {
   // Nacrt se čita jednom, pri prvom crtanju (otok je client:only, pa nema SSR razlike).
-  const [nacrt] = useState(() => ucitajNacrt(sesija.email));
-  const [unos, setUnos] = useState<UnosDogadjaja>(() => nacrt?.unos ?? prazanUnos());
-  const [eventId] = useState(() => nacrt?.eventId ?? crypto.randomUUID());
-  const [korak, setKorak] = useState<Korak>(() => korakIzUrla(location.search, nacrt?.unos ?? prazanUnos()));
-  const [posjeceno, setPosjeceno] = useState<Korak>(() => Math.max(nacrt?.posjeceno ?? 1, korak) as Korak);
+  // Uređivanje skice ne koristi nacrt: izvor je jezgra, a nacrt novog događaja ostaje netaknut.
+  const [nacrt] = useState(() => (uredi ? null : ucitajNacrt(sesija.email)));
+  const [unos, setUnos] = useState<UnosDogadjaja>(() => uredi?.unos ?? nacrt?.unos ?? prazanUnos());
+  const [eventId] = useState(() => uredi?.campaignId ?? nacrt?.eventId ?? crypto.randomUUID());
+  const [korak, setKorak] = useState<Korak>(() => korakIzUrla(location.search, uredi?.unos ?? nacrt?.unos ?? prazanUnos()));
+  const [posjeceno, setPosjeceno] = useState<Korak>(() => (uredi ? 5 : (Math.max(nacrt?.posjeceno ?? 1, korak) as Korak)));
+  const [brise, setBrise] = useState(false);
   /** Koraci na kojima je „Dalje” već pokušan: tek tada se greške pokazuju (i prate tipkanje). */
   const [pokusani, setPokusani] = useState<ReadonlySet<Korak>>(() => new Set());
   const [racuni, setRacuni] = useState<Racuni | null>(null);
@@ -90,7 +161,7 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
         if (!vazi) return;
         setRacuni(p.accounts);
         setUnos((u) => {
-          if (p.accounts.some((a) => a.id === u.accountId)) return u;
+          if (uredi || p.accounts.some((a) => a.id === u.accountId)) return u;
           return { ...u, accountId: p.accounts.length === 1 ? p.accounts[0]!.id : "" };
         });
       })
@@ -102,12 +173,14 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
     return () => {
       vazi = false;
     };
+    // uredi se ne mijenja dok je wizard otvoren
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sesija.access_token, istekla]);
 
-  // ── nacrt u localStorageu ──
+  // ── nacrt u localStorageu (samo novi događaj) ──
   useEffect(() => {
-    if (!gotovo) spremiNacrt({ email: sesija.email, eventId, unos, posjeceno });
-  }, [unos, posjeceno, eventId, sesija.email, gotovo]);
+    if (!gotovo && !uredi) spremiNacrt({ email: sesija.email, eventId, unos, posjeceno });
+  }, [unos, posjeceno, eventId, sesija.email, gotovo, uredi]);
 
   // ── korak u URL-u ──
   useEffect(() => {
@@ -176,10 +249,16 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
     setSalje(true);
     setGreska(null);
     try {
-      const r = await kreirajDogadjaj(sesija.access_token, zahtjev(unos, eventId));
-      obrisiNacrt();
-      history.replaceState(null, "", location.pathname);
-      setGotovo({ slug: r.slug, naslov: unos.naslov.trim() });
+      if (uredi) {
+        await azurirajDogadjaj(sesija.access_token, uredi.campaignId, zahtjevIzmjene(unos, uredi.tierIds));
+        history.replaceState(null, "", location.pathname);
+        setGotovo({ slug: "", naslov: unos.naslov.trim() });
+      } else {
+        const r = await kreirajDogadjaj(sesija.access_token, zahtjev(unos, eventId));
+        obrisiNacrt();
+        history.replaceState(null, "", location.pathname);
+        setGotovo({ slug: r.slug, naslov: unos.naslov.trim() });
+      }
     } catch (e) {
       if (jeIstekla(e)) {
         istekla(); // nacrt ostaje, nakon prijave se nastavlja
@@ -216,6 +295,20 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
     location.replace(location.pathname);
   };
 
+  const obrisi = async () => {
+    if (!uredi || !window.confirm(`Obrisati skicu „${unos.naslov.trim() || "bez naziva"}”? Ovo se ne može vratiti.`)) return;
+    setBrise(true);
+    setGreska(null);
+    try {
+      await obrisiSkicu(sesija.access_token, uredi.campaignId);
+      location.replace("/organizator");
+    } catch (e) {
+      if (jeIstekla(e)) istekla();
+      else setGreska(porukaIzGreske(e));
+      setBrise(false);
+    }
+  };
+
   const imeRacuna = racuni?.find((r) => r.id === unos.accountId)?.name ?? null;
   const pregled = useMemo(() => podaciPregleda(unos), [unos]);
 
@@ -224,7 +317,15 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
       <div className={css.gotovo}>
         <TrakaSesije naslov="Skica je spremljena" email={sesija.email} odjava={odjava} />
         <Banner ton="ok" istaknut>
-          „{gotovo.naslov}” je spremljen kao <b>privatna skica</b>. Kupci ga još ne vide; objava dolazi u sljedećem koraku.
+          {uredi ? (
+            <>
+              Izmjene skice „{gotovo.naslov}” su spremljene. Skica je i dalje <b>privatna</b>.
+            </>
+          ) : (
+            <>
+              „{gotovo.naslov}” je spremljen kao <b>privatna skica</b>. Kupci ga još ne vide; objava dolazi u sljedećem koraku.
+            </>
+          )}
         </Banner>
         {gotovo.slug && <p className={css.mutno}>Adresa nakon objave: /dogadjaj/{gotovo.slug}</p>}
         <div className={css.gumbi}>
@@ -246,11 +347,11 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
   const opisKoraka = KORACI[korak - 1]!;
   const korak3Prazan = !unos.opis.trim() && !unos.slika.trim() && unos.galerija.length === 0;
   const tekstDalje =
-    korak === BROJ_KORAKA ? (salje ? "Spremam…" : "Spremi kao skicu") : korak === 3 && korak3Prazan ? "Preskoči" : "Dalje";
+    korak === BROJ_KORAKA ? (salje ? "Spremam…" : uredi ? "Spremi izmjene" : "Spremi kao skicu") : korak === 3 && korak3Prazan ? "Preskoči" : "Dalje";
 
   return (
     <div className={css.wizard}>
-      <TrakaSesije naslov="Novi događaj" email={sesija.email} odjava={odjava} />
+      <TrakaSesije naslov={uredi ? "Uredi skicu" : "Novi događaj"} email={sesija.email} odjava={odjava} />
 
       <div className={css.tijelo}>
         {/* ── stepper (računalo) ── */}
@@ -290,13 +391,19 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
             })}
           </ol>
           <div className={css.stepperDno}>
-            <p className={css.napomena}>Nacrt se sprema u ovom pregledniku dok ne spremiš skicu.</p>
+            {!uredi && <p className={css.napomena}>Nacrt se sprema u ovom pregledniku dok ne spremiš skicu.</p>}
             <a href="/organizator" className={css.malaPoveznica}>
               ← Pregled prodaje
             </a>
-            <button type="button" className={css.malaPoveznica} onClick={odbaciNacrt}>
-              Odbaci nacrt
-            </button>
+            {uredi ? (
+              <button type="button" className={css.malaPoveznica} onClick={obrisi} disabled={brise}>
+                {brise ? "Brišem…" : "Obriši skicu"}
+              </button>
+            ) : (
+              <button type="button" className={css.malaPoveznica} onClick={odbaciNacrt}>
+                Odbaci nacrt
+              </button>
+            )}
           </div>
         </nav>
 
@@ -323,7 +430,7 @@ function Wizard({ sesija, odjava, istekla }: SesijaOtoka) {
 
           {greska && <Banner ton="error">{greska}</Banner>}
 
-          {korak === 1 && <Korak1 unos={unos} greske={greske} racuni={racuni} postavi={postavi} />}
+          {korak === 1 && <Korak1 unos={unos} greske={greske} racuni={racuni} postavi={postavi} zakljucan={!!uredi} />}
           {korak === 2 && <Korak2 unos={unos} greske={greske} postavi={postavi} />}
           {korak === 3 && (
             <Korak3
@@ -415,7 +522,13 @@ interface KorakProps {
 
 // ── 1. Osnovno ───────────────────────────────────────────────────────────────
 
-function Korak1({ unos, greske, racuni, postavi }: KorakProps & { racuni: Racuni | null }) {
+function Korak1({
+  unos,
+  greske,
+  racuni,
+  postavi,
+  zakljucan,
+}: KorakProps & { racuni: Racuni | null; zakljucan: boolean }) {
   return (
     <div className={css.polja}>
       {racuni === null && (
@@ -437,6 +550,7 @@ function Korak1({ unos, greske, racuni, postavi }: KorakProps & { racuni: Racuni
             id="nd-accountId"
             className={`${polje.unos} ${css.izbornik}`}
             value={unos.accountId}
+            disabled={zakljucan}
             onChange={(e) => postavi("accountId", e.target.value)}
             aria-invalid={greske.accountId ? true : undefined}
             aria-describedby={greske.accountId ? "nd-accountId-greska" : undefined}

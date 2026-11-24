@@ -564,11 +564,23 @@ export async function checkin(env: Env, jwt: string, qrToken: string): Promise<C
  * `event_id` šalje klijent, pa je ponovljeni zahtjev (npr. nakon prekida mreže)
  * isti događaj, ne duplikat (`create_event` je idempotentan po `p_id`).
  */
-export async function kreirajDogadjaj(
+export const kreirajDogadjaj = (
   env: Env,
   jwt: string,
   podaci: Record<string, unknown>,
-): Promise<{ id: string; slug: string; existing: boolean }> {
+): Promise<{ id: string; slug: string; existing: boolean }> => organizatorAkcija(env, jwt, "create", podaci);
+
+/**
+ * Akcija `events-organizer` (`create`, `update`, `delete`) KORISNIKOVIM JWT-om.
+ * Isto mapiranje grešaka za sve tri: RLS odbijanje → `nema_prava_kreiranja`,
+ * strojni kod jezgre prolazi, sirova poruka baze ne izlazi prema browseru.
+ */
+export async function organizatorAkcija<T = Record<string, unknown>>(
+  env: Env,
+  jwt: string,
+  action: "create" | "update" | "delete",
+  podaci: Record<string, unknown>,
+): Promise<T> {
   const res = await fetch(`${env.DOMOVINA_API_URL}/functions/v1/events-organizer`, {
     method: "POST",
     headers: {
@@ -576,7 +588,7 @@ export async function kreirajDogadjaj(
       Authorization: `Bearer ${jwt}`,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ ...podaci, action: "create" }),
+    body: JSON.stringify({ ...podaci, action }),
   });
   const text = await res.text();
   let parsed: Record<string, unknown> = {};
@@ -595,9 +607,9 @@ export async function kreirajDogadjaj(
     if (res.status >= 500 || !/^[a-z_]+$/.test(code)) {
       throw new HttpError(502, "api_error", `events-organizer: ${res.status} ${text.slice(0, 200)}`);
     }
-    throw new HttpError(400, code);
+    throw new HttpError(res.status === 403 ? 403 : res.status === 409 ? 409 : 400, code);
   }
-  return parsed as { id: string; slug: string; existing: boolean };
+  return parsed as T;
 }
 
 /** Što bucket `pinka-covers` prima (jezgra: `allowed_mime_types`) → nastavak datoteke. */

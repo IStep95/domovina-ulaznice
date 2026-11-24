@@ -71,6 +71,8 @@ export interface ApiState {
   /** Storage `pinka-covers` (upload slike iz editora): status i tijelo odgovora. */
   slikaStatus: number;
   slikaOdgovor: string;
+  /** Skica za uređivanje (`GET /api/organizator/dogadjaj/:id` → PostgREST `campaigns` s embedom). */
+  skica: Array<Record<string, unknown>>;
   /** `organizer_payment_rails.invoice_provider` — tko izdaje račun kupcu. */
   invoiceProvider: string;
   /** Odgovor FIRA API-ja. */
@@ -110,6 +112,7 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     checkinStatus: 200,
     kreiranjeStatus: 200,
     slikaStatus: 200,
+    skica: [],
     slikaOdgovor: '{"Key":"pinka-covers/x"}',
     kreiranje: { id: "dogadjaj-id", slug: "novi-dogadjaj", existing: false, event_created: true },
     organizerOverview: { accounts: [{ id: "acc-1", name: "Test udruga", allowlisted: true, has_record: true }], events: [] },
@@ -370,6 +373,10 @@ function installFetchStub(state: ApiState) {
     }
     if (url.includes("/rest/v1/rpc/refund_ticket_order")) {
       return json({ status: state.refundStatus, order_id: JSON.parse(body || "{}").p_order_id, voided: 2 });
+    }
+    if (url.includes("/rest/v1/campaigns") && url.includes("campaign_tiers(")) {
+      if (!headers.authorization?.startsWith("Bearer ")) throw new Error("skica čitana BEZ korisnikovog JWT-a");
+      return json(state.skica);
     }
     if (url.includes("/rest/v1/campaigns")) {
       return json([{ id: CAMPAIGN, account_id: "acc-1" }]);

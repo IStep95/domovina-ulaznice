@@ -17,7 +17,12 @@ import {
   provjeri,
   prviNevaljaniKorak,
   validirajKorak,
+  unosIzCenti,
+  unosIzSkice,
+  utcUZidnoVrijeme,
   zahtjev,
+  zahtjevIzmjene,
+  type Skica,
   zidnoVrijemeUUtc,
   type UnosDogadjaja,
 } from "../src/lib/editor.ts";
@@ -255,4 +260,82 @@ test("podaciPregleda: najniža valjana cijena u centima, termin, mjesto i organi
   assert.equal(p.slika, "https://x.hr/a.jpg");
   assert.equal(podaciPregleda(unos({ organizator: " PzS " })).organizator, "PzS");
   assert.equal(podaciPregleda(unos({ slika: "http://x.hr/a.jpg" })).slika, null);
+});
+
+// ── uređivanje skice ────────────────────────────────────────────────────────
+
+test("utcUZidnoVrijeme je obrat zidnoVrijemeUUtc, i zimi i ljeti", () => {
+  for (const z of ["2027-01-15T20:00", "2027-07-15T20:00", "2027-03-28T12:00"]) {
+    assert.equal(utcUZidnoVrijeme(zidnoVrijemeUUtc(z)), z);
+  }
+  assert.equal(utcUZidnoVrijeme("2027-05-10T18:00:00+00:00"), "2027-05-10T20:00");
+  assert.equal(utcUZidnoVrijeme(null), "");
+  assert.equal(utcUZidnoVrijeme("nije datum"), "");
+});
+
+test("unosIzCenti je obrat centiIzUnosa", () => {
+  for (const c of [0, 5, 1500, 2550, 2505, 123457]) assert.equal(centiIzUnosa(unosIzCenti(c)), c, String(c));
+  assert.equal(unosIzCenti(2550), "25,50");
+  assert.equal(unosIzCenti(1500), "15");
+});
+
+const skica = (izmjene: Partial<Skica> = {}): Skica => ({
+  campaign_id: "c1",
+  account_id: "a1",
+  slug: "koncert",
+  title: "Koncert",
+  state: "draft",
+  event: {
+    event_type: "koncert",
+    venue_name: "Dvorana",
+    venue_address: null,
+    venue_city: "Zagreb",
+    starts_at: "2027-06-01T18:00:00+00:00",
+    ends_at: null,
+    timezone: "Europe/Zagreb",
+    description_hr: "Opis",
+    cover_image_url: "https://x.hr/a.webp",
+    gallery: [{ url: "https://x.hr/1.webp" }, { url: 5 }],
+    organizer_name: "Koncert",
+    organizer_email: null,
+    organizer_web: null,
+  },
+  tiers: [
+    { id: "t1", title: "Parter", price_cents: 2550, inventory_total: null, imenska: true },
+    { id: "t2", title: "VIP", price_cents: 5000, inventory_total: 20, imenska: false },
+  ],
+  ...izmjene,
+});
+
+test("unosIzSkice: forma kakvu bi organizator upisao, vrste s id-em", () => {
+  const u = unosIzSkice(skica());
+  assert.equal(u.pocetak, "2027-06-01T20:00");
+  assert.equal(u.kraj, "");
+  assert.equal(u.adresa, "");
+  assert.equal(u.organizator, "", "ime jednako naslovu je zamjena jezgre, ne upis");
+  assert.deepEqual(u.galerija, ["https://x.hr/1.webp"]);
+  assert.deepEqual(u.tieri, [
+    { id: "t1", naziv: "Parter", cijena: "25,50", kolicina: "", imenska: true },
+    { id: "t2", naziv: "VIP", cijena: "50", kolicina: "20", imenska: false },
+  ]);
+  assert.deepEqual(provjeri(u), {});
+  assert.equal(unosIzSkice(skica({ tiers: [] })).tieri.length, 1);
+});
+
+test("zahtjevIzmjene: id-evi i redoslijed vrsta, maknute u remove_tier_ids, prazna polja kao ''", () => {
+  const u = unosIzSkice(skica());
+  const z = zahtjevIzmjene(
+    { ...u, opis: "", slika: "", tieri: [u.tieri[1]!, { naziv: "Novi", cijena: "10", kolicina: "", imenska: false }] },
+    ["t1", "t2"],
+  );
+  assert.ok(!("event_id" in z) && !("account_id" in z));
+  assert.equal(z.description_hr, "");
+  assert.equal(z.cover_image_url, "");
+  assert.equal(z.venue_address, "");
+  assert.deepEqual(z.tiers, [
+    { id: "t2", title: "VIP", price_cents: 5000, inventory_total: 20, imenska: false, sort: 0 },
+    { title: "Novi", price_cents: 1000, inventory_total: null, imenska: false, sort: 1 },
+  ]);
+  assert.deepEqual(z.remove_tier_ids, ["t1"]);
+  assert.deepEqual(z.gallery, [{ url: "https://x.hr/1.webp" }]);
 });

@@ -126,3 +126,9 @@
     text-align: left;
   }
 }
+
+.akcije {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

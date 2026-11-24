@@ -676,6 +676,13 @@ app.get("/api/organizator/holderi.csv", async (c) => {
   });
 });
 
+/** Polja događaja koja editor smije poslati (create i update); sve ostalo Worker odbacuje. */
+const POLJA_DOGADJAJA = [
+  "title", "event_type", "starts_at", "ends_at", "timezone",
+  "venue_name", "venue_address", "venue_city", "description_hr", "cover_image_url",
+  "gallery", "organizer_name", "organizer_email", "organizer_web", "tiers",
+];
+
 /**
  * Editor događaja: nova privatna skica. Worker propušta samo poznata polja i
  * odbija očito smeće prije mreže; prava validacija (i tko smije) je u
@@ -699,13 +706,68 @@ app.post("/api/organizator/dogadjaj", async (c) => {
   // galerija: oblik i https provjerava events-organizer; ovdje samo da smeće ne ide na mrežu
   if ("gallery" in body && (!Array.isArray(body.gallery) || body.gallery.length > 20)) return fail("invalid_gallery");
 
-  const POLJA = [
-    "event_id", "account_id", "title", "event_type", "starts_at", "ends_at", "timezone",
-    "venue_name", "venue_address", "venue_city", "description_hr", "cover_image_url",
-    "gallery", "organizer_name", "organizer_email", "organizer_web", "tiers",
-  ];
-  const podaci = Object.fromEntries(POLJA.filter((k) => k in body).map((k) => [k, body[k]]));
+  const podaci = Object.fromEntries(["event_id", "account_id", ...POLJA_DOGADJAJA].filter((k) => k in body).map((k) => [k, body[k]]));
   return c.json(await api.kreirajDogadjaj(c.env, jwt, podaci));
+});
+
+/**
+ * Skica za uređivanje: kampanja, event i vrste ulaznica, čitano U IME
+ * korisnika (RLS: član računa vidi i svoje privatne skice). Obrisana ili
+ * tuđa kampanja jednostavno nije u rezultatu → 404.
+ */
+app.get("/api/organizator/dogadjaj/:id", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  const redci = await api.korisnickiRest<Array<Record<string, unknown>>>(
+    c.env,
+    jwt,
+    `campaigns?id=eq.${id}&type=eq.tickets&select=id,account_id,slug,title,state,` +
+      "events(event_type,venue_name,venue_address,venue_city,starts_at,ends_at,timezone,description_hr," +
+      "cover_image_url,gallery,organizer_name,organizer_email,organizer_web)," +
+      "campaign_tiers(id,title,price_cents,inventory_total,inventory_claimed,imenska,sort)",
+  );
+  const r = redci[0];
+  if (!r) return fail("event_not_found", 404);
+  const { events, campaign_tiers, id: campaign_id, ...ostalo } = r;
+  const tiers = Array.isArray(campaign_tiers)
+    ? [...(campaign_tiers as Array<{ sort?: number }>)].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+    : [];
+  return c.json({ campaign_id, ...ostalo, event: events ?? null, tiers });
+});
+
+/**
+ * Izmjena skice → `events-organizer` `update` (`update_event` + galerija).
+ * Vrste ulaznica s `id` se mijenjaju, bez `id` dodaju; `remove_tier_ids`
+ * briše maknute, ali samo dok je događaj skica (provjerava jezgra).
+ */
+app.put("/api/organizator/dogadjaj/:id", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  let body: Record<string, unknown>;
+  try {
+    body = await c.req.json();
+  } catch {
+    return fail("bad_json");
+  }
+  if (!Array.isArray(body.tiers) || body.tiers.length === 0) return fail("invalid_tiers");
+  if ("gallery" in body && (!Array.isArray(body.gallery) || body.gallery.length > 20)) return fail("invalid_gallery");
+  if ("remove_tier_ids" in body && !Array.isArray(body.remove_tier_ids)) return fail("invalid_tiers");
+
+  const podaci = Object.fromEntries([...POLJA_DOGADJAJA, "remove_tier_ids"].filter((k) => k in body).map((k) => [k, body[k]]));
+  return c.json(await api.organizatorAkcija(c.env, jwt, "update", { ...podaci, campaign_id: id }));
+});
+
+/** Brisanje skice → `delete_event_draft` (admin računa, samo skica bez narudžbi). */
+app.delete("/api/organizator/dogadjaj/:id", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  return c.json(await api.organizatorAkcija(c.env, jwt, "delete", { campaign_id: id }));
 });
 
 /**

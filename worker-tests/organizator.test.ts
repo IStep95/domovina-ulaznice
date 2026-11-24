@@ -201,6 +201,97 @@ test("galerija prolazi do events-organizer, smeće umjesto galerije ne", async (
   assert.equal(t.calls.filter((c) => c.url.includes("events-organizer")).length, 1);
 });
 
+// ------------------------------------------------------ uređivanje i brisanje
+
+const SKICA = "44444444-4444-4444-8444-444444444444";
+
+test("skica za uređivanje se čita JWT-om; vrste po redu, nepostojeća → 404", async () => {
+  t = testEnv();
+  t.api.skica = [
+    {
+      id: SKICA,
+      account_id: "acc-1",
+      slug: "skica",
+      title: "Skica",
+      state: "draft",
+      events: { venue_name: "Dvorana", gallery: [] },
+      campaign_tiers: [
+        { id: "t2", title: "B", sort: 1 },
+        { id: "t1", title: "A", sort: 0 },
+      ],
+    },
+  ];
+  const { status, body } = await callJson<{ campaign_id: string; event: unknown; tiers: Array<{ id: string }> }>(
+    t,
+    `/api/organizator/dogadjaj/${SKICA}`,
+    { headers: auth() },
+  );
+  assert.equal(status, 200);
+  assert.equal(body.campaign_id, SKICA);
+  assert.deepEqual(body.event, { venue_name: "Dvorana", gallery: [] });
+  assert.deepEqual(body.tiers.map((x) => x.id), ["t1", "t2"]);
+  const poziv = t.calls.find((c) => c.url.includes("/rest/v1/campaigns"))!;
+  assert.equal(poziv.headers.authorization, "Bearer jwt-organizatora");
+  assert.notEqual(poziv.headers.apikey, SERVICE_KEY);
+
+  t.api.skica = [];
+  const nema = await callJson<{ error: string }>(t, `/api/organizator/dogadjaj/${SKICA}`, { headers: auth() });
+  assert.equal(nema.status, 404);
+  assert.equal(nema.body.error, "event_not_found");
+});
+
+test("izmjena skice ide na events-organizer update s id-em iz putanje i samo poznatim poljima", async () => {
+  t = testEnv();
+  t.api.kreiranje = { campaign_id: SKICA, updated: true };
+  const { status } = await callJson(t, `/api/organizator/dogadjaj/${SKICA}`, {
+    method: "PUT",
+    headers: auth(),
+    body: {
+      title: "Novo",
+      campaign_id: "drugi-id",
+      account_id: "podmetnuto",
+      tiers: [{ id: "t1", title: "A", price_cents: 100 }],
+      remove_tier_ids: ["t2"],
+      visibility: "public",
+    },
+  });
+  assert.equal(status, 200);
+  const poslano = JSON.parse(t.calls.find((c) => c.url.includes("events-organizer"))!.body);
+  assert.equal(poslano.action, "update");
+  assert.equal(poslano.campaign_id, SKICA, "id dolazi iz putanje, ne iz tijela");
+  assert.deepEqual(poslano.remove_tier_ids, ["t2"]);
+  assert.ok(!("account_id" in poslano) && !("visibility" in poslano));
+});
+
+test("brisanje skice ide na events-organizer delete; kod jezgre prolazi", async () => {
+  t = testEnv();
+  t.api.kreiranje = { campaign_id: SKICA, deleted: true };
+  const ok = await callJson(t, `/api/organizator/dogadjaj/${SKICA}`, { method: "DELETE", headers: auth() });
+  assert.equal(ok.status, 200);
+  const poslano = JSON.parse(t.calls.find((c) => c.url.includes("events-organizer"))!.body);
+  assert.deepEqual(poslano, { campaign_id: SKICA, action: "delete" });
+
+  t.api.kreiranjeStatus = 400;
+  t.api.kreiranje = { error: "event_not_draft" };
+  const objavljen = await callJson<{ error: string }>(t, `/api/organizator/dogadjaj/${SKICA}`, {
+    method: "DELETE",
+    headers: auth(),
+  });
+  assert.equal(objavljen.status, 400);
+  assert.equal(objavljen.body.error, "event_not_draft");
+});
+
+test("uređivanje i brisanje bez prijave ili s lošim id-em ne idu na mrežu", async () => {
+  t = testEnv();
+  for (const method of ["GET", "PUT", "DELETE"]) {
+    const bez = await callJson(t, `/api/organizator/dogadjaj/${SKICA}`, { method, body: method === "PUT" ? {} : undefined });
+    assert.equal(bez.status, 401, method);
+    const los = await callJson<{ error: string }>(t, "/api/organizator/dogadjaj/x", { method, headers: auth() });
+    assert.equal(los.body.error, "invalid_campaign_id", method);
+  }
+  assert.equal(t.calls.filter((c) => c.url.includes("events-organizer") || c.url.includes("/rest/v1/")).length, 0);
+});
+
 // --------------------------------------------------------------- upload slike
 
 const UID = "33333333-3333-4333-8333-333333333333";

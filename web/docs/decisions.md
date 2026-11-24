@@ -780,3 +780,25 @@ lokalno Storage vraća `http://` URL, pa ga validacija koraka 3 odbije (na stagi
 `https://api.domovina.ai`); na 1440×900 korak 3 sada ima scroll stranice; na mobitelu gumbi
 „Učitaj…” padaju u svoj red. Izgled ide na Ivanovo oko.
 Revizija: po potrebi u feedback sesiji.
+
+**823. „Uredi skicu” je isti wizard nad skicom iz jezgre** (`/organizator/novi?uredi=<id>`,
+Ivan, 24. 11.). `GET /api/organizator/dogadjaj/:id` čita kampanju, event i vrste ulaznica
+korisnikovim JWT-om (PostgREST embed, RLS člana računa); `unosIzSkice` ih vrati u oblik
+forme (UTC → zidno vrijeme u Zagrebu, centi → „25,50”), vrste nose `id`. Spremanje je
+`PUT` → `events-organizer` `update` (`zahtjevIzmjene`): ispražnjeno neobavezno polje ide kao
+`""` jer `null` u `update_event` znači „ne diraj”; maknute vrste idu u `remove_tier_ids`.
+Uređivanje ne koristi lokalni nacrt (izvor je jezgra, nacrt novog događaja ostaje), pa
+refresh usred uređivanja vraća spremljeno stanje. Organizator se ne mijenja. Jezgra ne zna
+obrisati kraj događaja ni ime organizatora (`coalesce`): prazno polje tamo ostavlja staro.
+Objavljeni događaj se ovdje ne uređuje (poruka umjesto forme).
+Revizija: nema.
+
+**824. „Obriši skicu” je meko brisanje kroz novi RPC `delete_event_draft`** (jezgra, grana
+`events-media`, migracija `20261124170000`). Korisnikov PATCH `deleted_at` kroz PostgREST
+pada na RLS (novi red više ne prolazi `campaigns_select`), pa je RPC DEFINER s istim
+provjerama kao `publish_event` (admin računa) i uvjetom: skica (`draft`) bez ijedne
+narudžbe (`event_not_draft`, `event_has_orders`). Brisanje vrste ulaznice pri uređivanju
+radi kroz RLS `tiers_write`, ali `events-organizer` ga pušta samo dok je događaj skica.
+Gumbi su na kartici skice u pregledu prodaje i u stepperu wizarda (uz `confirm`).
+Revizija: nema.
+

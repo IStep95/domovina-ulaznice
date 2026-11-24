@@ -11,7 +11,7 @@
 // accountu u kodu, i to je namjerno: filter u klijentu je ukras, ne zaštita.
 // „Zauzeto” (ne „prodano”) uključuje i rezervacije: v. zbrojDogadjaja.
 import { useEffect, useState } from "react";
-import { dohvatiPregled, jeIstekla, preuzmiHoldere, type OrgEvent, type OrgPregled } from "../lib/auth.ts";
+import { dohvatiPregled, jeIstekla, obrisiSkicu, preuzmiHoldere, type OrgEvent, type OrgPregled } from "../lib/auth.ts";
 import { eur } from "../lib/format.ts";
 import { datumDogadjaja, imeCsvDatoteke, stanjeDogadjaja, zbrojDogadjaja } from "../lib/organizator.ts";
 import { porukaIzGreske } from "../lib/poruke.ts";
@@ -87,7 +87,15 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
           </h2>
           {pregled.events.length === 0 && <p className={css.mutno}>Nemate nijedan događaj.</p>}
           {pregled.events.map((d) => (
-            <Dogadjaj key={d.campaign_id} d={d} token={sesija.access_token} istekla={istekla} />
+            <Dogadjaj
+              key={d.campaign_id}
+              d={d}
+              token={sesija.access_token}
+              istekla={istekla}
+              obrisan={() =>
+                postaviPregled((p) => p && { ...p, events: p.events.filter((x) => x.campaign_id !== d.campaign_id) })
+              }
+            />
           ))}
         </section>
       )}
@@ -100,8 +108,20 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
   );
 }
 
-function Dogadjaj({ d, token, istekla }: { d: OrgEvent; token: string; istekla: () => void }) {
+function Dogadjaj({
+  d,
+  token,
+  istekla,
+  obrisan,
+}: {
+  d: OrgEvent;
+  token: string;
+  istekla: () => void;
+  obrisan: () => void;
+}) {
   const [radi, postaviRadi] = useState(false);
+  const [brise, postaviBrise] = useState(false);
+  const skica = d.state === "draft";
   const [greska, postaviGresku] = useState<string | null>(null);
   const { zauzeto, prihod, imenskih } = zbrojDogadjaja(d);
   const stanje = stanjeDogadjaja(d.state);
@@ -123,6 +143,20 @@ function Dogadjaj({ d, token, istekla }: { d: OrgEvent; token: string; istekla: 
       else postaviGresku(porukaIzGreske(e));
     } finally {
       postaviRadi(false);
+    }
+  }
+
+  async function obrisi() {
+    if (!window.confirm(`Obrisati skicu „${d.title}”? Ovo se ne može vratiti.`)) return;
+    postaviGresku(null);
+    postaviBrise(true);
+    try {
+      await obrisiSkicu(token, d.campaign_id);
+      obrisan();
+    } catch (e) {
+      if (jeIstekla(e)) istekla();
+      else postaviGresku(porukaIzGreske(e));
+      postaviBrise(false);
     }
   }
 
@@ -162,17 +196,35 @@ function Dogadjaj({ d, token, istekla }: { d: OrgEvent; token: string; istekla: 
 
       {greska && <Banner ton="error">{greska}</Banner>}
 
-      {imenskih && (
-        <div>
-          <button
-            type="button"
-            className={`${gumb.gumb} ${gumb.sekundarni}`}
-            disabled={radi}
-            aria-busy={radi || undefined}
-            onClick={preuzmi}
-          >
-            {radi ? "Pripremam…" : "Preuzmi popis sudionika (CSV)"}
-          </button>
+      {(imenskih || skica) && (
+        <div className={css.akcije}>
+          {skica && (
+            <>
+              <a className={`${gumb.gumb} ${gumb.sekundarni}`} href={`/organizator/novi?uredi=${d.campaign_id}`}>
+                Uredi skicu
+              </a>
+              <button
+                type="button"
+                className={`${gumb.gumb} ${gumb.sekundarni}`}
+                disabled={brise}
+                aria-busy={brise || undefined}
+                onClick={obrisi}
+              >
+                {brise ? "Brišem…" : "Obriši skicu"}
+              </button>
+            </>
+          )}
+          {imenskih && (
+            <button
+              type="button"
+              className={`${gumb.gumb} ${gumb.sekundarni}`}
+              disabled={radi}
+              aria-busy={radi || undefined}
+              onClick={preuzmi}
+            >
+              {radi ? "Pripremam…" : "Preuzmi popis sudionika (CSV)"}
+            </button>
+          )}
         </div>
       )}
     </article>

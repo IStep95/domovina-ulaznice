@@ -20,6 +20,7 @@
 // prijavu usred događaja. To je stvarna neugodnost i legitimno je riješiti je
 // drukčije — ali svako rješenje znači trajniju tajnu na tuđem uređaju, pa je
 // odluka svjesno na strani kraće sesije.
+import type { Skica } from "./editor.ts";
 import { ApiError, parseApiResponse } from "./api.ts";
 
 export { ApiError };
@@ -282,6 +283,18 @@ export const kreirajDogadjaj = (
  */
 export const ucitajSliku = (token: string, slika: Blob): Promise<{ url: string }> =>
   zahtjev("/api/organizator/slika", { method: "POST", body: slika, headers: { "content-type": slika.type } }, token);
+
+/** Skica za uređivanje (`GET /api/organizator/dogadjaj/:id`). */
+export const dohvatiSkicu = (token: string, id: string): Promise<Skica> =>
+  zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}`, { method: "GET" }, token);
+
+/** Izmjena skice (`PUT` → `events-organizer` update); tijelo složi `zahtjevIzmjene`. */
+export const azurirajDogadjaj = (token: string, id: string, tijelo: Record<string, unknown>): Promise<unknown> =>
+  zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify(tijelo) }, token);
+
+/** Brisanje skice (`DELETE` → `delete_event_draft`; objavljeni događaj jezgra odbije). */
+export const obrisiSkicu = (token: string, id: string): Promise<unknown> =>
+  zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}`, { method: "DELETE" }, token);
 
 /** Izvoz sudionika (CSV); s tokenom, pa se datoteka dohvaća fetchom, ne linkom. */
 export async function preuzmiHoldere(token: string, campaignId: string): Promise<Blob> {
