@@ -599,3 +599,43 @@ Revizija: nema.
 `assets` u korijenskom `wrangler.jsonc` lokalni Worker treba restartati. Napola učitan config
 daje 503 na kupačkim putanjama i SPA na `/`.
 Revizija: nema.
+
+## S7 (2026-11-24)
+
+**700. Vrata S7 prošla bez Matijinog deploya:** staging (oba Workera) i produkcija deployani
+su 2026-11-23 na Ivanov zahtjev (`docs/deploy-dug.md`). `/dogadjaj/test-pregled-web-sucelja`
+na stagingu dolazi iz Astra; `/uvjeti/` → 307 na `/uvjeti` kroz binding.
+Revizija: nema.
+
+**701. Odluka 602 riješena bindingom, ne mjerenjem.** Fetch Astra na javni URL istog Workera
+kroz `WEB` nije radio (`/` → 503, `ApiError: neispravan_odgovor`), pa SSR ide kroz service
+binding `API` (`bb9294a`, `web/src/lib/api-ssr.ts`). Višak SSR-a nakon toga: 5 mjerenja
+`curl -w %{time_total}`, medijan ~0,20 s naspram ~0,18 s za izravni `/api` — ispod kriterija.
+Revizija: nema.
+
+**702. SPA u `src/` drži samo organizatora, skener i prijavu** (`885ffb7`). Obrisani Popis,
+Dogadjaj, Kupnja, Narudzba, Pravno; neuhvaćena putanja SPA-e → `/organizator`. `src/lib/api.ts`
+ostaje cijel: uvoze ga organizatorske stranice, a `web/test/api.test.ts` ga koristi za paritet
+(`spa.dohvatiDogadjaj`). Ako se te funkcije brišu, referenca ide u sam test.
+Revizija: S9 (gašenje SPA-e).
+
+**703. CSS SPA-e očišćen samo gdje je grep jednoznačan** (6 klasa); sve što dijele Skener i
+Organizator ostaje. Komentari u `web/` koji upućuju na obrisane datoteke označeni su
+„(bivši SPA, obrisan u S7)” umjesto brisanja, da ostane trag podrijetla logike.
+Revizija: nema.
+
+**704. `index.html` SPA-e ostaje kupački** (naslov i opis), iako ga služi samo organizator.
+Nema smisla dorađivati ga jer se SPA seli u Astro (S8) i gasi (S9).
+Revizija: S9.
+
+**705. Lighthouse (mobile, medijan od 3, `research/2026-11-24-lighthouse.md`):** Astro 0 B JS-a
+naspram 70 kB (gzip) u SPA-i, LCP 0,82 s naspram 1,51 s, a11y 100 naspram 90. SEO 66 samo zbog
+`noindex` (odluka 24). Preporuke (inline CSS, preload fonta, `og:image:width/height`, `image` u
+JSON-LD-u) idu u S8 kao sitnice, ukidanje `noindex` na produkciji je zasebna odluka.
+Revizija: kad se ukine `noindex`.
+
+**706. Lanac se nastavlja sa S8 i S9** (Ivan, 2026-11-24, `ui-feedback.md` stavka 7): sve na
+Astro, javne samo `ulaznice(-staging).domovina.ai`. S8 seli organizatora, skener i prijavu
+(s wizardom iz stavke 4), S9 gasi SPA-u i domene `ulaznice-web(-staging)`.
+Revizija: nema.
+

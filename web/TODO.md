@@ -45,7 +45,18 @@ Legenda: `[x]` gotovo · `[ ]` otvoreno · `[~]` u radu · `(!)` traži korisnik
 - [x] test u `worker-tests/` za podjelu putanja → S6
 - [x] cijela kupnja lokalno kroz Astro (`scripts/lokalno/pokreni.sh` + Astro) → S6
 - [x] zapis u `docs/deploy-dug.md` → S6
-- [ ] (!) deploy na `ulaznice-staging.domovina.ai` (Matija) → vrata nakon S6
-- [ ] izmjereno na stagingu: Lighthouse (performance, SEO, a11y) Astro naspram starog SPA-a, pregled linka u WhatsAppu → S7
-- [ ] kupačke stranice uklonjene iz `src/` (Popis, Dogadjaj, Kupnja, Narudzba, Pravno); SPA drži samo organizatora, skener i prijavu → S7
-- [ ] `CLAUDE.md` i `docs/02-arhitektura.md` opisuju novu podjelu → S7
+- [x] (!) deploy na `ulaznice-staging.domovina.ai` → vrata nakon S6 (2026-11-23, Ivan; i produkcija)
+- [x] izmjereno na stagingu: Lighthouse (performance, SEO, a11y) Astro naspram starog SPA-a, pregled linka u WhatsAppu → S7
+- [x] kupačke stranice uklonjene iz `src/` (Popis, Dogadjaj, Kupnja, Narudzba, Pravno); SPA drži samo organizatora, skener i prijavu → S7
+- [x] `CLAUDE.md` i `docs/02-arhitektura.md` opisuju novu podjelu → S7
+
+## F3 — sve na Astro (Ivan, 2026-11-24, `docs/ui-feedback.md` stavka 7)
+
+- [ ] prijava (kod na e-mail, Google, lozinka) kao React otok u Astru → S8
+- [ ] `/organizator` (pregled prodaje, CSV) u Astru → S8
+- [ ] `/organizator/novi` kao wizard (stavka 4) u Astru → S8
+- [ ] `/skener` u Astru (`client:only`, kamera) → S8
+- [ ] sitnice iz Lighthousea: inline CSS, preload fonta, `og:image:width/height`, `image` u JSON-LD → S8
+- [ ] glavni Worker bez SPA-e i `ASSETS`; `src/` obrisan → S9
+- [ ] domene `ulaznice-web(-staging).domovina.ai` ugašene, Astro samo kroz binding → S9
+

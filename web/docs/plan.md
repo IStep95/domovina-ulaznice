@@ -78,6 +78,8 @@ događaj za staging je pripremljen u `seeds/staging-web-pregled.sql` i čeka Mat
 | S6 | F2 | service binding u Workeru, lokalna e2e kupnja, `deploy-dug.md` | 600 | test podjele putanja u `worker-tests/`; cijela kupnja lokalno (`scripts/lokalno/pokreni.sh`) prolazi kroz Astro; `npm test` zelen |
 | — | vrata | (!) Matija deploya oba Workera na staging | — | `ulaznice-staging.domovina.ai/dogadjaj/<slug>` dolazi iz Astra |
 | S7 | F2 | mjerenje na stagingu, uklanjanje kupačkih stranica iz `src/`, dokumentacija | 700 | Lighthouse brojke u `docs/research/`; `src/pages/` bez kupačkih stranica; `npm run build`, `npm test`, `check` zeleni |
+| S8 | F3 | organizator, skener i prijava u Astru; `/organizator/novi` kao wizard | 800 | `/organizator*` i `/skener` dolaze iz Astra; SPA samo rezerva; `check` i `npm test` zeleni; snimke 1440×900 i 390×844 |
+| S9 | F3 | gašenje SPA-e i domena `ulaznice-web(-staging)` | 900 | glavni Worker bez `ASSETS`, `src/` obrisan; javne samo dvije domene; dokumentacija |
 
 Procjena: **8 sesija**, troja vrata (dizajn, migracija jezgre, staging deploy). S2b ne
 mora čekati dizajn (može ići odmah nakon S1, paralelno s Ivanovim radom u Claude
@@ -126,3 +128,5 @@ S3 (2026-11-20): `/` i `/dogadjaj/[slug]` iz API-ja (SSR), `format.ts` (novac, d
 S2b (2026-11-20): migracija `events_venue_geo` u `domovina-api` (dva runa, drugi bez promjene), `events-feed` vraća `venue_lat`, `venue_lon`, `cover_image_alt`; tipovi, mock, test Workera, `seeds/koordinate-mjesta.sql` iz OSM-a. Lokalno (`pokreni.sh`) `/api/dogadjaj/:slug` vraća koordinate. Sljedeće: vrata migracije (Matija), S4.
 
 S4 (2026-11-20): `/dogadjaj/[slug]/kupnja` (SSR + React otok `KupnjaForma`), validacija u `kupnja.ts` zrcali Worker, `poruke.ts` s porukom za svih 27 kodova (test grepa Worker), 429 s odbrojavanjem, ponovno učitavanje raspoloživosti nakon odbijanja; mock vraća `sale_*` i prisilne kodove (`greska+<kod>@`). E2E kroz mock do `/ulaznice/<id>?placeno=1` u headless Chromeu. Sljedeće: S5.
+
+S7 (2026-11-24): staging i produkcija deployani (23. 11.), SSR kroz binding `API`; Lighthouse: Astro 0 B JS-a, LCP 0,82 s naspram 1,51 s SPA-e (`research/2026-11-24-lighthouse.md`); kupačke stranice obrisane iz `src/`, dokumentacija opisuje podjelu. Lanac nastavlja sa S8/S9 (sve na Astro, odluka 706).

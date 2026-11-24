@@ -39,9 +39,11 @@ Ovaj lanac je odvojen od `docs/handoffs/` u korijenu (faze U1–U7).
 | S4 | kupnja | gotovo | 6820547 | web 106, korijen 99 | Ivan, 2026-11-20; odluke 400–412; e2e kroz mock |
 | S5 | narudžba, pravno, 404 | gotovo | 0e39ef1 | web 133, korijen 99 | Ivan, 2026-11-20; odluke 500–517; QR namjerno ne (501); `npm run e2e` |
 | S6 | service binding, lokalna e2e | gotovo | 346b57b | web 133, korijen 108 | Ivan, 2026-11-20; odluke 600–607; `e2e:stack` kroz :8788 |
-| — | (!) staging deploy | čeka | | | Matija |
+| — | (!) staging deploy | gotovo | 0d5f7dc | — | Ivan, 2026-11-23; i produkcija bez najave |
 | — | izvan lanca: prijava kodom, galerija, editor događaja | gotovo | a423316 | korijen 126, web 137 | Ivan, 2026-11-20; `docs/2026-11-20-prijava-kodom-galerija-editor.md`, deploy-dug #7–#9 |
-| S7 | mjerenje, čišćenje SPA-a, dokumentacija | otvoreno | | | |
+| S7 | mjerenje, čišćenje SPA-a, dokumentacija | gotovo | (ovaj commit) | korijen 129, web 137 | Ivan, 2026-11-24; odluke 700–706 |
+| S8 | organizator, skener, prijava u Astru (wizard) | otvoreno | | | |
+| S9 | gašenje SPA-e i domena `ulaznice-web(-staging)` | otvoreno | | | |
 
 ## Zajednička pravila (vrijede u svakoj sesiji)
 
