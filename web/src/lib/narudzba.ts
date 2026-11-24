@@ -1,6 +1,6 @@
 // Stranica narudžbe (S5; Narudzba-1280, Narudzba-390, Narudzba-stanja-1280):
 // pravila bez Astra i Reacta, da ih node:test provjeri. Ponašanje prati
-// src/pages/Narudzba.tsx (SPA): stanja, osvježavanje nakon povratka sa Stripea,
+// src/pages/Narudzba.tsx (bivši SPA, obrisan u S7): stanja, osvježavanje nakon povratka sa Stripea,
 // ishodi ponovne dostave. QR se na webu ne prikazuje (design-brief §4.4, §9).
 import type { OrderView, ResendResponse } from "./api.ts";
 

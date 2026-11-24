@@ -2,31 +2,25 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./styles.css";
-import Popis from "./pages/Popis";
-import Dogadjaj from "./pages/Dogadjaj";
-import Kupnja from "./pages/Kupnja";
-import Narudzba from "./pages/Narudzba";
 import Skener from "./pages/Skener";
 import Organizator from "./pages/Organizator";
 import NoviDogadjaj from "./pages/NoviDogadjaj";
-import { Privatnost, Uvjeti } from "./pages/Pravno";
 
+// SPA drži samo organizatora i skener (S7). Stranice kupaca (popis, događaj,
+// kupnja, narudžba, uvjeti, privatnost) servira Astro iz web/ kroz binding
+// `WEB`; podjela putanja je u worker/index.ts (idePremaWebu).
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Popis />} />
-        <Route path="/dogadjaj/:slug" element={<Dogadjaj />} />
-        <Route path="/dogadjaj/:slug/kupnja" element={<Kupnja />} />
-        <Route path="/ulaznice/:orderId" element={<Narudzba />} />
         {/* Skener i pregled traže prijavu; autorizacija je server-side pri
             svakom pozivu, ruta je samo ulaz. */}
         <Route path="/skener" element={<Skener />} />
         <Route path="/organizator" element={<Organizator />} />
         <Route path="/organizator/novi" element={<NoviDogadjaj />} />
-        <Route path="/uvjeti" element={<Uvjeti />} />
-        <Route path="/privatnost" element={<Privatnost />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* Do SPA-a dolaze samo /organizator/* i /skener; sve ostalo pod
+            /organizator/ vodi na pregled prodaje. */}
+        <Route path="*" element={<Navigate to="/organizator" replace />} />
       </Routes>
     </BrowserRouter>
   );

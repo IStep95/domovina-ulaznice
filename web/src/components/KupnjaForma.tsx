@@ -1,5 +1,5 @@
 // Forma kupnje (S4; Kupnja-1280, Kupnja-390): React otok na /dogadjaj/:slug/kupnja.
-// Logika je prenesena iz src/pages/Kupnja.tsx; pravila validacije su u
+// Logika je prenesena iz src/pages/Kupnja.tsx (bivši SPA, obrisan u S7); pravila validacije su u
 // src/lib/kupnja.ts, a poruke grešaka u src/lib/poruke.ts (oba bez Reacta).
 //
 // Tok: izbor tiera → količina 1…min(10, preostalo) → ime po komadu za imenske →

@@ -292,7 +292,7 @@ export const PRAG_MALO = 10;
 
 /**
  * TierView → stanje reda u cjeniku (RedTiera). Redoslijed kao oznakaTiera u
- * src/pages/Dogadjaj.tsx: rasprodano ima prednost (rasprodan tier je i
+ * src/pages/Dogadjaj.tsx (bivši SPA, obrisan u S7): rasprodano ima prednost (rasprodan tier je i
  * „završen” ako mu je prošao `sale_end`, a kupcu je važnije prvo).
  */
 export function stanjeTiera(t: Pick<TierView, "sold_out" | "not_started" | "ended" | "available">): StanjeTiera {

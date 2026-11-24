@@ -2,7 +2,7 @@
 // Narudžba (S5; Narudzba-1280, Narudzba-390, Narudzba-stanja-1280). Link iz
 // e-maila i povratak sa Stripea (`?placeno=1`). `order_id` (128-bit random) je
 // jedini ključ, bez prijave. SSR iz GET /api/ulaznice/:id; ponašanje prati
-// src/pages/Narudzba.tsx:
+// src/pages/Narudzba.tsx (bivši SPA, obrisan u S7):
 //   pending + ?placeno=1 → otok PotvrdaPlacanja provjerava svake 2 s (do 20 s) i
 //                          ponovno učita stranicu kad stanje više nije pending
 //   paid                 → popis ulaznica, ponovna dostava (otok), link u aplikaciju

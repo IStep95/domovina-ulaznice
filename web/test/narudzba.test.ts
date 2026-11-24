@@ -1,6 +1,6 @@
 // Testovi stranice narudžbe (web/src/lib/narudzba.ts, S5): valjanost order_id,
 // osvježavanje nakon povratka sa Stripea, zaglavlje po stanju, oznake ulaznica,
-// ishod ponovne dostave i link u aplikaciju. Ponašanje prati src/pages/Narudzba.tsx.
+// ishod ponovne dostave i link u aplikaciju. Ponašanje prati src/pages/Narudzba.tsx (bivši SPA, obrisan u S7).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
