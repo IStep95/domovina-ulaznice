@@ -802,3 +802,11 @@ radi kroz RLS `tiers_write`, ali `events-organizer` ga pušta samo dok je događ
 Gumbi su na kartici skice u pregledu prodaje i u stepperu wizarda (uz `confirm`).
 Revizija: nema.
 
+**825. Jedan gumb „Dodaj u kalendar”** umjesto „Google Kalendar” i „.ics (Apple, Outlook)” na
+`/dogadjaj/[slug]` (Ivan, 24. 11.; mijenja prijedlog iz `ui-feedback` stavke 1). Klik otvara
+Google Kalendar u novoj kartici (`window.open`); kad ga preglednik ne otvori (blokirani
+skočni prozori, ugrađeni preglednici aplikacija), preuzima se `/dogadjaj/<slug>.ics`. Bez
+JS-a je to običan link na Google. Ruta `.ics` ostaje. „Ne uspije” ne uključuje korisnika
+koji nije prijavljen u Google: to preglednik ne vidi, Google tada sam traži prijavu.
+Revizija: nema.
+

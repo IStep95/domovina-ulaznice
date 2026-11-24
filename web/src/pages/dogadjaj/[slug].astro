@@ -178,10 +178,11 @@ const metaOpis =
 
           {kalendar?.google && (
             <Odjeljak naslov="Dodaj u kalendar" id="kalendar" class="o-kalendar">
-              <div class="dva-gumba">
-                <Gumb varijanta="sekundarni" href={kalendar.google} rel="noopener">Google Kalendar</Gumb>
-                <Gumb varijanta="sekundarni" href={kalendar.ics} download>.ics (Apple, Outlook)</Gumb>
-              </div>
+              {/* Jedan gumb (Ivan, 24. 11.): Google Kalendar u novoj kartici; ako ga preglednik
+                  ne pusti otvoriti (blokiran prozor), preuzima se .ics. Bez JS-a je običan link na Google. */}
+              <Gumb varijanta="sekundarni" blok href={kalendar.google} rel="noopener" data-kalendar-ics={kalendar.ics}>
+                Dodaj u kalendar
+              </Gumb>
             </Odjeljak>
           )}
 
@@ -330,15 +331,6 @@ const metaOpis =
     gap: var(--space-2);
   }
   /* Odjeljak je komponenta, pa klasa s ove stranice na njoj nema Astro scope: :global. */
-  .dogadjaj :global(.o-kalendar) .dva-gumba {
-    flex-wrap: nowrap;
-  }
-  .dogadjaj :global(.o-kalendar) .dva-gumba > :global(*) {
-    flex: 1;
-    padding: 0 var(--space-2);
-    font-size: var(--font-size-sm);
-    white-space: normal;
-  }
   .dogadjaj :global(.o-lokacija) .dva-gumba > :global(*) {
     font-size: var(--font-size-sm);
   }
@@ -423,3 +415,23 @@ const metaOpis =
     }
   }
 </style>
+
+<script>
+  // „Dodaj u kalendar”: Google Kalendar u novoj kartici, a kad ga preglednik ne otvori
+  // (blokirani skočni prozori, ugrađeni preglednici aplikacija) preuzme se .ics.
+  // Da korisnik nije prijavljen u Google, ne možemo znati: Google tada sam traži prijavu.
+  for (const gumb of document.querySelectorAll<HTMLAnchorElement>("a[data-kalendar-ics]")) {
+    gumb.addEventListener("click", (e) => {
+      e.preventDefault();
+      const prozor = window.open(gumb.href, "_blank");
+      if (prozor) {
+        prozor.opener = null;
+        return;
+      }
+      const ics = document.createElement("a");
+      ics.href = gumb.dataset.kalendarIcs!;
+      ics.download = "";
+      ics.click();
+    });
+  }
+</script>
