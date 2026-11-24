@@ -83,10 +83,10 @@ const canonical = new URL("/", Astro.url.origin).toString();
       }
     </div>
 
-    <aside class="bez-posrednika" aria-labelledby="bez-posrednika">
+    <aside class="bez-provizije" aria-labelledby="bez-provizije">
       <Ikona ime="lokot" velicina={24} />
-      <h2 id="bez-posrednika">Bez posrednika</h2>
-      <p>Plaćate karticom izravno organizatoru preko Stripea. Platforma ne naplaćuje naknadu i ne drži vaš novac.</p>
+      <h2 id="bez-provizije">Bez provizije</h2>
+      <p>Platforma ne naplaćuje naknadu i ne drži vaš novac.</p>
       <p>Ulaznica je QR kod koji stiže e-mailom i skenira se na ulazu.</p>
     </aside>
   </div>
@@ -121,7 +121,7 @@ const canonical = new URL("/", Astro.url.origin).toString();
     line-height: 1.5;
     color: var(--color-text-muted);
   }
-  .bez-posrednika {
+  .bez-provizije {
     flex: none;
     width: 260px;
     display: flex;
@@ -132,12 +132,12 @@ const canonical = new URL("/", Astro.url.origin).toString();
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
   }
-  .bez-posrednika h2 {
+  .bez-provizije h2 {
     font-size: 17px;
     font-weight: 700;
     line-height: 1.3;
   }
-  .bez-posrednika p {
+  .bez-provizije p {
     font-size: var(--font-size-sm);
     line-height: 1.55;
     color: var(--color-text-muted);
@@ -157,7 +157,7 @@ const canonical = new URL("/", Astro.url.origin).toString();
     .uvod p {
       font-size: 15px;
     }
-    .bez-posrednika {
+    .bez-provizije {
       width: auto;
     }
   }

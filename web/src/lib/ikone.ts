@@ -9,7 +9,7 @@ export interface IkonaOblik {
 }
 
 export const IKONE = {
-  /** logo i „Bez posrednika” */
+  /** logo i „Bez provizije” */
   ulaznica: { sadrzaj: '<path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4V8z"/>' },
   /** logo u zaglavlju: ulaznica s perforacijom */
   logo: {
