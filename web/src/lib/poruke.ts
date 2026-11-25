@@ -52,6 +52,7 @@ export const PORUKE_NARUDZBE: Readonly<Record<string, string>> = {
   organizer_not_connected: "Organizator još nije povezao račun za naplatu, pa online kupnja nije moguća.",
   organizer_charges_disabled: "Organizatorov račun za naplatu još nije aktivan, pa online kupnja trenutačno nije moguća.",
   checkout_bez_url: "Stranica za plaćanje se nije otvorila. Pokušajte ponovno.",
+  besplatna_nije_potvrdjena: "Besplatne ulaznice nisu izdane. Pokušajte ponovno.",
   // app.onError i 404 fallback za nepostojeću /api/ rutu
   greska_servera: GENERICKA_PORUKA,
   not_found: NARUDZBA_NIJE_POSLANA,
@@ -373,6 +374,8 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   tier_locked: "Cijena i imenska postojeće ulaznice ne mogu se mijenjati nakon objave.",
   inventory_below_claimed: "Količina ne može biti manja od već prodanih ulaznica.",
   invalid_gallery_url: "Link slike u galeriji nije ispravan (mora počinjati s https://).",
+  invalid_attendance_mode: "Odaberi je li događaj fizički ili online.",
+  invalid_online_url: "Link za pristup nije ispravan (mora počinjati s https://, najviše 1000 znakova).",
   invalid_tier_title: "Svaka ulaznica treba naziv (najviše 160 znakova).",
   invalid_tier_price: "Cijena ulaznice nije ispravna.",
   invalid_tier_inventory: "Količina ulaznica nije ispravna.",

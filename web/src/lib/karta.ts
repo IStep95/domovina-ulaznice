@@ -35,6 +35,19 @@ export function adresa(d: Pick<EventDetails, "venue_address" | "venue_city"> | n
   return [d?.venue_address, d?.venue_city].map((s) => s?.trim()).filter(Boolean).join(", ");
 }
 
+/** Online događaj (jezgra mu za mjesto i grad upiše „Online”). */
+export const jeOnline = (d: { attendance_mode?: string | null } | null | undefined): boolean =>
+  d?.attendance_mode === "online";
+
+/** Kratko mjesto za kartice i zaglavlja: „Dom sportova, Zagreb” ili „Online”. */
+export function kratkoMjesto(
+  d: { venue_name?: string | null; venue_city?: string | null; attendance_mode?: string | null } | null | undefined,
+  razdjelnik = ", ",
+): string {
+  if (jeOnline(d)) return "Online";
+  return [d?.venue_name, d?.venue_city].map((x) => x?.trim()).filter(Boolean).join(razdjelnik);
+}
+
 /** „Dom sportova, Trg Krešimira Ćosića 11, Zagreb” (za kalendar i JSON-LD). */
 export function punoMjesto(d: Pick<EventDetails, "venue_name" | "venue_address" | "venue_city"> | null | undefined): string {
   return [d?.venue_name?.trim(), adresa(d)].filter(Boolean).join(", ");

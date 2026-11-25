@@ -36,6 +36,8 @@ export interface EventDetails {
   /** WGS84; oba ili nijedno (S2b, odluka 14). Opcionalno dok jezgra nema migraciju. */
   venue_lat?: number | null;
   venue_lon?: number | null;
+  /** physical | online (jezgra `events_free_online`, 2026-11-25). Bez polja = physical. */
+  attendance_mode?: "physical" | "online";
   organizer_name: string;
   organizer_email: string | null;
   organizer_web: string | null;
@@ -54,6 +56,8 @@ export interface EventView {
   tiers: TierView[];
   stripe_connected: boolean;
   kupovno: boolean;
+  /** Sve vrste su 0 € (besplatan događaj); izvodi Worker. */
+  besplatno?: boolean;
   brand?: { accent_color?: string; logo_url?: string; hero_url?: string; intro_html?: string; terms_url?: string } | null;
 }
 
@@ -76,6 +80,8 @@ export interface OrderView {
   event: ({ title: string; slug: string } & Partial<EventDetails>) | null;
   tickets: TicketView[];
   dostava: { status: string; at: string } | null;
+  /** Link online događaja; samo uz plaćenu ili besplatno potvrđenu narudžbu. */
+  online_url?: string | null;
 }
 
 /** GET /api/dogadjaji */
@@ -97,6 +103,8 @@ export interface CreateOrderResponse {
   order_id: string;
   checkout_url: string;
   amount_cents: number;
+  /** Besplatna: `checkout_url` vodi ravno na /ulaznice/:id (bez Stripea). */
+  besplatno?: boolean;
 }
 
 /** POST /api/ulaznice/:id/ponovna-dostava */

@@ -6,7 +6,7 @@
 import DatumskaPlocica from "./DatumskaPlocica.astro";
 import Ikona from "./Ikona.astro";
 import Oznaka from "./Oznaka.astro";
-import { eur } from "../lib/format.ts";
+import { cijenaOd } from "../lib/format.ts";
 
 interface Props {
   href: string;
@@ -47,7 +47,7 @@ const prodaja = kupovno && cijenaOdCenti != null;
       )
     }
     <span class="oznake">
-      {prodaja ? <Oznaka ton="ok">od {eur(cijenaOdCenti!)}</Oznaka> : <Oznaka ton="neutral">prodaja nije otvorena</Oznaka>}
+      {prodaja ? <Oznaka ton="ok">{cijenaOd(cijenaOdCenti!)}</Oznaka> : <Oznaka ton="neutral">prodaja nije otvorena</Oznaka>}
       {vrsta && <Oznaka ton="obrub" class="vrsta">{vrsta}</Oznaka>}
     </span>
   </div>

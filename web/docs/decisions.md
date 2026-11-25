@@ -810,3 +810,26 @@ JS-a je to običan link na Google. Ruta `.ics` ostaje. „Ne uspije” ne uklju�
 koji nije prijavljen u Google: to preglednik ne vidi, Google tada sam traži prijavu.
 Revizija: nema.
 
+**826. Događaj je fizički ili online; link online događaja nije javan** (Ivan, 25. 11.; jezgra
+grana `events-format`, migracija `20261125120000_events_free_online`). Novi stupac
+`events.attendance_mode` (`physical` | `online`) je javan i ide kroz feed. Link za pristup
+je u zasebnoj tablici `event_access` jer anon smije čitati objavljene `events`; čita ga
+admin računa (editor) i Worker service ključem, koji ga daje samo uz plaćenu narudžbu (mail
+s ulaznicama, `GET /api/ulaznice/:id`). Link je u editoru neobavezan (organizator ga često
+dobije kasnije). Online događaj bez mjesta dobije „Online” za `venue_name`/`venue_city`
+(NOT NULL), pa feed, mail, filtar po gradu i `.ics` rade bez izmjena; web ga prikazuje kao
+„Online” i skriva kartu. JSON-LD: `OnlineEventAttendanceMode` + `VirtualLocation`.
+Revizija: nema.
+
+**827. Besplatan događaj = sve vrste ulaznica po 0 €, bez Stripea.** Wizard bira
+„Komercijalni” ili „Besplatan” (korak 4); besplatan sakrije cijene i šalje `price_cents: 0`,
+komercijalni odbija cijenu 0 (upućuje na „Besplatan”). U jezgri `create_ticket_order` prima
+tier od 0 (prije `tier_price_missing`), `amount_positive` dopušta 0 samo uz tier, a
+`confirm_ticket_order_offchain` prima rail `free` samo za narudžbu od 0 (`order_not_free`).
+`events-order` takvu narudžbu potvrdi odmah i vrati QR tokene; Worker (`/api/narudzba`)
+preskače Connect i Stripe, šalje mail i vraća `checkout_url` = `/ulaznice/<id>?besplatno=1`,
+pa web kupnje nema posebnu granu. Kupovnost: besplatna vrsta je kupiva i bez Stripe raila.
+Račun se ne izdaje. Zaštita od pražnjenja besplatnih mjesta je samo postojeći limit po IP-u
+(`order`); jezgra gostima nema limit po kupcu.
+Revizija: kad netko isprazni besplatan događaj botom (Turnstile ili limit po e-mailu).
+

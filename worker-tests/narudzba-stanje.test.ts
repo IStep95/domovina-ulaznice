@@ -248,3 +248,15 @@ test("termin: datum bez satnice se ne prikazuje kao „u 00:00”", async () => 
   assert.match(formatWhenHr("2027-04-16T09:00:00+02:00", "Europe/Zagreb", null), /09:00/);
   assert.equal(formatWhenHr(null, "Europe/Zagreb"), "termin još nije objavljen");
 });
+
+test("online: link na stranici narudžbe samo kad je plaćena", async () => {
+  t = testEnv();
+  t.api.eventExtra = { attendance_mode: "online" };
+  t.api.onlineUrl = "https://meet.example.com/tajna";
+  const neplacena = await callJson<{ online_url: string | null }>(t, `/api/ulaznice/${ORDER}`);
+  assert.equal(neplacena.body.online_url, null);
+  t.api.orderState = "paid";
+  t.api.orderPaidAt = new Date().toISOString();
+  const placena = await callJson<{ online_url: string | null }>(t, `/api/ulaznice/${ORDER}`);
+  assert.equal(placena.body.online_url, "https://meet.example.com/tajna");
+});

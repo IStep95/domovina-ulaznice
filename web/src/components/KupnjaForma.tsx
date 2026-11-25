@@ -141,7 +141,7 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
       const odgovor = await api.kreirajNarudzbu(tijeloNarudzbe(campaignId, { tier, kolicina, imena, email, uvjeti }));
       const url = adresaPlacanja(odgovor.checkout_url);
       if (!url) throw new ApiError("neispravan_odgovor", 200);
-      // Stripe Checkout na računu organizatora. Gumb ostaje zaključan do odlaska.
+      // Stripe Checkout na računu organizatora (besplatna: ravno na narudžbu). Gumb ostaje zaključan do odlaska.
       window.location.assign(url);
     } catch (err) {
       const { kod, retryAfter } = kodIzGreske(err);
@@ -164,6 +164,8 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
     }
   }
 
+  // Besplatna vrsta (2026-11-25): bez Stripea, ulaznice odmah na e-mail.
+  const besplatna = tier?.price_cents === 0;
   const stavke = tier ? [{ opis: `${tier.title} × ${kolicina}`, iznosCenti: iznosCenti(tier, kolicina) }] : [];
   const nedostaje = !provjera.valjano && !salje && !ceka && !konacno && provjera.nedostaje.length > 0;
   const natrag = `/dogadjaj/${encodeURIComponent(slug)}`;
@@ -281,8 +283,8 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
           varijanta="naglasni"
           velik
           blok
-          tekst="Nastavi na plaćanje"
-          tekstSlanja="Otvaram plaćanje…"
+          tekst={besplatna ? "Uzmi ulaznice" : "Nastavi na plaćanje"}
+          tekstSlanja={besplatna ? "Izdajem ulaznice…" : "Otvaram plaćanje…"}
           salje={salje}
           sekundi={cekanje.sekundi}
           kljuc={cekanje.kljuc}
@@ -298,7 +300,11 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
             Za nastavak: {provjera.nedostaje.join(", ")}.
           </span>
         )}
-        <span className={css.sitno}>Plaćanje karticom obrađuje Stripe za organizatora. Mjesta su rezervirana 20 minuta.</span>
+        <span className={css.sitno}>
+          {besplatna
+            ? "Ulaznice su besplatne i stižu odmah na e-mail."
+            : "Plaćanje karticom obrađuje Stripe za organizatora. Mjesta su rezervirana 20 minuta."}
+        </span>
         <span className={css.izravno}>
           <Ikona ime="lokot" velicina={16} />
           Kupujete izravno od organizatora.

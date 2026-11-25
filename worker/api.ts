@@ -140,6 +140,8 @@ export interface FeedEvent {
   state: string;
   event: {
     event_type: string;
+    /** physical | online (jezgra 20261125120000); stariji feed ga nema → physical. */
+    attendance_mode?: "physical" | "online";
     venue_name: string;
     venue_address: string | null;
     venue_city: string;
@@ -169,6 +171,10 @@ export interface OrderResponse {
   currency: string;
   expires_at: string | null;
   existing: boolean;
+  /** Besplatna narudžba: jezgra je odmah potvrdi (rail 'free') i vrati QR tokene. */
+  free?: boolean;
+  status?: string;
+  tickets?: ConfirmTicket[];
 }
 
 export interface StripeIntent {
@@ -293,6 +299,7 @@ export const createOrder = (
     tier_id: string;
     quantity: number;
     holders: Array<{ full_name: string; email?: string }>;
+    buyer_email?: string;
   },
 ): Promise<OrderResponse> => callFunction<OrderResponse>(env, "events-order", p);
 
@@ -303,6 +310,15 @@ export const stripeConfirm = (
   env: Env,
   p: { order_id: string; external_ref: string; amount_cents: number; payer_email?: string },
 ): Promise<ConfirmResponse> => callFunction<ConfirmResponse>(env, "events-stripe-confirm", p, { signed: true });
+
+/** Link online događaja (`event_access`, nije u javnom feedu); service ključ. */
+export async function onlineLink(env: Env, campaignId: string): Promise<string | null> {
+  const r = await rest<Array<{ online_url: string | null }>>(
+    env,
+    `event_access?campaign_id=eq.${campaignId}&select=online_url`,
+  );
+  return r[0]?.online_url ?? null;
+}
 
 /** ⚠️ Troši jednokratne QR tokene — zvati SAMO iz dostave ulaznica. */
 export const deliverTickets = (

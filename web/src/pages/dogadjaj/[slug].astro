@@ -38,7 +38,7 @@ import {
 } from "../../lib/format.ts";
 import { slikeGalerije } from "../../lib/galerija.ts";
 import { googleKalendarUrl } from "../../lib/kalendar.ts";
-import { adresa, koordinate, linkoviKarte, punoMjesto } from "../../lib/karta.ts";
+import { adresa, jeOnline, koordinate, kratkoMjesto, linkoviKarte, punoMjesto } from "../../lib/karta.ts";
 import { opisHtml, opisTekst } from "../../lib/opis.ts";
 import { eventJsonLd, jsonLdSkripta } from "../../lib/seo.ts";
 import { CACHE_GRESKA, CACHE_STRANICA, OG_ZADANA_MJERE, ogZadanaSlika } from "../../lib/stranica.ts";
@@ -73,10 +73,13 @@ const naslovnaAlt = d?.cover_image_alt?.trim() || null;
 const galerija = dogadjaj
   ? slikeGalerije(d, naslovnaUrl ? { url: naslovnaUrl, alt: naslovnaAlt } : null, dogadjaj.title)
   : [];
-const mjestoKratko = [d?.venue_name, d?.venue_city].filter(Boolean).join(" · ");
+const online = jeOnline(d);
+const mjestoKratko = kratkoMjesto(d, " · ");
+const besplatno = dogadjaj?.besplatno === true;
+const tekstKupnje = besplatno ? "Uzmi ulaznice" : "Kupi ulaznice";
 const adresaMjesta = adresa(d);
 const k = koordinate(d);
-const karta = k ? linkoviKarte(k, d?.venue_name) : null;
+const karta = k && !online ? linkoviKarte(k, d?.venue_name) : null;
 const opis = opisHtml(d?.description_hr);
 const opisKratko = opisTekst(d?.description_hr, 200);
 const organizatorWeb = sigurniUrl(d?.organizer_web);
@@ -94,7 +97,7 @@ const kalendar = dogadjaj
         startsAt: d?.starts_at,
         endsAt: d?.ends_at,
         timeZone: zona,
-        mjesto: punoMjesto(d),
+        mjesto: online ? "Online" : punoMjesto(d),
         opis: opisKratko,
         url: canonical,
       }),
@@ -208,7 +211,11 @@ const metaOpis =
             ) : (
               <RedInfo glavno={TERMIN_NEPOZNAT} ikona="sat" />
             )}
-            {d?.venue_name && <RedInfo glavno={d.venue_name} sporedno={adresaMjesta} ikona="mjesto" />}
+            {online ? (
+              <RedInfo glavno="Online događaj" sporedno="Link za pristup stiže uz ulaznicu." ikona="mjesto" />
+            ) : (
+              d?.venue_name && <RedInfo glavno={d.venue_name} sporedno={adresaMjesta} ikona="mjesto" />
+            )}
           </div>
 
           <div class="cjenik">
@@ -231,8 +238,12 @@ const metaOpis =
               <Fragment slot="dno">
                 {dogadjaj.kupovno ? (
                   <>
-                    <Gumb varijanta="naglasni" href={kupnja} velik blok>Kupi ulaznice</Gumb>
-                    <span>Kupujete izravno od organizatora — bez naknade posrednika.</span>
+                    <Gumb varijanta="naglasni" href={kupnja} velik blok>{tekstKupnje}</Gumb>
+                    <span>
+                      {besplatno
+                        ? "Ulaznice su besplatne i stižu odmah na e-mail."
+                        : "Kupujete izravno od organizatora — bez naknade posrednika."}
+                    </span>
                   </>
                 ) : (
                   <Banner ton="neutral" class="bez-prodaje">
@@ -251,7 +262,7 @@ const metaOpis =
             </Odjeljak>
           )}
 
-          {d?.venue_name && (
+          {d?.venue_name && !online && (
             <Odjeljak naslov="Lokacija" id="lokacija" class="o-lokacija">
               <div class="mjesto">
                 <b>{d.venue_name}</b>
@@ -268,7 +279,7 @@ const metaOpis =
         </div>
       </div>
 
-      {dogadjaj.kupovno && cijenaOd !== null && <ProdajnaTraka slot="dno" href={kupnja} cijenaOdCenti={cijenaOd} />}
+      {dogadjaj.kupovno && cijenaOd !== null && <ProdajnaTraka slot="dno" href={kupnja} cijenaOdCenti={cijenaOd} tekst={tekstKupnje} />}
     </Osnovni>
   )
 }

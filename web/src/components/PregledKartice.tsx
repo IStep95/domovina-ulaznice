@@ -2,7 +2,7 @@
 // KarticaDogadjaja.astro + GrupaPoDatumu.astro + DatumskaPlocica.astro
 // („boja”, 112 px), iste mjere i tokeni, da organizator vidi točno ono što će
 // kupac vidjeti na popisu. Nije link (nema još stranice), pa nema hovera.
-import { datumDijelovi, eur } from "../lib/format.ts";
+import { cijenaOd, datumDijelovi } from "../lib/format.ts";
 import { ZONA, type PodaciPregleda } from "../lib/editor.ts";
 import Ikona from "./Ikona.tsx";
 import oznaka from "./oznaka.module.css";
@@ -32,7 +32,7 @@ export default function PregledKartice({ p }: { p: PodaciPregleda }) {
           )}
           <span className={css.oznake}>
             {p.cijenaOdCenti !== null ? (
-              <span className={`${oznaka.oznaka} ${oznaka.ok}`}>od {eur(p.cijenaOdCenti)}</span>
+              <span className={`${oznaka.oznaka} ${oznaka.ok}`}>{cijenaOd(p.cijenaOdCenti)}</span>
             ) : (
               <span className={`${oznaka.oznaka} ${oznaka.neutral}`}>cijena još nije upisana</span>
             )}

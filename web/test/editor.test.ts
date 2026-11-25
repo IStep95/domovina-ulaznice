@@ -62,6 +62,9 @@ const unos = (izmjene: Partial<UnosDogadjaja> = {}): UnosDogadjaja => ({
   opis: "",
   slika: "",
   galerija: [],
+  online: false,
+  onlineLink: "",
+  besplatan: false,
   organizator: "",
   email: "",
   web: "",
@@ -97,12 +100,14 @@ test("zahtjev: polja SPA-e + galerija (ugovor s events-organizer)", () => {
   const z = zahtjev(unos({ adresa: " Maksimirska 1 ", opis: "Opis", slika: "https://x.hr/a.jpg", web: "primjer.hr" }), "id-2");
   assert.deepEqual(Object.keys(z).sort(), [
     "account_id",
+    "attendance_mode",
     "cover_image_url",
     "description_hr",
     "ends_at",
     "event_id",
     "event_type",
     "gallery",
+    "online_url",
     "organizer_email",
     "organizer_name",
     "organizer_web",
@@ -338,4 +343,69 @@ test("zahtjevIzmjene: id-evi i redoslijed vrsta, maknute u remove_tier_ids, praz
   ]);
   assert.deepEqual(z.remove_tier_ids, ["t1"]);
   assert.deepEqual(z.gallery, [{ url: "https://x.hr/1.webp" }]);
+});
+
+// ── Besplatni i online (2026-11-25) ─────────────────────────────────────────
+
+test("online: mjesto i grad nisu obavezni, link samo https", () => {
+  assert.deepEqual(validirajKorak(2, unos({ online: true, mjesto: "", grad: "" })), {});
+  assert.ok(validirajKorak(2, unos({ online: true, onlineLink: "http://meet.example.com" })).onlineLink);
+  assert.deepEqual(validirajKorak(2, unos({ online: true, onlineLink: "https://meet.example.com/x" })), {});
+  // fizički i dalje traži mjesto i grad
+  const g = validirajKorak(2, unos({ mjesto: "", grad: "" }));
+  assert.ok(g.mjesto && g.grad);
+  assert.equal(korakPolja("onlineLink"), 2);
+  assert.equal(korakZaKod("invalid_online_url"), 2);
+  assert.equal(korakZaKod("invalid_attendance_mode"), 2);
+});
+
+test("online: zahtjev nosi način i link; fizički ne šalje link", () => {
+  const z = zahtjev(unos({ online: true, mjesto: "", grad: "", onlineLink: " https://meet.example.com/x " }), "e");
+  assert.equal(z.attendance_mode, "online");
+  assert.equal(z.online_url, "https://meet.example.com/x");
+  assert.equal(z.venue_name, "");
+  const f = zahtjev(unos({ onlineLink: "https://zaostalo.example.com" }), "e");
+  assert.equal(f.attendance_mode, "physical");
+  assert.equal(f.online_url, null);
+  assert.equal(podaciPregleda(unos({ online: true })).mjesto, "Online");
+});
+
+test("besplatan: cijena se ne traži, sve vrste idu po 0 centi", () => {
+  const u = unos({ besplatan: true, tieri: [{ naziv: "Ulaz", cijena: "", kolicina: "", imenska: false }] });
+  assert.deepEqual(validirajKorak(4, u), {});
+  const tiers = zahtjev(u, "e").tiers as Array<{ price_cents: number }>;
+  assert.deepEqual(tiers.map((t) => t.price_cents), [0]);
+  assert.equal(podaciPregleda(u).cijenaOdCenti, 0);
+});
+
+test("komercijalni: cijena 0 je greška koja upućuje na „Besplatan”", () => {
+  const g = validirajKorak(4, unos({ tieri: [{ naziv: "Ulaz", cijena: "0", kolicina: "", imenska: false }] }));
+  assert.match(g["tier.0.cijena"]!, /Besplatan/);
+});
+
+test("skica: online i besplatna se vraćaju u formu bez zamjenskog „Online”", () => {
+  const u = unosIzSkice({
+    campaign_id: "c",
+    account_id: "a",
+    slug: "s",
+    title: "Webinar",
+    state: "draft",
+    event: {
+      venue_name: "Online",
+      venue_city: "Online",
+      attendance_mode: "online",
+      online_url: "https://meet.example.com/x",
+    },
+    tiers: [{ id: "t1", title: "Ulaz", price_cents: 0, inventory_total: null, imenska: false }],
+  });
+  assert.equal(u.online, true);
+  assert.equal(u.mjesto, "");
+  assert.equal(u.grad, "");
+  assert.equal(u.onlineLink, "https://meet.example.com/x");
+  assert.equal(u.besplatan, true);
+  assert.equal(u.tieri[0]!.cijena, "");
+  // izmjena: prelazak na fizički briše link
+  const z = zahtjevIzmjene({ ...u, online: false, mjesto: "Dvorana", grad: "Split" }, ["t1"]);
+  assert.equal(z.online_url, "");
+  assert.equal(z.attendance_mode, "physical");
 });

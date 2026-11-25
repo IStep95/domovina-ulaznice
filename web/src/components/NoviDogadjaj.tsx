@@ -631,35 +631,102 @@ function Korak2({ unos, greske, postavi }: KorakProps) {
           neobavezno
         />
       </div>
-      <Polje
-        id="nd-mjesto"
-        oznaka="Naziv mjesta"
-        value={unos.mjesto}
-        placeholder="npr. Dom sportova"
-        maxLength={160}
-        greska={greske.mjesto}
-        onChange={(e) => postavi("mjesto", e.target.value)}
+      <Izbor
+        ime="nd-nacin"
+        legenda="Gdje se održava"
+        vrijednost={unos.online ? "online" : "fizicki"}
+        opcije={[
+          ["fizicki", "Fizički", "Događaj je na lokaciji; kupci dobiju adresu i kartu."],
+          ["online", "Online", "Virtualni događaj; kupci dobiju link za pristup uz ulaznicu."],
+        ]}
+        onChange={(v) => postavi("online", v === "online")}
       />
-      <div className={css.red}>
+      {unos.online ? (
         <Polje
-          id="nd-adresa"
-          oznaka="Adresa (neobavezno)"
-          value={unos.adresa}
-          placeholder="Trg Krešimira Ćosića 11"
-          maxLength={200}
-          onChange={(e) => postavi("adresa", e.target.value)}
+          id="nd-onlineLink"
+          oznaka="Link za pristup (neobavezno)"
+          value={unos.onlineLink}
+          placeholder="https://meet.google.com/…"
+          maxLength={1000}
+          inputMode="url"
+          greska={greske.onlineLink}
+          pomoc={
+            greske.onlineLink
+              ? undefined
+              : "Vide ga samo vlasnici ulaznica: u mailu s ulaznicom i na stranici narudžbe. Možeš ga dodati i kasnije."
+          }
+          onChange={(e) => postavi("onlineLink", e.target.value)}
         />
-        <Polje
-          id="nd-grad"
-          oznaka="Grad"
-          value={unos.grad}
-          placeholder="Zagreb"
-          maxLength={80}
-          greska={greske.grad}
-          onChange={(e) => postavi("grad", e.target.value)}
-        />
-      </div>
+      ) : (
+        <>
+          <Polje
+            id="nd-mjesto"
+            oznaka="Naziv mjesta"
+            value={unos.mjesto}
+            placeholder="npr. Dom sportova"
+            maxLength={160}
+            greska={greske.mjesto}
+            onChange={(e) => postavi("mjesto", e.target.value)}
+          />
+          <div className={css.red}>
+            <Polje
+              id="nd-adresa"
+              oznaka="Adresa (neobavezno)"
+              value={unos.adresa}
+              placeholder="Trg Krešimira Ćosića 11"
+              maxLength={200}
+              onChange={(e) => postavi("adresa", e.target.value)}
+            />
+            <Polje
+              id="nd-grad"
+              oznaka="Grad"
+              value={unos.grad}
+              placeholder="Zagreb"
+              maxLength={80}
+              greska={greske.grad}
+              onChange={(e) => postavi("grad", e.target.value)}
+            />
+          </div>
+        </>
+      )}
     </div>
+  );
+}
+
+/** Radio pilule (isti izgled kao „Vrsta” u koraku 1); ispod je opis odabrane opcije. */
+function Izbor({
+  ime,
+  legenda,
+  vrijednost,
+  opcije,
+  onChange,
+}: {
+  ime: string;
+  legenda: string;
+  vrijednost: string;
+  opcije: ReadonlyArray<readonly [string, string, string]>;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <fieldset className={css.skupina}>
+      <legend className={polje.oznaka}>{legenda}</legend>
+      <div className={css.vrste}>
+        {opcije.map(([v, naziv], i) => (
+          <label key={v} className={css.vrsta}>
+            <input
+              type="radio"
+              name={ime}
+              id={i === 0 ? ime : undefined}
+              value={v}
+              checked={vrijednost === v}
+              onChange={() => onChange(v)}
+            />
+            <span>{naziv}</span>
+          </label>
+        ))}
+      </div>
+      <span className={css.mutno}>{opcije.find(([v]) => v === vrijednost)?.[2]}</span>
+    </fieldset>
   );
 }
 
@@ -949,6 +1016,16 @@ function Korak4({
   };
   return (
     <div className={css.polja}>
+      <Izbor
+        ime="nd-naplata"
+        legenda="Naplata"
+        vrijednost={unos.besplatan ? "besplatan" : "komercijalni"}
+        opcije={[
+          ["komercijalni", "Komercijalni", "Ulaznice se plaćaju karticom, novac ide izravno na tvoj Stripe račun."],
+          ["besplatan", "Besplatan", "Ulaznice su 0 €; kupac odmah dobije QR, bez plaćanja i bez Stripea."],
+        ]}
+        onChange={(v) => postavi("besplatan", v === "besplatan")}
+      />
       {greske.tieri && <Banner ton="error">{greske.tieri}</Banner>}
       <div className={css.tierovi}>
         <div className={css.zaglavljeTablice} aria-hidden="true">
@@ -964,11 +1041,18 @@ function Korak4({
             return (
               <div key={i} className={css.redTiera} role="group" aria-label={`Vrsta ulaznice ${i + 1}`}>
                 {celija(i, "naziv", "Naziv", { placeholder: "npr. Parter", maxLength: 160 })}
-                {celija(i, "cijena", "Cijena (€)", {
-                  inputMode: "decimal",
-                  placeholder: "25,00",
-                  title: c !== null ? eur(c) : undefined,
-                })}
+                {unos.besplatan ? (
+                  <div className={`${css.celija} ${css.c_cijena}`}>
+                    <span className={css.oznakaCelije}>Cijena (€)</span>
+                    <span className={css.besplatno}>Besplatno</span>
+                  </div>
+                ) : (
+                  celija(i, "cijena", "Cijena (€)", {
+                    inputMode: "decimal",
+                    placeholder: "25,00",
+                    title: c !== null ? eur(c) : undefined,
+                  })
+                )}
                 {celija(i, "kolicina", "Količina", { inputMode: "numeric", placeholder: "∞" })}
                 <label className={`${css.celija} ${css.c_imenska}`} title="Kupac upisuje ime za svaku ulaznicu">
                   <input
@@ -1030,13 +1114,20 @@ function Korak5({
   const tieri = unos.tieri
     .map((t) => {
       const c = centiIzUnosa(t.cijena);
-      return `${t.naziv.trim() || "bez naziva"} ${c !== null ? eur(c) : "?"}${t.kolicina.trim() ? ` × ${t.kolicina.trim()}` : ""}`;
+      const iznos = unos.besplatan ? "besplatno" : c !== null ? eur(c) : "?";
+      return `${t.naziv.trim() || "bez naziva"} ${iznos}${t.kolicina.trim() ? ` × ${t.kolicina.trim()}` : ""}`;
     })
     .join(" · ");
   const redovi: Array<[Korak, string, string]> = [
     [1, "Događaj", [unos.naslov.trim() || "—", vrsta, imeRacuna].filter(Boolean).join(" · ")],
     [2, "Termin", pocetak ? (kraj ? `${pocetak} – ${kraj}` : pocetak) : "—"],
-    [2, "Mjesto", [unos.mjesto.trim(), unos.adresa.trim(), unos.grad.trim()].filter(Boolean).join(", ") || "—"],
+    [
+      2,
+      "Mjesto",
+      unos.online
+        ? `Online · ${unos.onlineLink.trim() ? "link upisan" : "link još nije upisan"}`
+        : [unos.mjesto.trim(), unos.adresa.trim(), unos.grad.trim()].filter(Boolean).join(", ") || "—",
+    ],
     [
       3,
       "Opis i slika",

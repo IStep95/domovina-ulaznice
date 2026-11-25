@@ -38,6 +38,8 @@ export interface EventInfo {
   venue_name: string | null;
   venue_city: string | null;
   organizer_name?: string | null;
+  /** Link online događaja (jezgra `event_access`); ide samo vlasnicima ulaznica. */
+  online_url?: string | null;
 }
 
 export const esc = (s: unknown): string =>
@@ -107,7 +109,10 @@ export interface TicketMailData {
 
 export function ticketMail(d: TicketMailData): { subject: string; html: string; text: string } {
   const when = formatWhenHr(d.event.starts_at, d.event.timezone, d.event.ends_at ?? null);
-  const place = [d.event.venue_name, d.event.venue_city].filter(Boolean).join(", ");
+  // online događaj ima „Online” i za mjesto i za grad
+  const place = [...new Set([d.event.venue_name, d.event.venue_city].filter(Boolean))].join(", ");
+  const besplatno = d.amountCents === 0;
+  const link = d.event.online_url ?? null;
   const rows = d.tickets
     .map(
       (t, i) => `
@@ -124,10 +129,14 @@ export function ticketMail(d: TicketMailData): { subject: string; html: string; 
     `<h1 style="font-size:20px;margin:0 0 4px">Vaše ulaznice</h1>
 <p style="margin:0 0 16px;font-size:15px"><strong>${esc(d.event.title)}</strong><br>
 ${esc(when)}${place ? `<br>${esc(place)}` : ""}</p>
-${rows}
-<p style="font-size:14px;margin:20px 0 0">Ukupno plaćeno: <strong>${esc(eur(d.amountCents))}</strong></p>
+${
+  link
+    ? `<p style="font-size:15px;margin:0 0 16px">Link za pristup događaju:<br><a href="${esc(link)}" style="color:#2f855a;word-break:break-all">${esc(link)}</a></p>`
+    : ""
+}${rows}
+<p style="font-size:14px;margin:20px 0 0">${besplatno ? "Ulaznica je besplatna." : `Ukupno plaćeno: <strong>${esc(eur(d.amountCents))}</strong>`}</p>
 <p style="font-size:14px;margin:12px 0 0">
-  Na ulazu pokažite QR kod s ove poruke.
+  ${link ? "Link je samo za vas; ne dijelite ga." : "Na ulazu pokažite QR kod s ove poruke."}
   <a href="${esc(d.orderUrl)}" style="color:#2f855a">Pregled narudžbe</a>
 </p>
 <p style="font-size:13px;color:#6b7280;margin:16px 0 0">
@@ -139,10 +148,11 @@ ${rows}
     `Vaše ulaznice — ${d.event.title}`,
     when,
     place,
+    ...(link ? ["", `Link za pristup: ${link}`] : []),
     "",
     ...d.tickets.map((t) => `${t.serial}${t.holder_name ? ` — ${t.holder_name}` : ""}`),
     "",
-    `Ukupno: ${eur(d.amountCents)}`,
+    besplatno ? "Ulaznica je besplatna." : `Ukupno: ${eur(d.amountCents)}`,
     `Pregled narudžbe: ${d.orderUrl}`,
     "QR kodovi su u HTML inačici poruke; sačuvajte je jer se izdaju jednom.",
   ].join("\n");

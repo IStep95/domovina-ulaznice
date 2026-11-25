@@ -9,7 +9,7 @@
 // Prigušeni red mijenja pozadinu i boju teksta, nikad opacity (pravilo 3).
 // Stanje iz TierView računa stanjeTiera() u src/lib/format.ts.
 import Oznaka from "./Oznaka.astro";
-import { eur, type StanjeTiera } from "../lib/format.ts";
+import { cijena, type StanjeTiera } from "../lib/format.ts";
 
 interface Props {
   naziv: string;
@@ -40,10 +40,10 @@ const punOpis = [opis, imenska ? "glasi na ime" : null].filter(Boolean).join(" �
   {
     stanje === "rasprodano" ? (
       <span class="cijena">
-        <del>{eur(cijenaCenti)}</del>
+        <del>{cijena(cijenaCenti)}</del>
       </span>
     ) : (
-      <span class="cijena">{eur(cijenaCenti)}</span>
+      <span class="cijena">{cijena(cijenaCenti)}</span>
     )
   }
 </div>

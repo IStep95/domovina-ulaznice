@@ -20,6 +20,7 @@ export const BASE_URL = "https://ulaznice.test";
 export const CAMPAIGN = "11111111-1111-4111-8111-111111111111";
 export const TIER = "22222222-2222-4222-8222-222222222222";
 export const TIER_IMENSKA = "33333333-3333-4333-8333-333333333333";
+export const TIER_BESPLATNA = "55555555-5555-4555-8555-555555555555";
 export const ACCT = "acct_1TestOrganizator";
 
 export interface TestCtx {
@@ -86,6 +87,10 @@ export interface ApiState {
   createdSessions: Array<{ body: string; account: string | null }>;
   refunds: Array<{ body: string; account: string | null }>;
   emails: Array<Record<string, unknown>>;
+  /** `event_access.online_url` (link online događaja, samo service ključem). */
+  onlineUrl: string | null;
+  /** Feed dobiva i besplatnu vrstu (TIER_BESPLATNA, 0 €). */
+  besplatnaVrsta: boolean;
 }
 
 export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestCtx {
@@ -126,6 +131,8 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     createdSessions: [],
     refunds: [],
     emails: [],
+    onlineUrl: null,
+    besplatnaVrsta: false,
   };
 
   const env = {
@@ -244,6 +251,16 @@ function installFetchStub(state: ApiState) {
 
     if (url.includes("/functions/v1/events-order")) {
       const p = JSON.parse(body || "{}");
+      if (p.tier_id === TIER_BESPLATNA) {
+        // jezgra potvrdi besplatnu odmah (rail 'free') i vrati jednokratne tokene
+        const tickets = Array.from({ length: Number(p.quantity ?? 1) }, (_, i) => ({
+          serial: `TES-00010${i}`, holder_name: null, holder_email: null, state: "issued", qr_token: `tok-free-${i}`,
+        }));
+        return json({
+          order_id: p.order_id, state: "paid", amount_cents: 0, currency: "eur", expires_at: null,
+          existing: false, free: true, status: "paid", tickets,
+        });
+      }
       state.inventoryClaimed += Number(p.quantity ?? 0);
       return json({
         order_id: p.order_id,
@@ -374,6 +391,10 @@ function installFetchStub(state: ApiState) {
     if (url.includes("/rest/v1/rpc/refund_ticket_order")) {
       return json({ status: state.refundStatus, order_id: JSON.parse(body || "{}").p_order_id, voided: 2 });
     }
+    if (url.includes("/rest/v1/event_access")) {
+      if (headers.authorization !== `Bearer ${SERVICE_KEY}`) throw new Error("event_access čitan bez service ključa");
+      return json(state.onlineUrl ? [{ online_url: state.onlineUrl }] : []);
+    }
     if (url.includes("/rest/v1/campaigns") && url.includes("campaign_tiers(")) {
       if (!headers.authorization?.startsWith("Bearer ")) throw new Error("skica čitana BEZ korisnikovog JWT-a");
       return json(state.skica);
@@ -501,6 +522,17 @@ function feedPayload(state: ApiState) {
             sale_start: null,
             sale_end: state.saleEnd,
           },
+          ...(state.besplatnaVrsta ? [{
+            id: TIER_BESPLATNA,
+            title: "Besplatna",
+            description: null,
+            price_cents: 0,
+            inventory_total: 100,
+            inventory_claimed: 0,
+            imenska: false,
+            sale_start: null,
+            sale_end: null,
+          }] : []),
           {
             id: TIER_IMENSKA,
             title: "Imenska",

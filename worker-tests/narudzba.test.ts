@@ -2,7 +2,7 @@
 // najvažnije — `acct_…` ne smije izaći prema browseru.
 import { strict as assert } from "node:assert";
 import { afterEach, test } from "node:test";
-import { ACCT, CAMPAIGN, SERVICE_KEY, TIER, TIER_IMENSKA, call, callJson, testEnv, type TestCtx } from "./harness/env.ts";
+import { ACCT, CAMPAIGN, SERVICE_KEY, TIER, TIER_BESPLATNA, TIER_IMENSKA, call, callJson, testEnv, type TestCtx } from "./harness/env.ts";
 
 let t: TestCtx | null = null;
 afterEach(() => { t?.restore(); t = null; });
@@ -141,4 +141,57 @@ test("prema events-* NE šaljemo Authorization (events-order bi prešao na user-
     assert.equal(c.headers.authorization, undefined, `${c.url} nosi Authorization`);
     assert.equal(c.headers.apikey, SERVICE_KEY, `${c.url} mora nositi apikey (Kong)`);
   }
+});
+
+// ------------------------------------------------- besplatno i online (2026-11-25)
+
+test("besplatna ulaznica: bez Stripea i Connecta, mail s QR-om, URL vodi na narudžbu", async () => {
+  t = testEnv();
+  t.api.besplatnaVrsta = true;
+  t.api.connected = false; // besplatnom događaju Stripe ne treba
+  const { status, body, text } = await callJson<{ order_id: string; checkout_url: string; besplatno: boolean }>(
+    t, "/api/narudzba", { body: narudzba({ tier_id: TIER_BESPLATNA }) },
+  );
+  assert.equal(status, 200);
+  assert.equal(body.besplatno, true);
+  assert.ok(body.checkout_url.endsWith(`/ulaznice/${body.order_id}?besplatno=1`), body.checkout_url);
+  assert.ok(!text.includes("tok-free"), "QR token ne smije u odgovor pregledniku");
+  assert.equal(t.api.createdSessions.length, 0, "besplatna ne smije otvoriti Stripe session");
+  assert.ok(!t.calls.some((c) => c.url.includes("events-stripe-intent")));
+  const order = JSON.parse(t.calls.find((c) => c.url.includes("events-order"))!.body);
+  assert.equal(order.buyer_email, "kupac@example.com");
+  const mail = t.api.emails.at(-1)!;
+  assert.deepEqual(mail.to, ["kupac@example.com"]);
+  assert.match(String(mail.html), /Ulaznica je besplatna/);
+  assert.equal((mail.attachments as unknown[]).length, 2);
+});
+
+test("online događaj: link ide u mail s ulaznicama", async () => {
+  t = testEnv();
+  t.api.besplatnaVrsta = true;
+  t.api.eventExtra = { attendance_mode: "online", venue_name: "Online", venue_city: "Online" };
+  t.api.onlineUrl = "https://meet.example.com/tajna";
+  await call(t, "/api/narudzba", { body: narudzba({ tier_id: TIER_BESPLATNA, quantity: 1 }) });
+  const mail = t.api.emails.at(-1)!;
+  assert.match(String(mail.html), /https:\/\/meet\.example\.com\/tajna/);
+  assert.match(String(mail.text), /Link za pristup: https:\/\/meet\.example\.com\/tajna/);
+  assert.ok(!String(mail.text).includes("Online, Online"), "mjesto se ne ponavlja");
+});
+
+test("fizički događaj ne traži link", async () => {
+  t = testEnv();
+  t.api.besplatnaVrsta = true;
+  t.api.onlineUrl = "https://meet.example.com/tajna";
+  await call(t, "/api/narudzba", { body: narudzba({ tier_id: TIER_BESPLATNA, quantity: 1 }) });
+  assert.ok(!t.calls.some((c) => c.url.includes("/rest/v1/event_access")));
+  assert.ok(!String(t.api.emails.at(-1)!.html).includes("meet.example.com"));
+});
+
+test("javni događaj: besplatna vrsta je kupovna i bez Stripea", async () => {
+  t = testEnv();
+  t.api.besplatnaVrsta = true;
+  t.api.connected = false;
+  const { body } = await callJson<{ kupovno: boolean; besplatno: boolean }>(t, "/api/dogadjaj/susret-2027");
+  assert.equal(body.kupovno, true);
+  assert.equal(body.besplatno, false, "uz plaćene vrste događaj nije besplatan");
 });

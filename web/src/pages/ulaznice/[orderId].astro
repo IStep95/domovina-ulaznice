@@ -24,7 +24,7 @@ import PotvrdaPlacanja from "../../components/PotvrdaPlacanja.tsx";
 import RedUlaznice from "../../components/RedUlaznice.astro";
 import StranicaGreske from "../../components/StranicaGreske.astro";
 import ZaglavljeNarudzbe from "../../components/ZaglavljeNarudzbe.astro";
-import { ZADANA_ZONA, eur, rokRezervacije, terminJednimRetkom } from "../../lib/format.ts";
+import { ZADANA_ZONA, cijena, rokRezervacije, sigurniUrl, terminJednimRetkom } from "../../lib/format.ts";
 import {
   cekaPotvrdu,
   ispravanOrderId,
@@ -33,6 +33,7 @@ import {
   stanjeUlaznice,
   stanjeZaglavlja,
 } from "../../lib/narudzba.ts";
+import { kratkoMjesto } from "../../lib/karta.ts";
 import { CACHE_NARUDZBA } from "../../lib/stranica.ts";
 
 const orderId = Astro.params.orderId ?? "";
@@ -62,7 +63,17 @@ const stanje = narudzba ? stanjeZaglavlja(narudzba.state, placeno) : "pending";
 const ceka = narudzba ? cekaPotvrdu(narudzba.state, placeno) : false;
 const placena = narudzba?.state === "paid";
 const naDogadjaj = ev?.slug ? `/dogadjaj/${encodeURIComponent(ev.slug)}` : null;
-const mjesto = [ev?.venue_name, ev?.venue_city].filter(Boolean).join(", ");
+const mjesto = kratkoMjesto(ev);
+const besplatna = narudzba?.amount_cents === 0;
+// Link online događaja: Worker ga vraća samo uz plaćenu narudžbu; ovdje još jednom samo https.
+const onlineLink = placena ? sigurniUrl(narudzba?.online_url) : null;
+const opisZaglavlja =
+  placena && (besplatna || onlineLink)
+    ? [
+        besplatna ? "Besplatne ulaznice su izdane i poslane e-mailom." : "Ulaznice su izdane i poslane e-mailom.",
+        onlineLink ? "Link za pristup je ispod i u poruci." : "Na ulazu pokažite QR kod iz poruke.",
+      ].join(" ")
+    : undefined;
 const rok = narudzba?.state === "pending" ? rokRezervacije(narudzba.expires_at, zona) : null;
 ---
 {
@@ -107,7 +118,7 @@ const rok = narudzba?.state === "pending" ? rokRezervacije(narudzba.expires_at, 
       )}
 
       <div class="narudzba">
-        <ZaglavljeNarudzbe stanje={stanje}>
+        <ZaglavljeNarudzbe stanje={stanje} naslov={placena && besplatna ? "Ulaznice su izdane" : undefined} opis={opisZaglavlja}>
           {stanje === "pending" && rok && <span>Rezervacija vrijedi do {rok}</span>}
           {(stanje === "expired" || stanje === "failed") && naDogadjaj && <Gumb href={naDogadjaj}>Natrag na događaj</Gumb>}
         </ZaglavljeNarudzbe>
@@ -130,8 +141,8 @@ const rok = narudzba?.state === "pending" ? rokRezervacije(narudzba.expires_at, 
           <dl class="brojke">
             <dt>Ulaznica</dt>
             <dd>{narudzba.quantity}</dd>
-            <dt>{placena ? "Plaćeno" : "Iznos"}</dt>
-            <dd>{eur(narudzba.amount_cents)}</dd>
+            <dt>{placena && !besplatna ? "Plaćeno" : "Iznos"}</dt>
+            <dd>{cijena(narudzba.amount_cents)}</dd>
             {narudzba.buyer_email && (
               <>
                 <dt>E-mail</dt>
@@ -146,6 +157,16 @@ const rok = narudzba?.state === "pending" ? rokRezervacije(narudzba.expires_at, 
             )}
           </dl>
         </section>
+
+        {
+          onlineLink && (
+            <section class="kartica online" aria-labelledby="online-naslov">
+              <h2 id="online-naslov">Link za pristup</h2>
+              <a class="online-link" href={onlineLink} rel="noopener noreferrer">{onlineLink}</a>
+              <p class="tekst">Link je samo za vlasnike ulaznica; ne dijelite ga.</p>
+            </section>
+          )
+        }
 
         {
           narudzba.tickets.length > 0 && (
@@ -273,6 +294,28 @@ const rok = narudzba?.state === "pending" ? rokRezervacije(narudzba.expires_at, 
   .napomena {
     margin-top: -8px;
     font-size: 13px;
+    color: var(--color-text-muted);
+  }
+
+  /* Link online događaja. */
+  .online {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 22px;
+  }
+  .online h2 {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+  }
+  .online-link {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--color-accent-text);
+    overflow-wrap: anywhere;
+  }
+  .online .tekst {
+    font-size: var(--font-size-sm);
     color: var(--color-text-muted);
   }
 

@@ -11,7 +11,7 @@ import type { Env } from "./env";
 import { HttpError } from "./env";
 import * as api from "./api";
 import { createCheckoutSession, formatWhen } from "./stripe";
-import { handleStripeWebhook, logMoney } from "./webhooks";
+import { deliverTicketsEmail, handleStripeWebhook, logMoney } from "./webhooks";
 import { reconcile } from "./reconcile";
 import { clientIp, consume } from "./ratelimit";
 import { sendEmail, ticketAttachments, ticketMail } from "./mail";
@@ -112,8 +112,10 @@ function publicEvent(ev: api.FeedEvent, rail: { connected: boolean; charges_enab
     tiers,
     // izvedeni boolean umjesto acct_… (docs/03 §2, presedan bookable.ts)
     stripe_connected: rail.connected,
-    // "vidljiv, ali ne kupiv" je legitimno stanje — stranica se prikazuje
-    kupovno: rail.connected && rail.charges_enabled && tiers.some((t) => t.buyable),
+    // "vidljiv, ali ne kupiv" je legitimno stanje — stranica se prikazuje.
+    // Besplatnoj ulaznici Stripe ne treba (2026-11-25), plaćenoj treba.
+    kupovno: tiers.some((t) => t.buyable && (t.price_cents === 0 || (rail.connected && rail.charges_enabled))),
+    besplatno: tiers.length > 0 && tiers.every((t) => t.price_cents === 0),
   };
 }
 
@@ -274,6 +276,31 @@ app.post("/api/narudzba", async (c) => {
     }
   }
 
+  // Besplatna ulaznica: bez Stripea i bez Connect računa organizatora. Jezgra
+  // narudžbu od 0 centi potvrdi odmah (rail 'free') i vrati QR tokene; mail ide
+  // odavde, kao nakon webhooka. „checkout_url” vodi ravno na narudžbu, pa web
+  // ne treba posebnu granu.
+  if (tier.price_cents === 0) {
+    const orderId = crypto.randomUUID();
+    const order = await api.createOrder(c.env, {
+      order_id: orderId,
+      campaign_id: ev.campaign_id,
+      tier_id: tier.id,
+      quantity,
+      holders: tier.imenska ? holders.map((h) => ({ full_name: h.full_name, email: h.email })) : [],
+      buyer_email: buyerEmail,
+    });
+    if (order.state !== "paid") return fail("besplatna_nije_potvrdjena", 502, { state: order.state });
+    const potvrda = { ok: true, status: "paid" as const, order_id: orderId, tickets: order.tickets ?? [] };
+    await deliverTicketsEmail(c.env, orderId, potvrda, buyerEmail, 0);
+    return c.json({
+      order_id: orderId,
+      checkout_url: `${c.env.PUBLIC_BASE_URL}/ulaznice/${orderId}?besplatno=1`,
+      amount_cents: 0,
+      besplatno: true,
+    });
+  }
+
   // Bez radnog Stripe raila session se NIKAD ne kreira "u prazno" (bookable.ts).
   const rail = await api.organizerRail(c.env, ev.campaign_id);
   if (!rail.connected) return fail("organizer_not_connected", 409);
@@ -347,6 +374,11 @@ app.get("/api/ulaznice/:order_id", async (c) => {
     paid_at: status.order.paid_at,
     buyer_email: maskEmail(status.order.buyer_email),
     event: ev ? { title: ev.title, slug: ev.slug, ...(ev.event ?? {}) } : null,
+    // link online događaja samo uz plaćenu (ili besplatno potvrđenu) narudžbu
+    online_url:
+      ev?.event?.attendance_mode === "online" && status.order.state === "paid"
+        ? await api.onlineLink(c.env, ev.campaign_id).catch(() => null)
+        : null,
     // QR se NE vraća: tokeni su jednokratni i žive u e-mailu (Zapisnik U1 §Gotcha 3)
     tickets: status.tickets,
     dostava: delivered ? { status: delivered.status, at: delivered.created_at } : null,
@@ -681,6 +713,7 @@ const POLJA_DOGADJAJA = [
   "title", "event_type", "starts_at", "ends_at", "timezone",
   "venue_name", "venue_address", "venue_city", "description_hr", "cover_image_url",
   "gallery", "organizer_name", "organizer_email", "organizer_web", "tiers",
+  "attendance_mode", "online_url",
 ];
 
 /**
@@ -725,16 +758,20 @@ app.get("/api/organizator/dogadjaj/:id", async (c) => {
     jwt,
     `campaigns?id=eq.${id}&type=eq.tickets&select=id,account_id,slug,title,state,` +
       "events(event_type,venue_name,venue_address,venue_city,starts_at,ends_at,timezone,description_hr," +
-      "cover_image_url,gallery,organizer_name,organizer_email,organizer_web)," +
+      "cover_image_url,gallery,organizer_name,organizer_email,organizer_web,attendance_mode)," +
+      "event_access(online_url)," +
       "campaign_tiers(id,title,price_cents,inventory_total,inventory_claimed,imenska,sort)",
   );
   const r = redci[0];
   if (!r) return fail("event_not_found", 404);
-  const { events, campaign_tiers, id: campaign_id, ...ostalo } = r;
+  const { events, event_access, campaign_tiers, id: campaign_id, ...ostalo } = r;
+  // event_access je 1:1 (PK campaign_id) → PostgREST vraća objekt ili null
+  const pristup = (Array.isArray(event_access) ? event_access[0] : event_access) as { online_url?: string } | null;
   const tiers = Array.isArray(campaign_tiers)
     ? [...(campaign_tiers as Array<{ sort?: number }>)].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     : [];
-  return c.json({ campaign_id, ...ostalo, event: events ?? null, tiers });
+  const event = events ? { ...(events as object), online_url: pristup?.online_url ?? null } : null;
+  return c.json({ campaign_id, ...ostalo, event, tiers });
 });
 
 /**

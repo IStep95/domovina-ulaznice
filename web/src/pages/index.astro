@@ -12,6 +12,7 @@ import Ikona from "../components/Ikona.astro";
 import KarticaDogadjaja from "../components/KarticaDogadjaja.astro";
 import PraznoStanje from "../components/PraznoStanje.astro";
 import { ZADANA_ZONA, najnizaCijena, sigurniUrl, terminKartice, vrstaDogadjaja, zaglavljeGrupe, type ZaglavljeGrupe } from "../lib/format.ts";
+import { kratkoMjesto } from "../lib/karta.ts";
 import { CACHE_GRESKA, CACHE_STRANICA, OG_ZADANA_MJERE, ogZadanaSlika } from "../lib/stranica.ts";
 
 let dogadjaji: EventView[] | null = null;
@@ -66,7 +67,7 @@ const canonical = new URL("/", Astro.url.origin).toString();
                     naslov={ev.title}
                     termin={terminKartice(d?.starts_at, d?.ends_at, d?.timezone || ZADANA_ZONA)}
                     organizator={d?.organizer_name}
-                    mjesto={[d?.venue_name, d?.venue_city].filter(Boolean).join(", ") || null}
+                    mjesto={kratkoMjesto(d) || null}
                     vrsta={vrstaDogadjaja(d?.event_type)}
                     datum={d?.starts_at ?? null}
                     timeZone={d?.timezone || ZADANA_ZONA}

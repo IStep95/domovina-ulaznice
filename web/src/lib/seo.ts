@@ -3,7 +3,7 @@
 // OrderView.currency je uvijek „eur”).
 import type { EventView, TierView } from "../../../shared/api-tipovi.ts";
 import { cijenaDecimalno, stanjeTiera } from "./format.ts";
-import { koordinate } from "./karta.ts";
+import { jeOnline, koordinate } from "./karta.ts";
 
 const SCHEMA = "https://schema.org/";
 
@@ -38,6 +38,7 @@ export function eventJsonLd({ dogadjaj, url, urlKupnje, opis, slika, organizator
   const d = dogadjaj.event;
   if (!d?.starts_at) return null;
   const k = koordinate(d);
+  const online = jeOnline(d);
   return {
     "@context": "https://schema.org",
     "@type": "Event",
@@ -46,10 +47,10 @@ export function eventJsonLd({ dogadjaj, url, urlKupnje, opis, slika, organizator
     startDate: d.starts_at,
     ...(d.ends_at ? { endDate: d.ends_at } : {}),
     eventStatus: `${SCHEMA}EventScheduled`,
-    eventAttendanceMode: `${SCHEMA}OfflineEventAttendanceMode`,
+    eventAttendanceMode: `${SCHEMA}${online ? "Online" : "Offline"}EventAttendanceMode`,
     ...(opis ? { description: opis } : {}),
     ...(slika ? { image: [slika] } : {}),
-    location: {
+    location: online ? { "@type": "VirtualLocation", url } : {
       "@type": "Place",
       name: d.venue_name,
       address: {

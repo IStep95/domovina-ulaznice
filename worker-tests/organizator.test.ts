@@ -180,6 +180,17 @@ test("strojni kod iz baze prolazi, sirova poruka baze ne", async () => {
   assert.ok(!b.text.includes("duplicate key"));
 });
 
+test("online način i link prolaze do events-organizer", async () => {
+  t = testEnv();
+  await callJson(t, "/api/organizator/dogadjaj", {
+    headers: auth(),
+    body: { ...noviDogadjaj, attendance_mode: "online", online_url: "https://meet.example.com/x" },
+  });
+  const poslano = JSON.parse(t.calls.find((c) => c.url.includes("events-organizer"))!.body);
+  assert.equal(poslano.attendance_mode, "online");
+  assert.equal(poslano.online_url, "https://meet.example.com/x");
+});
+
 test("galerija prolazi do events-organizer, smeće umjesto galerije ne", async () => {
   t = testEnv();
   const galerija = [{ url: "https://x/1.webp" }];
@@ -215,6 +226,7 @@ test("skica za uređivanje se čita JWT-om; vrste po redu, nepostojeća → 404"
       title: "Skica",
       state: "draft",
       events: { venue_name: "Dvorana", gallery: [] },
+      event_access: { online_url: "https://meet.example.com/x" },
       campaign_tiers: [
         { id: "t2", title: "B", sort: 1 },
         { id: "t1", title: "A", sort: 0 },
@@ -228,7 +240,9 @@ test("skica za uređivanje se čita JWT-om; vrste po redu, nepostojeća → 404"
   );
   assert.equal(status, 200);
   assert.equal(body.campaign_id, SKICA);
-  assert.deepEqual(body.event, { venue_name: "Dvorana", gallery: [] });
+  // link iz event_access (1:1) se spljošti u event
+  assert.deepEqual(body.event, { venue_name: "Dvorana", gallery: [], online_url: "https://meet.example.com/x" });
+  assert.ok(!("event_access" in body));
   assert.deepEqual(body.tiers.map((x) => x.id), ["t1", "t2"]);
   const poziv = t.calls.find((c) => c.url.includes("/rest/v1/campaigns"))!;
   assert.equal(poziv.headers.authorization, "Bearer jwt-organizatora");

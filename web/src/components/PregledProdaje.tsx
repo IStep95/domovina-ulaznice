@@ -12,7 +12,7 @@
 // „Zauzeto” (ne „prodano”) uključuje i rezervacije: v. zbrojDogadjaja.
 import { useEffect, useState } from "react";
 import { dohvatiPregled, jeIstekla, obrisiSkicu, preuzmiHoldere, type OrgEvent, type OrgPregled } from "../lib/auth.ts";
-import { eur } from "../lib/format.ts";
+import { cijena, eur } from "../lib/format.ts";
 import { datumDogadjaja, imeCsvDatoteke, stanjeDogadjaja, zbrojDogadjaja } from "../lib/organizator.ts";
 import { porukaIzGreske } from "../lib/poruke.ts";
 import Banner from "./Banner.tsx";
@@ -187,7 +187,7 @@ function Dogadjaj({
               <span>{t.title}</span>
               <span className={css.brojke}>
                 {t.inventory_claimed}
-                {t.inventory_total !== null ? ` / ${t.inventory_total}` : ""} · {eur(t.price_cents)}
+                {t.inventory_total !== null ? ` / ${t.inventory_total}` : ""} · {cijena(t.price_cents)}
               </span>
             </li>
           ))}

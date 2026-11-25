@@ -23,6 +23,16 @@ export function eur(centi: number): string {
   return `${predznak}${eura},${ostatak} €`;
 }
 
+/** Cijena ulaznice: 0 → „Besplatno” (2026-11-25), inače `eur`. */
+export function cijena(centi: number): string {
+  return centi === 0 ? "Besplatno" : eur(centi);
+}
+
+/** Oznaka najniže cijene na kartici: „od 25,00 €” ili „Besplatno”. */
+export function cijenaOd(centi: number): string {
+  return centi === 0 ? "Besplatno" : `od ${eur(centi)}`;
+}
+
 /** Cijeli centi → „60.00” (schema.org `price`: točka, bez valute i tisućica). */
 export function cijenaDecimalno(centi: number): string {
   const c = Math.trunc(centi);

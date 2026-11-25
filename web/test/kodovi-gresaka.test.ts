@@ -394,6 +394,8 @@ const JEZGRA_ORGANIZATORA = [
   "invalid_cover_url",
   "invalid_gallery",
   "invalid_gallery_url",
+  "invalid_attendance_mode",
+  "invalid_online_url",
   "campaign_not_found",
   "event_not_draft",
   "event_has_orders",

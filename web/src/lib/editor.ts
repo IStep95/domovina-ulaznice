@@ -97,6 +97,12 @@ export interface UnosDogadjaja {
   slika: string;
   /** Linkovi slika galerije, redom prikaza (bez alt teksta, Ivan 24. 11.). */
   galerija: string[];
+  /** Online (virtualni) događaj: mjesto i grad nisu obavezni, link vide samo vlasnici ulaznica. */
+  online: boolean;
+  /** Link za pristup online događaju (jezgra `event_access`); neobavezan dok ga organizator nema. */
+  onlineLink: string;
+  /** Besplatan događaj: sve vrste ulaznica idu po 0 €, bez Stripea. */
+  besplatan: boolean;
   organizator: string;
   email: string;
   web: string;
@@ -117,6 +123,9 @@ export const prazanUnos = (): UnosDogadjaja => ({
   opis: "",
   slika: "",
   galerija: [],
+  online: false,
+  onlineLink: "",
+  besplatan: false,
   organizator: "",
   email: "",
   web: "",
@@ -167,10 +176,16 @@ export function validirajKorak(n: Korak, u: UnosDogadjaja): Greske {
       else if (!zidnoVrijemeUUtc(u.pocetak)) g.pocetak = "Neispravan datum.";
       if (u.kraj && !zidnoVrijemeUUtc(u.kraj)) g.kraj = "Neispravan datum.";
       else if (u.kraj && u.pocetak && u.kraj <= u.pocetak) g.kraj = "Kraj mora biti nakon početka.";
-      if (!u.mjesto.trim()) g.mjesto = "Upiši mjesto (npr. dvoranu).";
-      else if (u.mjesto.trim().length > 160) g.mjesto = "Naziv mjesta je predug (najviše 160 znakova).";
-      if (!u.grad.trim()) g.grad = "Upiši grad.";
-      else if (u.grad.trim().length > 80) g.grad = "Naziv grada je predug (najviše 80 znakova).";
+      if (u.online) {
+        const link = u.onlineLink.trim();
+        if (link && !HTTPS.test(link)) g.onlineLink = "Link mora počinjati s https://.";
+        else if (link.length > 1000) g.onlineLink = "Link je predug (najviše 1000 znakova).";
+      } else {
+        if (!u.mjesto.trim()) g.mjesto = "Upiši mjesto (npr. dvoranu).";
+        if (!u.grad.trim()) g.grad = "Upiši grad.";
+      }
+      if (u.mjesto.trim().length > 160) g.mjesto = "Naziv mjesta je predug (najviše 160 znakova).";
+      if (u.grad.trim().length > 80) g.grad = "Naziv grada je predug (najviše 80 znakova).";
       break;
     case 3:
       if (u.slika.trim() && !HTTPS.test(u.slika.trim())) g.slika = "Link slike mora počinjati s https://.";
@@ -184,7 +199,11 @@ export function validirajKorak(n: Korak, u: UnosDogadjaja): Greske {
       else if (u.tieri.length > NAJVISE_TIEROVA) g.tieri = `Najviše ${NAJVISE_TIEROVA} vrsta ulaznica.`;
       u.tieri.forEach((t, i) => {
         if (!t.naziv.trim()) g[`tier.${i}.naziv`] = "Upiši naziv ulaznice.";
-        if (centiIzUnosa(t.cijena) === null) g[`tier.${i}.cijena`] = "Upiši cijenu, npr. 25 ili 25,50.";
+        if (!u.besplatan) {
+          const centi = centiIzUnosa(t.cijena);
+          if (centi === null) g[`tier.${i}.cijena`] = "Upiši cijenu, npr. 25 ili 25,50.";
+          else if (centi === 0) g[`tier.${i}.cijena`] = "Cijena mora biti veća od 0. Za besplatan događaj odaberi „Besplatan”.";
+        }
         if (t.kolicina.trim() && !/^\d{1,7}$/.test(t.kolicina.trim())) g[`tier.${i}.kolicina`] = "Količina je cijeli broj.";
       });
       break;
@@ -214,7 +233,7 @@ export function najdaljiDopusteni(u: UnosDogadjaja): Korak {
 export function korakPolja(kljuc: string): Korak {
   const polje = kljuc.split(".")[0]!;
   if (polje === "tier" || polje === "tieri") return 4;
-  if (["pocetak", "kraj", "mjesto", "adresa", "grad"].includes(polje)) return 2;
+  if (["pocetak", "kraj", "mjesto", "adresa", "grad", "onlineLink"].includes(polje)) return 2;
   if (["opis", "slika", "galerija"].includes(polje)) return 3;
   if (["organizator", "email", "web"].includes(polje)) return 5;
   return 1;
@@ -226,7 +245,10 @@ export function korakPolja(kljuc: string): Korak {
  */
 export function korakZaKod(kod: string): Korak | null {
   if (["invalid_title", "slug_collision", "invalid_account_id", "invalid_event_type"].includes(kod)) return 1;
-  if (["invalid_venue_name", "invalid_venue_city", "invalid_dates"].includes(kod)) return 2;
+  if (
+    ["invalid_venue_name", "invalid_venue_city", "invalid_dates", "invalid_attendance_mode", "invalid_online_url"]
+      .includes(kod)
+  ) return 2;
   if (["invalid_cover_url", "invalid_description", "invalid_gallery", "invalid_gallery_url"].includes(kod)) return 3;
   if (kod === "invalid_tiers" || kod.startsWith("invalid_tier_")) return 4;
   return null;
@@ -243,9 +265,12 @@ export function zahtjev(u: UnosDogadjaja, eventId: string): Record<string, unkno
     starts_at: zidnoVrijemeUUtc(u.pocetak),
     ends_at: u.kraj ? zidnoVrijemeUUtc(u.kraj) : null,
     timezone: ZONA,
+    // online bez mjesta: jezgra (events-organizer) upiše „Online”
     venue_name: u.mjesto.trim(),
     venue_address: prazno(u.adresa),
     venue_city: u.grad.trim(),
+    attendance_mode: u.online ? "online" : "physical",
+    online_url: u.online ? prazno(u.onlineLink) : null,
     description_hr: prazno(u.opis),
     cover_image_url: prazno(u.slika),
     gallery: u.galerija.map((url) => ({ url: url.trim() })),
@@ -254,7 +279,7 @@ export function zahtjev(u: UnosDogadjaja, eventId: string): Record<string, unkno
     organizer_web: prazno(u.web),
     tiers: u.tieri.map((t) => ({
       title: t.naziv.trim(),
-      price_cents: centiIzUnosa(t.cijena),
+      price_cents: u.besplatan ? 0 : centiIzUnosa(t.cijena),
       inventory_total: t.kolicina.trim() ? Number(t.kolicina.trim()) : null,
       imenska: t.imenska,
     })),
@@ -281,6 +306,9 @@ export interface Skica {
     description_hr?: string | null;
     cover_image_url?: string | null;
     gallery?: Array<{ url?: unknown }> | null;
+    attendance_mode?: string | null;
+    /** Iz `event_access` (Worker ga spljošti u event). */
+    online_url?: string | null;
     organizer_name?: string | null;
     organizer_email?: string | null;
     organizer_web?: string | null;
@@ -321,20 +349,27 @@ export function unosIzSkice(s: Skica): UnosDogadjaja {
   const e = s.event ?? {};
   const zona = e.timezone || ZONA;
   const tekst = (x: string | null | undefined) => x ?? "";
+  const online = e.attendance_mode === "online";
+  // „Online” je zamjena jezgre za mjesto koje online događaj nema; u formi je prazno
+  const bezZamjene = (x: string | null | undefined) => (online && x === "Online" ? "" : tekst(x));
+  const besplatan = s.tiers.length > 0 && s.tiers.every((t) => t.price_cents === 0);
   return {
     accountId: s.account_id,
     naslov: s.title,
     vrsta: e.event_type || "ostalo",
     pocetak: utcUZidnoVrijeme(e.starts_at, zona),
     kraj: utcUZidnoVrijeme(e.ends_at, zona),
-    mjesto: tekst(e.venue_name),
+    mjesto: bezZamjene(e.venue_name),
     adresa: tekst(e.venue_address),
-    grad: tekst(e.venue_city),
+    grad: bezZamjene(e.venue_city),
     opis: tekst(e.description_hr),
     slika: tekst(e.cover_image_url),
     galerija: (Array.isArray(e.gallery) ? e.gallery : [])
       .map((g) => (typeof g?.url === "string" ? g.url : ""))
       .filter(Boolean),
+    online,
+    onlineLink: tekst(e.online_url),
+    besplatan,
     organizator: e.organizer_name && e.organizer_name !== s.title ? e.organizer_name : "",
     email: tekst(e.organizer_email),
     web: tekst(e.organizer_web),
@@ -342,7 +377,7 @@ export function unosIzSkice(s: Skica): UnosDogadjaja {
       ? s.tiers.map((t) => ({
           id: t.id,
           naziv: t.title,
-          cijena: unosIzCenti(t.price_cents),
+          cijena: besplatan ? "" : unosIzCenti(t.price_cents),
           kolicina: t.inventory_total === null ? "" : String(t.inventory_total),
           imenska: t.imenska,
         }))
@@ -367,6 +402,7 @@ export function zahtjevIzmjene(u: UnosDogadjaja, izvorniTierIds: readonly string
     cover_image_url: u.slika.trim(),
     organizer_email: u.email.trim(),
     organizer_web: u.web.trim(),
+    online_url: u.online ? u.onlineLink.trim() : "",
     tiers: (tiers as Array<Record<string, unknown>>).map((t, i) => ({
       ...(u.tieri[i]!.id ? { id: u.tieri[i]!.id } : {}),
       ...t,
@@ -388,7 +424,7 @@ export interface PodaciPregleda {
   termin: string;
   /** Datum iznad kartice, kao na popisu događaja. */
   zaglavlje: ZaglavljeGrupe;
-  /** „Dom sportova, Zagreb” */
+  /** „Dom sportova, Zagreb”; online događaj „Online” */
   mjesto: string | null;
   vrsta: string | null;
   organizator: string | null;
@@ -414,10 +450,10 @@ export function podaciPregleda(u: UnosDogadjaja, sada: Date = new Date()): Podac
     startsAt,
     termin: terminKartice(startsAt, endsAt, ZONA),
     zaglavlje: zaglavljeGrupe(startsAt, ZONA, sada),
-    mjesto: [u.mjesto.trim(), u.grad.trim()].filter(Boolean).join(", ") || null,
+    mjesto: u.online ? "Online" : [u.mjesto.trim(), u.grad.trim()].filter(Boolean).join(", ") || null,
     vrsta: VRSTE.find(([v]) => v === u.vrsta)?.[1] ?? null,
     organizator: u.organizator.trim() || u.naslov.trim() || null,
-    cijenaOdCenti: cijene.length ? Math.min(...cijene) : null,
+    cijenaOdCenti: u.besplatan ? 0 : cijene.length ? Math.min(...cijene) : null,
     slika: HTTPS.test(slika) ? slika : null,
   };
 }

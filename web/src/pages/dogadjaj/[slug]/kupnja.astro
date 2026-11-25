@@ -15,6 +15,7 @@ import Ikona from "../../../components/Ikona.astro";
 import KupnjaForma from "../../../components/KupnjaForma.tsx";
 import StranicaGreske from "../../../components/StranicaGreske.astro";
 import { ZADANA_ZONA, kratkiDatum, sigurniUrl } from "../../../lib/format.ts";
+import { kratkoMjesto } from "../../../lib/karta.ts";
 import { CACHE_KUPNJA } from "../../../lib/stranica.ts";
 
 const slug = Astro.params.slug ?? "";
@@ -38,7 +39,7 @@ const d = dogadjaj?.event ?? null;
 const zona = d?.timezone || ZADANA_ZONA;
 const natrag = dogadjaj ? `/dogadjaj/${encodeURIComponent(dogadjaj.slug)}` : "/";
 const podnaslov = dogadjaj
-  ? [dogadjaj.title, kratkiDatum(d?.starts_at, zona), [d?.venue_name, d?.venue_city].filter(Boolean).join(", ")]
+  ? [dogadjaj.title, kratkiDatum(d?.starts_at, zona), kratkoMjesto(d)]
       .filter(Boolean)
       .join(" · ")
   : "";

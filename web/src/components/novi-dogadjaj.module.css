@@ -732,3 +732,18 @@ button.malaPoveznica {
     padding: 4px;
   }
 }
+
+/* Besplatan događaj: umjesto polja cijene (2026-11-25). */
+.besplatno {
+  display: flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.skupina > .mutno {
+  display: block;
+  margin-top: 8px;
+}

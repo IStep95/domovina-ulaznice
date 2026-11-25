@@ -242,7 +242,7 @@ async function onChargeRefunded(env: Env, c: Stripe.Charge, account: string | nu
 
 // ------------------------------------------------------------------ dostava
 
-async function deliverTicketsEmail(
+export async function deliverTicketsEmail(
   env: Env,
   orderId: string,
   confirm: ConfirmResponse,
@@ -433,6 +433,8 @@ export async function eventInfoForOrder(env: Env, orderId: string): Promise<Even
       venue_name: ev.event?.venue_name ?? null,
       venue_city: ev.event?.venue_city ?? null,
       organizer_name: ev.event?.organizer_name ?? null,
+      online_url:
+        ev.event?.attendance_mode === "online" ? await api.onlineLink(env, ev.campaign_id).catch(() => null) : null,
     };
   } catch (e) {
     console.error(`[webhook] podaci o eventu za ${orderId}: ${String(e)}`);
