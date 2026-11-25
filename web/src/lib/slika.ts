@@ -2,7 +2,7 @@
 // Prije slanja preglednik sliku smanji na najviše NAJVECA_STRANICA px po duljoj
 // stranici i pretvori u WebP (ili JPEG gdje canvas ne zna WebP, npr. stariji
 // Safari), pa fotografija s mobitela od 8 MB postane ~300 kB. Worker je šalje u
-// Supabase Storage (`POST /api/organizator/slika`, bucket `pinka-covers`).
+// Supabase Storage (`POST /api/organizator/slika`, bucket `ulaznice-media`).
 // Čiste funkcije su testirane u web/test/slika.test.ts; `pripremiSliku` treba
 // DOM (canvas) i provjerava se ručno u pregledniku.
 

@@ -215,6 +215,7 @@ test("account.updated osvježava rail organizatora", async () => {
   assert.equal(res.body.outcome, "rail_updated");
   const patch = t.calls.find((c) => c.method === "PATCH" && c.url.includes("organizer_payment_rails"));
   assert.ok(patch, "mora otići PATCH na organizer_payment_rails");
+  assert.equal(patch!.headers["content-profile"], "ulaznice");
   assert.ok(patch!.body.includes('"stripe_charges_enabled":true'));
 });
 

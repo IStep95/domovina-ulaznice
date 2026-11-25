@@ -1,9 +1,9 @@
 // Rate limit nad KV-om — grubi brojač po IP-u.
 //
-// Zašto je uopće ovdje, a ne u bazi: `create_ticket_order` u pinka_finance ima
-// limit od 10 narudžbi/h, ali veže ga na `contributor_account_id` ili
-// `declared_payer_address`. Web kupac nema ni jedno (gost bez računa i bez
-// walleta), pa je taj uvjet uvijek prazan i limit ne postoji — Zapisnik U1
+// Zašto je uopće ovdje, a ne u bazi: `create_ticket_order` u shemi `ulaznice` ima
+// limit od 10 narudžbi/h, ali veže ga na `buyer_account_id` (prije i na
+// `declared_payer_address`). Web kupac je gost bez računa, pa je taj uvjet
+// uvijek prazan i limit ne postoji — Zapisnik U1
 // §Gotcha 5. Rate limiting narudžbi je obaveza Workera.
 //
 // KV nema atomarni increment; ovo je namjerno približno (u najgorem slučaju

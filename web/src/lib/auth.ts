@@ -285,7 +285,7 @@ export const kreirajDogadjaj = (
 
 /**
  * Upload slike iz editora (`POST /api/organizator/slika` → Storage
- * `pinka-covers`). Tijelo je sama slika (već smanjena, `lib/slika.ts`);
+ * `ulaznice-media`). Tijelo je sama slika (već smanjena, `lib/slika.ts`);
  * vraća javni URL koji ide u `cover_image_url` ili galeriju.
  */
 export const ucitajSliku = (token: string, slika: Blob): Promise<{ url: string }> =>

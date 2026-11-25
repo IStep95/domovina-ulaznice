@@ -69,10 +69,10 @@ export interface ApiState {
   /** `events-organizer` create: status i tijelo odgovora; pozivi za provjeru. */
   kreiranjeStatus: number;
   kreiranje: Record<string, unknown>;
-  /** Storage `pinka-covers` (upload slike iz editora): status i tijelo odgovora. */
+  /** Storage `ulaznice-media` (upload slike iz editora): status i tijelo odgovora. */
   slikaStatus: number;
   slikaOdgovor: string;
-  /** Skica za uređivanje (`GET /api/organizator/dogadjaj/:id` → PostgREST `campaigns` s embedom). */
+  /** Skica za uređivanje (`GET /api/organizator/dogadjaj/:id` → PostgREST `ulaznice.events` s embedom). */
   skica: Array<Record<string, unknown>>;
   /** `organizer_payment_rails.invoice_provider` — tko izdaje račun kupcu. */
   invoiceProvider: string;
@@ -118,7 +118,7 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     kreiranjeStatus: 200,
     slikaStatus: 200,
     skica: [],
-    slikaOdgovor: '{"Key":"pinka-covers/x"}',
+    slikaOdgovor: '{"Key":"ulaznice-media/x"}',
     kreiranje: { id: "dogadjaj-id", slug: "novi-dogadjaj", existing: false, event_created: true },
     organizerOverview: { accounts: [{ id: "acc-1", name: "Test udruga", allowlisted: true, has_record: true }], events: [] },
     invoiceProvider: "organizator",
@@ -245,6 +245,16 @@ function installFetchStub(state: ApiState) {
     const body = typeof init?.body === "string" ? init.body : "";
     const headers = normHeaders(init?.headers);
     calls.push({ url, method, body, headers });
+
+    // ---- domovina-api: SVAKI PostgREST poziv mora ciljati shemu `ulaznice`
+    // (čitanje `Accept-Profile`, RPC i pisanje `Content-Profile`). Bez profila
+    // PostgREST pada na `public`, a stara Pinkina shema više nema ticketinga.
+    if (url.includes("/rest/v1/")) {
+      const profil = method === "GET" || method === "HEAD" ? headers["accept-profile"] : headers["content-profile"];
+      if (profil !== "ulaznice") {
+        throw new Error(`PostgREST poziv bez profila ulaznice (${profil ?? "nema"}): ${method} ${url}`);
+      }
+    }
 
     // ---- domovina-api: edge funkcije
     if (url.includes("/functions/v1/events-feed")) return json(feedPayload(state));
@@ -395,11 +405,11 @@ function installFetchStub(state: ApiState) {
       if (headers.authorization !== `Bearer ${SERVICE_KEY}`) throw new Error("event_access čitan bez service ključa");
       return json(state.onlineUrl ? [{ online_url: state.onlineUrl }] : []);
     }
-    if (url.includes("/rest/v1/campaigns") && url.includes("campaign_tiers(")) {
+    if (url.includes("/rest/v1/events?") && url.includes("ticket_tiers(")) {
       if (!headers.authorization?.startsWith("Bearer ")) throw new Error("skica čitana BEZ korisnikovog JWT-a");
       return json(state.skica);
     }
-    if (url.includes("/rest/v1/campaigns")) {
+    if (url.includes("/rest/v1/events?")) {
       return json([{ id: CAMPAIGN, account_id: "acc-1" }]);
     }
     if (url.includes("/rest/v1/organizer_payment_rails")) {
@@ -410,10 +420,11 @@ function installFetchStub(state: ApiState) {
         invoice_provider: state.invoiceProvider,
       }]);
     }
-    if (url.includes("/rest/v1/contributions")) {
+    if (url.includes("/rest/v1/orders?")) {
+      if (!url.includes("event_id")) throw new Error("orders upit bez event_id u selectu");
       return json([{
         id: idFromEq(url),
-        campaign_id: CAMPAIGN,
+        event_id: CAMPAIGN,
         tier_id: TIER,
         state: state.orderState,
         quantity: 2,
@@ -428,6 +439,7 @@ function installFetchStub(state: ApiState) {
       }]);
     }
     if (url.includes("/rest/v1/tickets")) {
+      if (!/[?&](order_id|event_id)=eq\./.test(url)) throw new Error(`tickets upit bez order_id/event_id filtra: ${url}`);
       return json(state.tickets.map((t) => ({
         serial: t.serial,
         holder_name: t.holder_name ?? null,
