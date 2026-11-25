@@ -550,3 +550,54 @@ test("skica: greška jezgre → 502 bez drugog pokušaja (ulaznice uvijek ima at
     globalThis.fetch = izvorni;
   }
 });
+
+// -------------------------------------------------------------- odobravanje
+
+test("slanje na odobrenje i admin rute idu korisnikovim JWT-om na events-organizer s pravom akcijom", async () => {
+  t = testEnv();
+  t.api.kreiranje = { ok: true };
+  const id = CAMPAIGN;
+  for (const [put, metoda, akcija, tijelo] of [
+    [`/api/organizator/dogadjaj/${id}/posalji`, "POST", "submit", undefined],
+    ["/api/admin/odobrenja", "GET", "review_queue", undefined],
+    [`/api/admin/dogadjaj/${id}/odobri`, "POST", "approve", undefined],
+    [`/api/admin/dogadjaj/${id}/vrati`, "POST", "reject", { napomena: "  Dodaj opis  ", action: "approve" }],
+  ] as const) {
+    const prije = t.calls.length;
+    const { status } = await callJson(t, put, { method: metoda, headers: auth(), body: tijelo });
+    assert.equal(status, 200, put);
+    const poziv = t.calls.slice(prije).find((c) => c.url.includes("/functions/v1/events-organizer"));
+    assert.equal(poziv!.headers.authorization, "Bearer jwt-organizatora", put);
+    const poslano = JSON.parse(poziv!.body);
+    assert.equal(poslano.action, akcija, put);
+    if (akcija !== "review_queue") assert.equal(poslano.campaign_id, id, put);
+    if (akcija === "reject") assert.equal(poslano.note, "Dodaj opis");
+  }
+});
+
+test("odobravanje: bez prijave 401, loš id 400, preduga napomena 400 — sve bez mreže", async () => {
+  t = testEnv();
+  assert.equal((await callJson(t, "/api/admin/odobrenja", { method: "GET" })).status, 401);
+  assert.equal((await callJson(t, `/api/admin/dogadjaj/${CAMPAIGN}/odobri`, { body: {} })).status, 401);
+  assert.equal((await callJson(t, "/api/admin/dogadjaj/x/odobri", { headers: auth(), body: {} })).status, 400);
+  assert.equal((await callJson(t, "/api/organizator/dogadjaj/x/posalji", { headers: auth(), body: {} })).status, 400);
+  const dugo = await callJson<{ error: string }>(t, `/api/admin/dogadjaj/${CAMPAIGN}/vrati`, {
+    headers: auth(),
+    body: { napomena: "x".repeat(1001) },
+  });
+  assert.equal(dugo.status, 400);
+  assert.equal(dugo.body.error, "invalid_review_note");
+  assert.equal(t.calls.filter((c) => c.url.includes("events-organizer")).length, 0);
+});
+
+test("korisnik koji nije admin platforme dobiva 403 not_authorized", async () => {
+  t = testEnv();
+  t.api.kreiranjeStatus = 403;
+  t.api.kreiranje = { error: "not_authorized" };
+  const { status, body } = await callJson<{ error: string }>(t, `/api/admin/dogadjaj/${CAMPAIGN}/odobri`, {
+    headers: auth(),
+    body: {},
+  });
+  assert.equal(status, 403);
+  assert.equal(body.error, "not_authorized");
+});

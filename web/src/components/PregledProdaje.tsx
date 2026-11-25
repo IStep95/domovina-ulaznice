@@ -11,11 +11,20 @@
 // accountu u kodu, i to je namjerno: filter u klijentu je ukras, ne zaštita.
 // „Zauzeto” (ne „prodano”) uključuje i rezervacije: v. zbrojDogadjaja.
 import { useEffect, useState } from "react";
-import { dohvatiPregled, jeIstekla, obrisiSkicu, preuzmiHoldere, type OrgEvent, type OrgPregled } from "../lib/auth.ts";
+import {
+  dohvatiPregled,
+  jeIstekla,
+  obrisiSkicu,
+  posaljiNaOdobrenje,
+  preuzmiHoldere,
+  type OrgEvent,
+  type OrgPregled,
+} from "../lib/auth.ts";
 import { cijena, eur } from "../lib/format.ts";
 import { datumDogadjaja, imeCsvDatoteke, stanjeDogadjaja, zbrojDogadjaja } from "../lib/organizator.ts";
 import { porukaIzGreske } from "../lib/poruke.ts";
 import Banner from "./Banner.tsx";
+import Odobrenja from "./Odobrenja.tsx";
 import SaPrijavom, { type SesijaOtoka } from "./SaPrijavom.tsx";
 import TrakaSesije from "./TrakaSesije.tsx";
 import gumb from "./gumb.module.css";
@@ -29,6 +38,8 @@ export default function PregledProdaje() {
 function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
   const [pregled, postaviPregled] = useState<OrgPregled | null>(null);
   const [greska, postaviGresku] = useState<string | null>(null);
+  // Povećava se nakon odobrenja: adminov vlastiti događaj u „Događaji” postaje objavljen.
+  const [osvjezi, postaviOsvjezi] = useState(0);
 
   useEffect(() => {
     let vazi = true;
@@ -42,7 +53,7 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
     return () => {
       vazi = false;
     };
-  }, [sesija.access_token, istekla]);
+  }, [sesija.access_token, istekla, osvjezi]);
 
   return (
     <div className={css.pregled}>
@@ -59,6 +70,10 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
         </p>
       )}
 
+      {pregled?.platform_admin && (
+        <Odobrenja token={sesija.access_token} istekla={istekla} odobren={() => postaviOsvjezi((n) => n + 1)} />
+      )}
+
       {pregled && pregled.accounts.length > 0 && (
         <section className={css.odjeljak} aria-labelledby="pregled-organizatori">
           <h2 id="pregled-organizatori" className={css.podnaslov}>
@@ -68,8 +83,8 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
             <div key={a.id} className={css.racun}>
               <strong>{a.name}</strong>
               <div className={css.oznake}>
-                <span className={`${oznaka.oznaka} ${a.allowlisted ? oznaka.ok : oznaka.wait}`}>
-                  {a.allowlisted ? "objava dopuštena" : "objava još nije odobrena"}
+                <span className={`${oznaka.oznaka} ${a.allowlisted ? oznaka.ok : oznaka.neutral}`}>
+                  {a.allowlisted ? "samostalna objava dopuštena" : "događaji idu na odobrenje"}
                 </span>
                 <span className={`${oznaka.oznaka} ${a.has_record ? oznaka.ok : oznaka.wait}`}>
                   {a.has_record ? "podaci izdavatelja upisani" : "nedostaju podaci izdavatelja (DAC7)"}
@@ -95,6 +110,15 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
               obrisan={() =>
                 postaviPregled((p) => p && { ...p, events: p.events.filter((x) => x.campaign_id !== d.campaign_id) })
               }
+              promijenjen={(izmjena) =>
+                postaviPregled(
+                  (p) =>
+                    p && {
+                      ...p,
+                      events: p.events.map((x) => (x.campaign_id === d.campaign_id ? { ...x, ...izmjena } : x)),
+                    },
+                )
+              }
             />
           ))}
         </section>
@@ -113,18 +137,23 @@ function Dogadjaj({
   token,
   istekla,
   obrisan,
+  promijenjen,
 }: {
   d: OrgEvent;
   token: string;
   istekla: () => void;
   obrisan: () => void;
+  promijenjen: (izmjena: Partial<OrgEvent>) => void;
 }) {
   const [radi, postaviRadi] = useState(false);
   const [brise, postaviBrise] = useState(false);
+  const [salje, postaviSalje] = useState(false);
   const skica = d.state === "draft";
+  const poslana = skica && !!d.submitted_at;
+  const vracena = skica && !d.submitted_at && !!d.review_note;
   const [greska, postaviGresku] = useState<string | null>(null);
   const { zauzeto, prihod, imenskih } = zbrojDogadjaja(d);
-  const stanje = stanjeDogadjaja(d.state);
+  const stanje = stanjeDogadjaja(d);
   const meta = [datumDogadjaja(d), d.event?.venue_city].filter(Boolean).join(" · ");
 
   async function preuzmi() {
@@ -157,6 +186,20 @@ function Dogadjaj({
       if (jeIstekla(e)) istekla();
       else postaviGresku(porukaIzGreske(e));
       postaviBrise(false);
+    }
+  }
+
+  async function posalji() {
+    postaviGresku(null);
+    postaviSalje(true);
+    try {
+      await posaljiNaOdobrenje(token, d.campaign_id);
+      promijenjen({ submitted_at: new Date().toISOString() });
+    } catch (e) {
+      if (jeIstekla(e)) istekla();
+      else postaviGresku(porukaIzGreske(e));
+    } finally {
+      postaviSalje(false);
     }
   }
 
@@ -194,10 +237,32 @@ function Dogadjaj({
         </ul>
       )}
 
+      {vracena && (
+        <Banner ton="wait">
+          Vraćeno na doradu: {d.review_note} Kad doradiš skicu, pošalji je ponovno.
+        </Banner>
+      )}
+      {poslana && (
+        <p className={css.mutno}>
+          Čeka odobrenje administratora; nakon odobrenja događaj postaje javan. Skicu i dalje možeš urediti.
+        </p>
+      )}
+
       {greska && <Banner ton="error">{greska}</Banner>}
 
       {(imenskih || skica) && (
         <div className={css.akcije}>
+          {skica && !poslana && (
+            <button
+              type="button"
+              className={`${gumb.gumb} ${gumb.primarni}`}
+              disabled={salje}
+              aria-busy={salje || undefined}
+              onClick={posalji}
+            >
+              {salje ? "Šaljem…" : "Pošalji na odobrenje"}
+            </button>
+          )}
           {skica && (
             <>
               <a className={`${gumb.gumb} ${gumb.sekundarni}`} href={`/organizator/novi?uredi=${d.campaign_id}`}>

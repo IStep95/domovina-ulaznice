@@ -109,7 +109,7 @@ function IzborDogadjaja({ sesija, odjava, istekla }: SesijaOtoka) {
                 <span className={css.izborTekst}>
                   <strong>{d.title}</strong>
                   <span className={css.mutno}>
-                    {[d.event?.venue_city, stanjeDogadjaja(d.state).tekst].filter(Boolean).join(" · ")}
+                    {[d.event?.venue_city, stanjeDogadjaja(d).tekst].filter(Boolean).join(" · ")}
                   </span>
                 </span>
                 <span aria-hidden="true">→</span>

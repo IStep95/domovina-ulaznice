@@ -48,9 +48,22 @@ test("zbrojDogadjaja: zauzeto i prihod u cijelim centima; imenski tier otvara iz
 });
 
 test("stanjeDogadjaja: active → objavljen (ok), draft → skica, ostalo kako je stiglo", () => {
-  assert.deepEqual(stanjeDogadjaja("active"), { tekst: "objavljen", ton: "ok" });
-  assert.deepEqual(stanjeDogadjaja("draft"), { tekst: "skica", ton: "wait" });
-  assert.deepEqual(stanjeDogadjaja("closed"), { tekst: "closed", ton: "neutral" });
+  assert.deepEqual(stanjeDogadjaja({ state: "active" }), { tekst: "objavljen", ton: "ok" });
+  assert.deepEqual(stanjeDogadjaja({ state: "draft" }), { tekst: "skica", ton: "wait" });
+  assert.deepEqual(stanjeDogadjaja({ state: "closed" }), { tekst: "closed", ton: "neutral" });
+});
+
+test("stanjeDogadjaja: skica poslana na odobrenje i vraćena na doradu", () => {
+  const poslana = { state: "draft", submitted_at: "2026-11-25T17:00:00Z" };
+  assert.deepEqual(stanjeDogadjaja(poslana), { tekst: "čeka odobrenje", ton: "neutral" });
+  assert.deepEqual(stanjeDogadjaja({ state: "draft", submitted_at: null, review_note: "Dodaj opis" }), {
+    tekst: "vraćeno na doradu",
+    ton: "wait",
+  });
+  // ponovno poslana: stara napomena ostaje u bazi, ali stanje je opet „čeka odobrenje”
+  assert.equal(stanjeDogadjaja({ ...poslana, review_note: "Dodaj opis" }).tekst, "čeka odobrenje");
+  // odobren događaj ostaje „objavljen” bez obzira na submitted_at
+  assert.equal(stanjeDogadjaja({ ...poslana, state: "active" }).tekst, "objavljen");
 });
 
 test("imeCsvDatoteke: slug, bez sluga prvih 8 znakova campaign_id, bez opasnih znakova", () => {

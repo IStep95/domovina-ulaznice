@@ -352,6 +352,10 @@ const RUTE_ORGANIZATORA = [
   'app.get("/api/organizator/dogadjaj/:id"',
   'app.put("/api/organizator/dogadjaj/:id"',
   'app.delete("/api/organizator/dogadjaj/:id"',
+  'app.post("/api/organizator/dogadjaj/:id/posalji"',
+  'app.get("/api/admin/odobrenja"',
+  'app.post("/api/admin/dogadjaj/:id/odobri"',
+  'app.post("/api/admin/dogadjaj/:id/vrati"',
   'app.post("/api/organizator/slika"',
   'app.post("/api/skener/sken"',
 ];
@@ -411,6 +415,11 @@ const JEZGRA_ORGANIZATORA = [
   "slug_collision",
   "not_authorized",
   "not_authenticated",
+  // odobravanje (migracija ulaznice_odobrenje)
+  "event_no_tiers",
+  "event_not_submitted",
+  "event_no_working_rail",
+  "invalid_review_note",
 ];
 /** Klijent: api.ts, kodIzGreske i Googleov povratak (src/lib/auth.ts). */
 const KLIJENT_ORGANIZATORA = [...KLIJENT, "google_neuspjelo"];

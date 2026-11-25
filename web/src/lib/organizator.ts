@@ -30,11 +30,19 @@ export function zbrojDogadjaja(d: Pick<OrgEvent, "tiers">): ZbrojDogadjaja {
   return { zauzeto, prihod, imenskih: d.tiers.some((t) => t.imenska) };
 }
 
-/** Stanje kampanje → tekst i ton oznake. Nepoznato stanje se prikazuje kako je stiglo. */
-export function stanjeDogadjaja(state: string): { tekst: string; ton: "ok" | "neutral" | "wait" } {
-  if (state === "active") return { tekst: "objavljen", ton: "ok" };
-  if (state === "draft") return { tekst: "skica", ton: "wait" };
-  return { tekst: state, ton: "neutral" };
+/**
+ * Stanje događaja → tekst i ton oznake. Skica ima tri lica: obična, poslana na
+ * odobrenje (`submitted_at`) i vraćena na doradu (`review_note` bez
+ * `submitted_at`). Nepoznato stanje se prikazuje kako je stiglo.
+ */
+export function stanjeDogadjaja(
+  d: Pick<OrgEvent, "state" | "submitted_at" | "review_note">,
+): { tekst: string; ton: "ok" | "neutral" | "wait" } {
+  if (d.state === "active") return { tekst: "objavljen", ton: "ok" };
+  if (d.state === "draft" && d.submitted_at) return { tekst: "čeka odobrenje", ton: "neutral" };
+  if (d.state === "draft" && d.review_note) return { tekst: "vraćeno na doradu", ton: "wait" };
+  if (d.state === "draft") return { tekst: "skica", ton: "wait" };
+  return { tekst: d.state, ton: "neutral" };
 }
 
 /**

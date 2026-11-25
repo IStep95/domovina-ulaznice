@@ -259,6 +259,10 @@ export interface OrgEvent {
   title: string;
   state: string;
   visibility: string;
+  /** Skica poslana na odobrenje; null = nije poslana ili ju je admin vratio. */
+  submitted_at?: string | null;
+  /** Napomena admina kad je skicu vratio na doradu. */
+  review_note?: string | null;
   event: { venue_city?: string; starts_at?: string | null; timezone?: string } | null;
   tiers: OrgTier[];
 }
@@ -266,6 +270,31 @@ export interface OrgEvent {
 export interface OrgPregled {
   accounts: Array<{ id: string; name: string; allowlisted: boolean; has_record: boolean }>;
   events: OrgEvent[];
+  /** Korisnik je admin platforme (`ulaznice.platform_admins`): vidi red za odobrenje. */
+  platform_admin?: boolean;
+}
+
+/** Skica u redu za odobrenje (`review_queue`), za admina platforme. */
+export interface SkicaNaOdobrenju {
+  campaign_id: string;
+  account_name: string;
+  slug: string;
+  title: string;
+  submitted_at: string;
+  /** Ima li organizator čime naplatiti; bez toga jezgra odbije odobrenje. */
+  rail_ready: boolean;
+  event: {
+    event_type?: string;
+    attendance_mode?: string;
+    venue_name?: string;
+    venue_city?: string;
+    starts_at?: string | null;
+    timezone?: string;
+    description_hr?: string | null;
+    organizer_name?: string;
+    organizer_email?: string | null;
+  } | null;
+  tiers: Array<{ id: string; title: string; price_cents: number; inventory_total: number | null }>;
 }
 
 export const dohvatiPregled = (token: string): Promise<OrgPregled> =>
@@ -302,6 +331,26 @@ export const azurirajDogadjaj = (token: string, id: string, tijelo: Record<strin
 /** Brisanje skice (`DELETE` → `delete_event_draft`; objavljeni događaj jezgra odbije). */
 export const obrisiSkicu = (token: string, id: string): Promise<unknown> =>
   zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}`, { method: "DELETE" }, token);
+
+/** Skica → red za odobrenje (`submit_event_for_review`; ponovno slanje je no-op). */
+export const posaljiNaOdobrenje = (token: string, id: string): Promise<unknown> =>
+  zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}/posalji`, { method: "POST" }, token);
+
+/** Admin platforme: skice koje čekaju odobrenje, najstarije prve. */
+export const dohvatiOdobrenja = (token: string): Promise<{ events: SkicaNaOdobrenju[] }> =>
+  zahtjev("/api/admin/odobrenja", { method: "GET" }, token);
+
+/** Admin platforme: odobri → događaj objavljen i javan. */
+export const odobriDogadjaj = (token: string, id: string): Promise<unknown> =>
+  zahtjev(`/api/admin/dogadjaj/${encodeURIComponent(id)}/odobri`, { method: "POST" }, token);
+
+/** Admin platforme: vrati na doradu s napomenom za organizatora. */
+export const vratiDogadjaj = (token: string, id: string, napomena: string): Promise<unknown> =>
+  zahtjev(
+    `/api/admin/dogadjaj/${encodeURIComponent(id)}/vrati`,
+    { method: "POST", body: JSON.stringify({ napomena }) },
+    token,
+  );
 
 /** Izvoz sudionika (CSV); s tokenom, pa se datoteka dohvaća fetchom, ne linkom. */
 export async function preuzmiHoldere(token: string, campaignId: string): Promise<Blob> {

@@ -382,6 +382,13 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   campaign_rate_limited: "Previše novih događaja u kratkom vremenu. Pokušaj za koju minutu.",
   slug_collision: "Događaj s tim nazivom već postoji. Promijeni naziv.",
 
+  // ── jezgra: odobravanje (submit_event_for_review, approve_event, reject_event) ──
+  event_no_tiers: "Dodaj barem jednu vrstu ulaznice prije slanja na odobrenje.",
+  event_not_submitted: "Ta skica više ne čeka odobrenje. Osvježi stranicu.",
+  event_no_working_rail:
+    "Događaj s plaćenim ulaznicama ne može se objaviti dok organizator nema aktivan Stripe račun.",
+  invalid_review_note: "Napomena je preduga (najviše 1000 znakova).",
+
   // ── jezgra: events-checkin (redeem_ticket), skener ──
   not_authorized: "Nemate ovlasti za ovaj događaj.",
   not_authenticated: "Prijava je istekla. Prijavite se ponovno.",

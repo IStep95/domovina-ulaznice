@@ -827,6 +827,53 @@ app.delete("/api/organizator/dogadjaj/:id", async (c) => {
 });
 
 /**
+ * Slanje skice na odobrenje → `submit_event_for_review` (admin računa, skica s
+ * barem jednom vrstom ulaznica). Ponovno slanje je no-op.
+ */
+app.post("/api/organizator/dogadjaj/:id/posalji", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  return c.json(await api.organizatorAkcija(c.env, jwt, "submit", { campaign_id: id }));
+});
+
+/**
+ * Admin platforme (`ulaznice.platform_admins`): red skica koje čekaju
+ * odobrenje, odobri (→ objavljen i javan) i vrati na doradu s napomenom.
+ * Worker ne zna tko je admin: odlučuju RPC-i jezgre (`not_authorized` → 403).
+ */
+app.get("/api/admin/odobrenja", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  return c.json(await api.organizatorAkcija(c.env, jwt, "review_queue", {}));
+});
+
+app.post("/api/admin/dogadjaj/:id/odobri", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  return c.json(await api.organizatorAkcija(c.env, jwt, "approve", { campaign_id: id }));
+});
+
+app.post("/api/admin/dogadjaj/:id/vrati", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  let body: { napomena?: unknown } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    // napomena nije obavezna; prazno tijelo je u redu
+  }
+  const napomena = typeof body.napomena === "string" ? body.napomena.trim() : "";
+  if (napomena.length > 1000) return fail("invalid_review_note");
+  return c.json(await api.organizatorAkcija(c.env, jwt, "reject", { campaign_id: id, note: napomena }));
+});
+
+/**
  * Upload slike za editor (naslovna ili galerija) → Supabase Storage
  * `ulaznice-media/{uid}/{uuid}.{ext}`, korisnikovim JWT-om. Bucket i njegov RLS
  * su iz jezgre (`ulaznice_media_bucket`): javno čitanje, upis samo u vlastitu
