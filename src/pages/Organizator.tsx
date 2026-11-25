@@ -28,7 +28,7 @@ import Prijava from "./Prijava";
  * ⚠️ REVIEW(fable): „prodano" je `inventory_claimed`, što uključuje i
  * REZERVIRANE (pending) narudžbe, ne samo plaćene. Za organizatora je to
  * optimistična brojka — 20 min nakon isteka rezervacije padne. Točan broj
- * plaćenih traži ili dodatni upit nad `contributions` ili novo polje u
+ * plaćenih traži ili dodatni upit nad `ulaznice.orders` ili novo polje u
  * `organizer_overview`; nisam htio mijenjati RPC bez potrebe, ali stupac je
  * zato izrijekom nazvan „zauzeto", ne „prodano".
  */

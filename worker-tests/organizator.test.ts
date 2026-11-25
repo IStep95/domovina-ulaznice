@@ -239,9 +239,11 @@ test("skica za uređivanje se čita JWT-om; vrste po redu, nepostojeća → 404"
       slug: "skica",
       title: "Skica",
       state: "draft",
-      events: { venue_name: "Dvorana", gallery: [] },
+      // ulaznice.events: kampanja i event u jednom retku
+      venue_name: "Dvorana",
+      gallery: [],
       event_access: { online_url: "https://meet.example.com/x" },
-      campaign_tiers: [
+      ticket_tiers: [
         { id: "t2", title: "B", sort: 1 },
         { id: "t1", title: "A", sort: 0 },
       ],
@@ -257,10 +259,15 @@ test("skica za uređivanje se čita JWT-om; vrste po redu, nepostojeća → 404"
   // link iz event_access (1:1) se spljošti u event
   assert.deepEqual(body.event, { venue_name: "Dvorana", gallery: [], online_url: "https://meet.example.com/x" });
   assert.ok(!("event_access" in body));
+  assert.ok(!("venue_name" in body), "polja eventa idu u `event`, ne na vrh");
   assert.deepEqual(body.tiers.map((x) => x.id), ["t1", "t2"]);
-  const poziv = t.calls.find((c) => c.url.includes("/rest/v1/campaigns"))!;
+  const poziv = t.calls.find((c) => c.url.includes("/rest/v1/events?"))!;
   assert.equal(poziv.headers.authorization, "Bearer jwt-organizatora");
   assert.notEqual(poziv.headers.apikey, SERVICE_KEY);
+  assert.equal(poziv.headers["accept-profile"], "ulaznice");
+  assert.match(poziv.url, new RegExp(`/rest/v1/events\\?id=eq\\.${SKICA}&select=id,account_id,slug,title,state,`));
+  assert.match(poziv.url, /event_access\(online_url\),ticket_tiers\(/);
+  assert.ok(!/campaigns|campaign_tiers|type=eq/.test(poziv.url), "stara imena (campaigns/campaign_tiers) više ne postoje");
 
   t.api.skica = [];
   const nema = await callJson<{ error: string }>(t, `/api/organizator/dogadjaj/${SKICA}`, { headers: auth() });
@@ -331,15 +338,15 @@ const slika = (o: { jwt?: string; vrsta?: string; raw?: string } = {}) =>
     raw: o.raw ?? "RIFF....WEBP",
   });
 
-test("upload slike ide JWT-om u korisnikovu mapu u pinka-covers i vraća javni URL", async () => {
+test("upload slike ide JWT-om u korisnikovu mapu u ulaznice-media i vraća javni URL", async () => {
   t = testEnv();
   const { status, body } = await slika();
   assert.equal(status, 200);
   const poziv = t.calls.find((c) => c.url.includes("/storage/v1/object/"))!;
-  assert.match(poziv.url, new RegExp(`/storage/v1/object/pinka-covers/${UID}/[0-9a-f-]{36}\\.webp$`));
+  assert.match(poziv.url, new RegExp(`/storage/v1/object/ulaznice-media/${UID}/[0-9a-f-]{36}\\.webp$`));
   assert.equal(poziv.headers.authorization, `Bearer ${jwtS(UID)}`);
   assert.equal(poziv.headers.apikey, ANON_KEY);
-  assert.equal(body.url, poziv.url.replace("/object/pinka-covers/", "/object/public/pinka-covers/"));
+  assert.equal(body.url, poziv.url.replace("/object/ulaznice-media/", "/object/public/ulaznice-media/"));
 });
 
 test("upload bez prijave, s krivom vrstom ili bez sub-a ne ide u Storage", async () => {
@@ -415,6 +422,9 @@ test("izvoz sudionika je CSV s BOM-om i ; razdjelnikom", async () => {
   const text = await res.text();
   assert.match(text, /serial;ime;email;stanje;ulazak/);
   assert.match(text, /Ana Anić/);
+  const poziv = t.calls.find((c) => c.url.includes("/rest/v1/tickets"))!;
+  assert.match(poziv.url, new RegExp(`&event_id=eq\\.${CAMPAIGN}$`));
+  assert.equal(poziv.headers["accept-profile"], "ulaznice");
 });
 
 test("izvoz s neispravnim campaign_id ne ide na mrežu", async () => {
@@ -518,18 +528,24 @@ test("bez anon ključa prijava jasno pada, a zdravlje to pokazuje", async () => 
   assert.equal(body.error, "anon_key_missing");
 });
 
-test("skica: jezgra bez events_free_online → čita se bez attendance_mode i event_access", async () => {
+test("skica: greška jezgre → 502 bez drugog pokušaja (ulaznice uvijek ima attendance_mode i event_access)", async () => {
   t = testEnv();
-  t.api.skica = [{ id: SKICA, account_id: "acc-1", slug: "s", title: "S", state: "draft", events: { venue_name: "D" }, campaign_tiers: [] }];
   const izvorni = globalThis.fetch;
-  globalThis.fetch = (async (u: RequestInfo | URL, init?: RequestInit) =>
-    String(u).includes("event_access(") ? new Response("{}", { status: 400 }) : izvorni(u, init)) as typeof fetch;
+  let pokusaja = 0;
+  globalThis.fetch = (async (u: RequestInfo | URL, init?: RequestInit) => {
+    if (String(u).includes("/rest/v1/events?")) {
+      pokusaja += 1;
+      return new Response("{}", { status: 400 });
+    }
+    return izvorni(u, init);
+  }) as typeof fetch;
   try {
-    const { status, body } = await callJson<{ event: { venue_name: string } }>(t, `/api/organizator/dogadjaj/${SKICA}`, {
+    const { status, body } = await callJson<{ error: string }>(t, `/api/organizator/dogadjaj/${SKICA}`, {
       headers: auth(),
     });
-    assert.equal(status, 200);
-    assert.equal(body.event.venue_name, "D");
+    assert.equal(status, 502);
+    assert.equal(body.error, "api_rest_error");
+    assert.equal(pokusaja, 1);
   } finally {
     globalThis.fetch = izvorni;
   }

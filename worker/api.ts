@@ -1,4 +1,4 @@
-// Tanki klijent za domovina-api (ticketing jezgra, shema pinka_finance).
+// Tanki klijent za domovina-api (ticketing jezgra, shema `ulaznice`).
 //
 // Ovaj repo NEMA vlastitu kopiju ulaznica, narudžbi ni inventoryja — svaki
 // takav podatak dolazi odavde (docs/02-arhitektura.md §1). Dvije vrste poziva:
@@ -16,6 +16,16 @@ import type { Env } from "./env";
 import { HttpError } from "./env";
 
 export const SIGNATURE_HEADER = "x-ulaznice-signature";
+
+/**
+ * PostgREST shema jezgre (`Accept-Profile` / `Content-Profile`). Ticketing je
+ * od domovina-api `20261125150000` u vlastitoj shemi `ulaznice` (prije
+ * u Pinkinoj financijskoj shemi): `campaigns`+`events` → `events`, `campaign_tiers` →
+ * `ticket_tiers`, `contributions` → `orders`; `campaign_id` → `event_id`,
+ * `contribution_id` → `order_id`. Id događaja je stari `campaigns.id`, pa JSON
+ * koji Worker vraća i dalje nosi `campaign_id`.
+ */
+export const SHEMA = "ulaznice";
 
 // ---------------------------------------------------------------- HMAC potpis
 
@@ -90,7 +100,7 @@ async function rest<T>(env: Env, path: string): Promise<T> {
     headers: {
       apikey: env.DOMOVINA_API_SERVICE_KEY,
       Authorization: `Bearer ${env.DOMOVINA_API_SERVICE_KEY}`,
-      "Accept-Profile": "pinka_finance",
+      "Accept-Profile": SHEMA,
       accept: "application/json",
     },
   });
@@ -109,7 +119,7 @@ async function restRpc<T>(env: Env, fn: string, args: Record<string, unknown>): 
     headers: {
       apikey: env.DOMOVINA_API_SERVICE_KEY,
       Authorization: `Bearer ${env.DOMOVINA_API_SERVICE_KEY}`,
-      "Content-Profile": "pinka_finance",
+      "Content-Profile": SHEMA,
       "content-type": "application/json",
     },
     body: JSON.stringify(args),
@@ -283,7 +293,7 @@ async function bezSkrivenih(env: Env, events: FeedEvent[], skriveni: string[]): 
   if (!ids.length) return events;
   const camps = await rest<Array<{ id: string; account_id: string }>>(
     env,
-    `campaigns?select=id,account_id&id=in.(${ids.join(",")})&account_id=in.(${skriveni.join(",")})`,
+    `events?select=id,account_id&id=in.(${ids.join(",")})&account_id=in.(${skriveni.join(",")})`,
   );
   const skrij = new Set(
     camps.filter((c) => skriveni.includes(String(c.account_id).toLowerCase())).map((c) => c.id),
@@ -315,7 +325,7 @@ export const stripeConfirm = (
 export async function onlineLink(env: Env, campaignId: string): Promise<string | null> {
   const r = await rest<Array<{ online_url: string | null }>>(
     env,
-    `event_access?campaign_id=eq.${campaignId}&select=online_url`,
+    `event_access?event_id=eq.${encodeURIComponent(campaignId)}&select=online_url`,
   );
   return r[0]?.online_url ?? null;
 }
@@ -339,7 +349,7 @@ export async function organizerRail(
 }> {
   const camps = await rest<Array<{ id: string; account_id: string }>>(
     env,
-    `campaigns?select=id,account_id&id=eq.${encodeURIComponent(campaignId)}`,
+    `events?select=id,account_id&id=eq.${encodeURIComponent(campaignId)}`,
   );
   const accountId = camps[0]?.account_id ?? null;
   if (!accountId) {
@@ -368,17 +378,20 @@ export async function orderStatus(
   env: Env,
   orderId: string,
 ): Promise<{ order: OrderRow; tickets: TicketRow[] } | null> {
-  const orders = await rest<OrderRow[]>(
+  const orders = await rest<Array<Omit<OrderRow, "campaign_id"> & { event_id: string }>>(
     env,
-    "contributions?select=id,campaign_id,tier_id,state,quantity,amount_cents,currency," +
+    "orders?select=id,event_id,tier_id,state,quantity,amount_cents,currency," +
       `reserve_expires_at,payment_rail,external_payment_ref,buyer_email,paid_at,holders&id=eq.${encodeURIComponent(orderId)}`,
   );
-  const order = orders[0];
-  if (!order || !order.tier_id) return null;
+  const red = orders[0];
+  if (!red || !red.tier_id) return null;
+  // `ulaznice.orders.event_id` → `campaign_id` (isti id; ugovor Workera se ne mijenja)
+  const { event_id, ...ostalo } = red;
+  const order: OrderRow = { ...ostalo, campaign_id: event_id };
   const tickets = await rest<TicketRow[]>(
     env,
     "tickets?select=serial,holder_name,state,checked_in_at&order=serial.asc" +
-      `&contribution_id=eq.${encodeURIComponent(orderId)}`,
+      `&order_id=eq.${encodeURIComponent(orderId)}`,
   );
   return { order, tickets };
 }
@@ -388,7 +401,8 @@ export async function orderStatus(
  *
  * Za kupca koji je izgubio e-mail. Stari QR nakon ovoga NE VRIJEDI — to je
  * svojstvo, ne nuspojava: bez poništavanja starog bi „ponovna dostava" bila
- * tvornica duplikata iste ulaznice. Migracija: `20260903120100` u domovina-api.
+ * tvornica duplikata iste ulaznice. Migracija: `20260903120100` u domovina-api
+ * (u shemi `ulaznice`: `20261125160000`).
  *
  * ⚠️ Kao i `deliverTickets`, troši jednokratne tokene — zvati SAMO iz dostave.
  */
@@ -504,7 +518,7 @@ export async function korisnickiRpc<T>(
     headers: {
       apikey: anonKey(env),
       Authorization: `Bearer ${jwt}`,
-      "Content-Profile": "pinka_finance",
+      "Content-Profile": SHEMA,
       "content-type": "application/json",
     },
     body: JSON.stringify(args),
@@ -521,7 +535,7 @@ export async function korisnickiRest<T>(env: Env, jwt: string, path: string): Pr
     headers: {
       apikey: anonKey(env),
       Authorization: `Bearer ${jwt}`,
-      "Accept-Profile": "pinka_finance",
+      "Accept-Profile": SHEMA,
       accept: "application/json",
     },
   });
@@ -577,8 +591,9 @@ export async function checkin(env: Env, jwt: string, qrToken: string): Promise<C
 /**
  * Novi događaj iz editora organizatora → `events-organizer` (`action: create`).
  *
- * Kao i kod skenera, ide KORISNIKOVIM JWT-om: `create_event` je security
- * invoker i RLS traži admina računa s provjerenim identitetom (KYC). Događaj
+ * Kao i kod skenera, ide KORISNIKOVIM JWT-om: `create_event` (`ulaznice`,
+ * security definer) sam traži admina računa s provjerenim identitetom (KYC) i
+ * odbija doslovnom porukom RLS-a, koju funkcija skrati u `"new"`. Događaj
  * nastaje kao privatna skica; objava je zaseban `publish_event`.
  *
  * `event_id` šalje klijent, pa je ponovljeni zahtjev (npr. nakon prekida mreže)
@@ -632,7 +647,7 @@ export async function organizatorAkcija<T = Record<string, unknown>>(
   return parsed as T;
 }
 
-/** Što bucket `pinka-covers` prima (jezgra: `allowed_mime_types`) → nastavak datoteke. */
+/** Što bucket `ulaznice-media` prima (jezgra: `allowed_mime_types`) → nastavak datoteke. */
 export const VRSTE_SLIKA: Record<string, string> = {
   "image/webp": "webp",
   "image/jpeg": "jpg",
@@ -640,7 +655,10 @@ export const VRSTE_SLIKA: Record<string, string> = {
   "image/avif": "avif",
 };
 
-/** Limit bucketa `pinka-covers` (5 MB). */
+/** Bucket slika događaja (jezgra `20261125150100_ulaznice_media_bucket`). */
+export const BUCKET_SLIKA = "ulaznice-media";
+
+/** Limit bucketa `ulaznice-media` (5 MB). */
 export const NAJVECA_SLIKA = 5 * 1024 * 1024;
 
 /** `sub` iz JWT-a bez provjere potpisa: putanju ionako provjerava RLS Storagea. */
@@ -668,7 +686,7 @@ export async function ucitajSliku(
   const uid = korisnikIzJwt(jwt);
   if (!uid) throw new HttpError(401, "nije_prijavljen");
   const putanja = `${uid}/${crypto.randomUUID()}.${VRSTE_SLIKA[vrsta] ?? "bin"}`;
-  const res = await fetch(`${env.DOMOVINA_API_URL}/storage/v1/object/pinka-covers/${putanja}`, {
+  const res = await fetch(`${env.DOMOVINA_API_URL}/storage/v1/object/${BUCKET_SLIKA}/${putanja}`, {
     method: "POST",
     headers: {
       apikey: anonKey(env),
@@ -691,7 +709,7 @@ export async function ucitajSliku(
     if (/mime/i.test(text)) throw new HttpError(415, "slika_vrsta");
     throw new HttpError(502, "slika_nije_spremljena", `storage: ${res.status} ${text.slice(0, 200)}`);
   }
-  return { url: `${env.DOMOVINA_API_URL}/storage/v1/object/public/pinka-covers/${putanja}` };
+  return { url: `${env.DOMOVINA_API_URL}/storage/v1/object/public/${BUCKET_SLIKA}/${putanja}` };
 }
 
 /**
@@ -726,7 +744,7 @@ export async function upsertOrganizerRail(
       headers: {
         apikey: env.DOMOVINA_API_SERVICE_KEY,
         Authorization: `Bearer ${env.DOMOVINA_API_SERVICE_KEY}`,
-        "Content-Profile": "pinka_finance",
+        "Content-Profile": SHEMA,
         "content-type": "application/json",
         Prefer: "return=representation",
       },

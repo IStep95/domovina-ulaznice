@@ -11,14 +11,14 @@ afterEach(() => { t?.restore(); t = null; });
 const TEST_ORG = "00000000-0000-4000-8000-0000000000f2";
 const DRUGI_ORG = "99999999-9999-4999-8999-999999999999";
 
-/** Okruženje u kojem je kampanja iz feeda u vlasništvu `vlasnik`; pamti upite na campaigns. */
+/** Okruženje u kojem je događaj iz feeda u vlasništvu `vlasnik`; pamti upite na `ulaznice.events`. */
 function okolina(skriveni: string | undefined, vlasnik: string) {
   t = testEnv(skriveni === undefined ? {} : { SKRIVENI_ORGANIZATORI: skriveni });
   const upiti: string[] = [];
   const stub = globalThis.fetch;
   globalThis.fetch = (async (input: string | URL | Request, init?: RequestInit) => {
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-    if (url.includes("/rest/v1/campaigns") && url.includes("account_id=in.")) {
+    if (url.includes("/rest/v1/events?") && url.includes("account_id=in.")) {
       upiti.push(decodeURIComponent(url));
       return new Response(JSON.stringify([{ id: CAMPAIGN, account_id: vlasnik }]), {
         headers: { "content-type": "application/json" },
@@ -49,6 +49,7 @@ test("događaj skrivenog organizatora nema u popisu, na stranici ni u kupnji", a
 
   assert.ok(upiti[0].includes(`id=in.(${CAMPAIGN})`));
   assert.ok(upiti[0].includes(`account_id=in.(${TEST_ORG})`));
+  assert.match(upiti[0], /\/rest\/v1\/events\?select=id,account_id&/, "ulaznice.events, ne campaigns");
 });
 
 test("bez varijable (staging) i s drugim organizatorom događaj je vidljiv", async () => {

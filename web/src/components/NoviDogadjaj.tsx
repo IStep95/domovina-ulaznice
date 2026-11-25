@@ -733,7 +733,7 @@ function Izbor({
 // ── 3. Opis i slika ──────────────────────────────────────────────────────────
 //
 // Naslovna i galerija: link ili upload, bez alt teksta (Ivan, 24. 11.) (lib/slika.ts smanji, Worker spremi u
-// Storage `pinka-covers`). Upload traži provjeren identitet, kao i spremanje
+// Storage `ulaznice-media`). Upload traži provjeren identitet, kao i spremanje
 // skice; bez njega ostaje link. Više uploada odjednom mijenja unos funkcijom
 // (`promijeni`), da se slike koje stignu u isto vrijeme ne pregaze.
 

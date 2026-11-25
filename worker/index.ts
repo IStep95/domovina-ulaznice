@@ -2,7 +2,7 @@
 //
 // Granica (docs/02-arhitektura.md §1): ovaj Worker je prodajni kanal i Stripe
 // rail. Ulaznice, narudžbe i inventory NISU ovdje — svaki takav podatak dolazi
-// iz domovina-api (shema pinka_finance) i tamo se i mijenja.
+// iz domovina-api (shema `ulaznice`) i tamo se i mijenja.
 //
 // Što browser NIKAD ne vidi: `acct_…` organizatora, service ključ, HMAC tajnu,
 // Stripe ključeve, QR tokene tuđih narudžbi.
@@ -694,7 +694,7 @@ app.get("/api/organizator/holderi.csv", async (c) => {
     c.env,
     jwt,
     "tickets?select=serial,holder_name,holder_email,state,checked_in_at&order=serial.asc" +
-      `&campaign_id=eq.${encodeURIComponent(campaignId)}`,
+      `&event_id=eq.${encodeURIComponent(campaignId)}`,
   );
 
   const csv = [
@@ -752,42 +752,45 @@ app.post("/api/organizator/dogadjaj", async (c) => {
   return c.json(await api.kreirajDogadjaj(c.env, jwt, podaci));
 });
 
+/** Polja `ulaznice.events` koja editor dobiva u objektu `event` (prije tablica `events`). */
+const POLJA_SKICE_EVENTA = [
+  "event_type", "venue_name", "venue_address", "venue_city", "starts_at", "ends_at", "timezone", "description_hr",
+  "cover_image_url", "gallery", "organizer_name", "organizer_email", "organizer_web", "attendance_mode",
+] as const;
+
 /**
- * Skica za uređivanje: kampanja, event i vrste ulaznica, čitano U IME
- * korisnika (RLS: član računa vidi i svoje privatne skice). Obrisana ili
- * tuđa kampanja jednostavno nije u rezultatu → 404.
+ * Skica za uređivanje: događaj i vrste ulaznica, čitano U IME korisnika
+ * (RLS: član računa vidi i svoje privatne skice). Obrisan ili tuđ događaj
+ * jednostavno nije u rezultatu → 404.
+ *
+ * U shemi `ulaznice` su kampanja i event jedan redak (`events`), pa Worker sam
+ * slaže stari oblik odgovora: `campaign_id` + polja kampanje + `event` + `tiers`.
  */
 app.get("/api/organizator/dogadjaj/:id", async (c) => {
   const jwt = bearer(c);
   if (!jwt) return fail("nije_prijavljen", 401);
   const id = c.req.param("id");
   if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
-  const upit = (novo: boolean) =>
-    api.korisnickiRest<Array<Record<string, unknown>>>(
-      c.env,
-      jwt,
-      `campaigns?id=eq.${id}&type=eq.tickets&select=id,account_id,slug,title,state,` +
-        "events(event_type,venue_name,venue_address,venue_city,starts_at,ends_at,timezone,description_hr," +
-        `cover_image_url,gallery,organizer_name,organizer_email,organizer_web${novo ? ",attendance_mode" : ""}),` +
-        (novo ? "event_access(online_url)," : "") +
-        "campaign_tiers(id,title,price_cents,inventory_total,inventory_claimed,imenska,sort)",
-    );
-  // Jezgra bez migracije events_free_online (deploy-dug #18) nema attendance_mode ni
-  // event_access: PostgREST tada odbije cijeli upit, pa se skica čita bez njih.
-  const redci = await upit(true).catch((e) => {
-    if (e instanceof HttpError && e.code === "api_rest_error") return upit(false);
-    throw e;
-  });
+  const redci = await api.korisnickiRest<Array<Record<string, unknown>>>(
+    c.env,
+    jwt,
+    `events?id=eq.${id}&select=id,account_id,slug,title,state,${POLJA_SKICE_EVENTA.join(",")},` +
+      "event_access(online_url)," +
+      "ticket_tiers(id,title,price_cents,inventory_total,inventory_claimed,imenska,sort)",
+  );
   const r = redci[0];
   if (!r) return fail("event_not_found", 404);
-  const { events, event_access, campaign_tiers, id: campaign_id, ...ostalo } = r;
-  // event_access je 1:1 (PK campaign_id) → PostgREST vraća objekt ili null
+  const { event_access, ticket_tiers, id: campaign_id, account_id, slug, title, state } = r;
+  // event_access je 1:1 (PK event_id) → PostgREST vraća objekt ili null
   const pristup = (Array.isArray(event_access) ? event_access[0] : event_access) as { online_url?: string } | null;
-  const tiers = Array.isArray(campaign_tiers)
-    ? [...(campaign_tiers as Array<{ sort?: number }>)].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
+  const tiers = Array.isArray(ticket_tiers)
+    ? [...(ticket_tiers as Array<{ sort?: number }>)].sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0))
     : [];
-  const event = events ? { ...(events as object), online_url: pristup?.online_url ?? null } : null;
-  return c.json({ campaign_id, ...ostalo, event, tiers });
+  const event = {
+    ...Object.fromEntries(POLJA_SKICE_EVENTA.filter((k) => k in r).map((k) => [k, r[k]])),
+    online_url: pristup?.online_url ?? null,
+  };
+  return c.json({ campaign_id, account_id, slug, title, state, event, tiers });
 });
 
 /**
@@ -825,8 +828,8 @@ app.delete("/api/organizator/dogadjaj/:id", async (c) => {
 
 /**
  * Upload slike za editor (naslovna ili galerija) → Supabase Storage
- * `pinka-covers/{uid}/{uuid}.{ext}`, korisnikovim JWT-om. Bucket i njegov RLS
- * su iz jezgre (`pinka_campaign_hardening`): javno čitanje, upis samo u vlastitu
+ * `ulaznice-media/{uid}/{uuid}.{ext}`, korisnikovim JWT-om. Bucket i njegov RLS
+ * su iz jezgre (`ulaznice_media_bucket`): javno čitanje, upis samo u vlastitu
  * mapu i samo uz provjeren identitet — isti uvjet kao `create_event`. Browser
  * sliku prije slanja smanji (web/src/lib/slika.ts), pa je 5 MB rezerva.
  */
