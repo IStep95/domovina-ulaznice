@@ -100,7 +100,7 @@ export async function prijavi(email: string, lozinka: string): Promise<Sesija> {
 
 /** Prijava kodom, korak 1. Odgovor je isti postoji li račun ili ne. */
 export async function posaljiKod(email: string): Promise<void> {
-  await json("/api/organizator/kod", { method: "POST", body: JSON.stringify({ email }) });
+  await json("/api/organizator/kod", { method: "POST", body: JSON.stringify({ email, povratak: location.pathname }) });
 }
 
 /** Prijava kodom, korak 2: kod iz maila → sesija. */

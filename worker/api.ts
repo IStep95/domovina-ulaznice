@@ -454,7 +454,8 @@ export async function prijava(env: Env, email: string, lozinka: string): Promise
 }
 
 /**
- * Prijava kodom na e-mail, korak 1: GoTrue šalje jednokratni kod (OTP).
+ * Prijava kodom na e-mail, korak 1: GoTrue šalje jednokratni kod (OTP) i link
+ * „Prijavi se” koji vodi na `redirectTo` (stranica ulaznica, ne SITE_URL jezgre).
  *
  * `create_user: false` — kod dobiva samo postojeći domovina.ai račun; ulaznice
  * ne otvaraju nove račune. GoTrue za nepoznat mail vraća grešku, ali je Worker
@@ -463,8 +464,11 @@ export async function prijava(env: Env, email: string, lozinka: string): Promise
  * Ovo je odgovor na REVIEW(fable) iznad samo za organizatora za stolom; lozinka
  * ostaje drugi put u istom obrascu, pa skener na ulazu radi kao i prije.
  */
-export async function posaljiKod(env: Env, email: string): Promise<void> {
-  const res = await fetch(`${env.DOMOVINA_API_URL}/auth/v1/otp`, {
+export async function posaljiKod(env: Env, email: string, redirectTo: string): Promise<void> {
+  // GoTrue `redirect_to` čita iz query stringa (kao supabase-js `emailRedirectTo`).
+  const u = new URL(`${env.DOMOVINA_API_URL}/auth/v1/otp`);
+  u.searchParams.set("redirect_to", redirectTo);
+  const res = await fetch(u.toString(), {
     method: "POST",
     headers: { apikey: anonKey(env), "content-type": "application/json" },
     body: JSON.stringify({ email, create_user: false }),

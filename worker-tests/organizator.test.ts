@@ -65,6 +65,20 @@ test("slanje koda ide na GoTrue /otp s anon ključem i bez otvaranja računa", a
   assert.ok(poziv, "slanje koda mora zvati GoTrue");
   assert.equal(poziv!.headers.apikey, ANON_KEY);
   assert.equal(JSON.parse(poziv!.body).create_user, false);
+  // Bez povratka gumb u mailu vodi na /organizator ovog Workera, ne na SITE_URL jezgre.
+  assert.match(new URL(poziv!.url).searchParams.get("redirect_to") ?? "", /^https?:\/\/[^/]+\/organizator$/);
+});
+
+test("link u mailu s kodom vraća na stranicu s koje je kod tražen, a strani povratak ne prolazi", async () => {
+  t = testEnv();
+  await callJson(t, "/api/organizator/kod", { body: { email: "org@test.hr", povratak: "/organizator/novi" } });
+  await callJson(t, "/api/organizator/kod", { body: { email: "org@test.hr", povratak: "https://zlo.example/x" } });
+  const [novi, strani] = t.calls
+    .filter((c) => c.url.includes("/auth/v1/otp"))
+    .map((c) => new URL(c.url).searchParams.get("redirect_to") ?? "");
+  assert.match(novi, /\/organizator\/novi$/);
+  assert.match(strani, /^https?:\/\/[^/]+\/organizator$/);
+  assert.ok(!strani.includes("zlo.example"));
 });
 
 test("nepoznat mail daje isti odgovor kao poznat (nema otkrivanja računa)", async () => {

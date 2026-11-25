@@ -147,7 +147,10 @@ export async function prijavi(email: string, lozinka: string): Promise<Sesija> {
 
 /** Prijava kodom, korak 1. Odgovor je isti postoji li račun ili ne. */
 export async function posaljiKod(email: string): Promise<void> {
-  await zahtjev("/api/organizator/kod", { method: "POST", body: JSON.stringify({ email }) });
+  await zahtjev("/api/organizator/kod", {
+    method: "POST",
+    body: JSON.stringify({ email, povratak: povratakIz(location.pathname) }),
+  });
 }
 
 /** Prijava kodom, korak 2: kod iz maila → sesija. */
@@ -171,8 +174,12 @@ export function prijaviGoogleom(): void {
 
 /** URL koraka 1; kosa crta na kraju se skida jer je Worker ne prihvaća u `povratak`. */
 export function adresaGooglePrijave(putanja: string): string {
-  const povratak = putanja.length > 1 ? putanja.replace(/\/+$/, "") : putanja;
-  return `/api/organizator/google?povratak=${encodeURIComponent(povratak)}`;
+  return `/api/organizator/google?povratak=${encodeURIComponent(povratakIz(putanja))}`;
+}
+
+/** Putanja stranice → `povratak` za Worker (Google i link u mailu s kodom). */
+export function povratakIz(putanja: string): string {
+  return putanja.length > 1 ? putanja.replace(/\/+$/, "") : putanja;
 }
 
 /** Greška s povratka iz Googlea, za obrazac prijave (pročita se jednom). */

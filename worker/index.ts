@@ -602,22 +602,31 @@ app.post("/api/organizator/prijava", async (c) => {
 // `ADDITIONAL_REDIRECT_URLS` jezgre (dodani ulaznice i ulaznice-staging
 // 2026-11-23), inače GoTrue vrati na SITE_URL. Povratak je ograničen na
 // stranice s prijavom; svaka od njih ima Astro stranicu (web/test/auth.test.ts).
-app.get("/api/organizator/google", (c) => {
-  const povratak = c.req.query("povratak") ?? "";
+/** `povratak` → puna adresa za GoTrueov `redirect_to` (Google i link u mailu s kodom). */
+// web/test/auth.test.ts čita ovaj regex: svaka putanja mora imati Astro stranicu.
+function adresaPovratka(url: string, unos: unknown): string {
+  const povratak = typeof unos === "string" ? unos : "";
   const put = /^\/(organizator|organizator\/novi|skener)$/.test(povratak) ? povratak : "/organizator";
+  return new URL(url).origin + put;
+}
+
+app.get("/api/organizator/google", (c) => {
   const u = new URL(`${c.env.DOMOVINA_API_URL}/auth/v1/authorize`);
   u.searchParams.set("provider", "google");
-  u.searchParams.set("redirect_to", new URL(c.req.url).origin + put);
+  u.searchParams.set("redirect_to", adresaPovratka(c.req.url, c.req.query("povratak")));
   return c.redirect(u.toString(), 302);
 });
 
 // Prijava kodom na e-mail. Isti bucket kao lozinka: kod je 6 znamenki, pa je
-// limit po IP-u ono što brani od pogađanja (uz GoTrueov istek koda).
+// limit po IP-u ono što brani od pogađanja (uz GoTrueov istek koda). Mail nosi
+// i gumb „Prijavi se”: `redirect_to` ga vraća na stranicu s koje je kod tražen
+// (bez toga GoTrue vodi na SITE_URL, domovina.ai); token stiže u fragmentu kao
+// kod Googlea.
 app.post("/api/organizator/kod", async (c) => {
   const rl = await consume(c.env, "prijava", clientIp(c.req.raw));
   if (!rl.allowed) return fail("previse_pokusaja", 429, { retry_after: rl.retryAfter });
 
-  let body: { email?: string };
+  let body: { email?: string; povratak?: string };
   try {
     body = await c.req.json();
   } catch {
@@ -626,7 +635,7 @@ app.post("/api/organizator/kod", async (c) => {
   const email = (body.email ?? "").trim();
   if (!EMAIL_RE.test(email) || email.length > 200) return fail("invalid_buyer_email");
 
-  await api.posaljiKod(c.env, email);
+  await api.posaljiKod(c.env, email, adresaPovratka(c.req.url, body.povratak));
   // Uvijek isti odgovor, postojao račun ili ne.
   return c.json({ ok: true });
 });
