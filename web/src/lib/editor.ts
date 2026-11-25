@@ -16,6 +16,7 @@ export const VRSTE: ReadonlyArray<[string, string]> = [
   ["konferencija", "Konferencija"],
   ["predstava", "Predstava"],
   ["radionica", "Radionica"],
+  ["seminar", "Seminar"],
   ["festival", "Festival"],
   ["sport", "Sport"],
   ["ostalo", "Ostalo"],
