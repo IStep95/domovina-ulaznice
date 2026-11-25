@@ -753,15 +753,22 @@ app.get("/api/organizator/dogadjaj/:id", async (c) => {
   if (!jwt) return fail("nije_prijavljen", 401);
   const id = c.req.param("id");
   if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
-  const redci = await api.korisnickiRest<Array<Record<string, unknown>>>(
-    c.env,
-    jwt,
-    `campaigns?id=eq.${id}&type=eq.tickets&select=id,account_id,slug,title,state,` +
-      "events(event_type,venue_name,venue_address,venue_city,starts_at,ends_at,timezone,description_hr," +
-      "cover_image_url,gallery,organizer_name,organizer_email,organizer_web,attendance_mode)," +
-      "event_access(online_url)," +
-      "campaign_tiers(id,title,price_cents,inventory_total,inventory_claimed,imenska,sort)",
-  );
+  const upit = (novo: boolean) =>
+    api.korisnickiRest<Array<Record<string, unknown>>>(
+      c.env,
+      jwt,
+      `campaigns?id=eq.${id}&type=eq.tickets&select=id,account_id,slug,title,state,` +
+        "events(event_type,venue_name,venue_address,venue_city,starts_at,ends_at,timezone,description_hr," +
+        `cover_image_url,gallery,organizer_name,organizer_email,organizer_web${novo ? ",attendance_mode" : ""}),` +
+        (novo ? "event_access(online_url)," : "") +
+        "campaign_tiers(id,title,price_cents,inventory_total,inventory_claimed,imenska,sort)",
+    );
+  // Jezgra bez migracije events_free_online (deploy-dug #18) nema attendance_mode ni
+  // event_access: PostgREST tada odbije cijeli upit, pa se skica čita bez njih.
+  const redci = await upit(true).catch((e) => {
+    if (e instanceof HttpError && e.code === "api_rest_error") return upit(false);
+    throw e;
+  });
   const r = redci[0];
   if (!r) return fail("event_not_found", 404);
   const { events, event_access, campaign_tiers, id: campaign_id, ...ostalo } = r;

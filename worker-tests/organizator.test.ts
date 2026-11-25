@@ -503,3 +503,20 @@ test("bez anon ključa prijava jasno pada, a zdravlje to pokazuje", async () => 
   assert.equal(status, 503);
   assert.equal(body.error, "anon_key_missing");
 });
+
+test("skica: jezgra bez events_free_online → čita se bez attendance_mode i event_access", async () => {
+  t = testEnv();
+  t.api.skica = [{ id: SKICA, account_id: "acc-1", slug: "s", title: "S", state: "draft", events: { venue_name: "D" }, campaign_tiers: [] }];
+  const izvorni = globalThis.fetch;
+  globalThis.fetch = (async (u: RequestInfo | URL, init?: RequestInit) =>
+    String(u).includes("event_access(") ? new Response("{}", { status: 400 }) : izvorni(u, init)) as typeof fetch;
+  try {
+    const { status, body } = await callJson<{ event: { venue_name: string } }>(t, `/api/organizator/dogadjaj/${SKICA}`, {
+      headers: auth(),
+    });
+    assert.equal(status, 200);
+    assert.equal(body.event.venue_name, "D");
+  } finally {
+    globalThis.fetch = izvorni;
+  }
+});
