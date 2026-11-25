@@ -67,8 +67,10 @@ u `update`. Worker: `GET`/`PUT`/`DELETE /api/organizator/dogadjaj/:id`. Wizard:
 
 ## Otvoreno
 
-- Matija: merge `events-media`, migracija prije `events-feed` i `events-organizer`.
+- `events-media` je mergean (PR #6), ali nije deployan: migracije prije `events-feed` i `events-organizer`.
   Bez nove funkcije skica se sprema, ali bez galerije.
 - Provjeriti da `pinka-covers` postoji na produkcijskoj jezgri.
 - Učitane slike koje organizator ukloni ostaju u bucketu (nema brisanja ni čišćenja).
 - Stavka 9: filtar osobnih računa (`is_personal`) u izboru organizatora čeka Ivana.
+
+Nastavak: [besplatni i online događaji](2026-11-25-besplatni-i-online-dogadjaji.md).
