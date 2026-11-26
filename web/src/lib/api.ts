@@ -12,6 +12,8 @@
 import type {
   CreateOrderRequest,
   CreateOrderResponse,
+  DodatnaPoljaResponse,
+  DodatnoPolje,
   EventDetails,
   EventListResponse,
   EventView,
@@ -24,6 +26,8 @@ import type {
 export type {
   CreateOrderRequest,
   CreateOrderResponse,
+  DodatnaPoljaResponse,
+  DodatnoPolje,
   EventDetails,
   EventListResponse,
   EventView,
@@ -107,6 +111,8 @@ export function createApiClient(options: ApiClientOptions = {}) {
   return {
     dohvatiDogadjaj: (slug: string) => req<EventView>(`/api/dogadjaj/${encodeURIComponent(slug)}`),
     dohvatiDogadjaje: () => req<EventListResponse>("/api/dogadjaji"),
+    dohvatiDodatnaPolja: (slug: string) =>
+      req<DodatnaPoljaResponse>(`/api/dogadjaj/${encodeURIComponent(slug)}/dodatna-polja`),
     dohvatiNarudzbu: (orderId: string) => req<OrderView>(`/api/ulaznice/${encodeURIComponent(orderId)}`),
     posaljiPonovno: (orderId: string) =>
       req<ResendResponse>(`/api/ulaznice/${encodeURIComponent(orderId)}/ponovna-dostava`, { method: "POST" }),

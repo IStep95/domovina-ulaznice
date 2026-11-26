@@ -93,6 +93,7 @@ export function nacrtIzTeksta(sirovo: string | null, email: string): Nacrt | nul
     online: u.online === true,
     onlineLink: tekst(u.onlineLink, 2000),
     besplatan: u.besplatan === true,
+    obrazac: tekst(u.obrazac, 500),
     organizator: tekst(u.organizator, 400),
     email: tekst(u.email, 400),
     web: tekst(u.web, 400),

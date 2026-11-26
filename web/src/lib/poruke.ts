@@ -32,6 +32,7 @@ const NARUDZBA_NIJE_POSLANA = "Narudžba nije ispravno poslana. Osvježite stran
 const NAPLATA_NEDOSTUPNA = "Naplata trenutačno nije dostupna. Pokušajte ponovno kasnije.";
 const SUSTAV_NE_ODGOVARA = "Sustav prodaje trenutačno ne odgovara. Pokušajte ponovno za trenutak.";
 const NARUDZBA_NIJE_PRIPREMLJENA = "Narudžbu nismo uspjeli pripremiti. Pokušajte ponovno.";
+const OBRAZAC_NEDOSTUPAN = "Obrazac s dodatnim podacima organizatora trenutačno nije dostupan. Pokušajte ponovno kasnije.";
 const TIER_NE_POSTOJI = "Odabrana vrsta ulaznice više nije u prodaji. Odaberite drugu vrstu.";
 
 /** Kod → poruka za sve što `POST /api/narudzba` (i klijent oko njega) može vratiti. */
@@ -53,6 +54,15 @@ export const PORUKE_NARUDZBE: Readonly<Record<string, string>> = {
   organizer_charges_disabled: "Organizatorov račun za naplatu još nije aktivan, pa online kupnja trenutačno nije moguća.",
   checkout_bez_url: "Stranica za plaćanje se nije otvorila. Pokušajte ponovno.",
   besplatna_nije_potvrdjena: "Besplatne ulaznice nisu izdane. Pokušajte ponovno.",
+  // dodatna polja (Google obrazac organizatora, worker/dodatna-polja.ts)
+  dodatna_polja_neispravna: "Popunite obavezna dodatna polja.",
+  obrazac_neispravan_link: OBRAZAC_NEDOSTUPAN,
+  obrazac_nije_citljiv: OBRAZAC_NEDOSTUPAN,
+  obrazac_nepodrzano_polje: OBRAZAC_NEDOSTUPAN,
+  obrazac_trazi_prijavu: OBRAZAC_NEDOSTUPAN,
+  obrazac_zatvoren: "Organizator je zatvorio prijave za ovaj događaj.",
+  obrazac_ne_postoji: OBRAZAC_NEDOSTUPAN,
+  obrazac_nedostupan: OBRAZAC_NEDOSTUPAN,
   // app.onError i 404 fallback za nepostojeću /api/ rutu
   greska_servera: GENERICKA_PORUKA,
   not_found: NARUDZBA_NIJE_POSLANA,
@@ -110,7 +120,7 @@ export function porukaGreske(kod: string): string {
 // ── Ponašanje forme po kodu ──────────────────────────────────────────────────
 
 /** Polje forme na koje se greška odnosi (inline poruka uz banner). */
-export type CiljGreske = "email" | "imena" | null;
+export type CiljGreske = "email" | "imena" | "dodatna" | null;
 
 export interface GreskaNarudzbe {
   kod: string;
@@ -190,6 +200,9 @@ export function greskaNarudzbe(kod: string, retryAfter?: number): GreskaNarudzbe
     g.dopuna = "Ispravite označeno polje i pokušajte ponovno.";
   } else if (kod === "holders_incomplete" || kod === "invalid_holder") {
     g.cilj = "imena";
+    g.dopuna = "Ispravite označena polja i pokušajte ponovno.";
+  } else if (kod === "dodatna_polja_neispravna") {
+    g.cilj = "dodatna";
     g.dopuna = "Ispravite označena polja i pokušajte ponovno.";
   }
   return g;
@@ -388,6 +401,17 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   event_no_working_rail:
     "Događaj s plaćenim ulaznicama ne može se objaviti dok organizator nema aktivan Stripe račun.",
   invalid_review_note: "Napomena je preduga (najviše 1000 znakova).",
+  // dodatna polja: link na Google obrazac (worker/dodatna-polja.ts)
+  obrazac_neispravan_link:
+    "To nije link na javni Google obrazac. U obrascu klikni „Pošalji” → ikona linka i zalijepi taj link (docs.google.com/forms/d/e/…/viewform ili forms.gle/…).",
+  obrazac_nije_citljiv: "Obrazac na tom linku ne možemo pročitati. Provjeri je li link na Google obrazac.",
+  obrazac_nepodrzano_polje:
+    "Obrazac ima obavezno pitanje koje se ne može ispuniti pri kupnji (npr. upload datoteke, mreža ili datum s vremenom). Učini ga neobaveznim ili ga makni.",
+  obrazac_trazi_prijavu:
+    "Obrazac traži prijavu Google računom. U postavkama obrasca isključi „Ograniči na 1 odgovor” i upload datoteka, a za skupljanje e-maila ne biraj „Provjereno”.",
+  obrazac_zatvoren: "Obrazac ne prima odgovore. U Google obrascu uključi „Prihvaćanje odgovora”.",
+  obrazac_ne_postoji: "Obrazac na tom linku ne postoji ili je obrisan.",
+  obrazac_nedostupan: "Google obrazac trenutačno ne odgovara. Pokušaj ponovno za trenutak.",
 
   // ── jezgra: events-checkin (redeem_ticket), skener ──
   not_authorized: "Nemate ovlasti za ovaj događaj.",

@@ -34,6 +34,8 @@ export const DEFAULT_RULES: Record<string, Rule> = {
   sken: { limit: 600, windowSeconds: 60 },
   // upload slike u editoru: naslovna + do 20 u galeriji, uz ponavljanja
   slika: { limit: 60, windowSeconds: 600 },
+  // provjera Google obrasca u editoru (dohvat stranice obrasca s Googlea)
+  obrazac: { limit: 30, windowSeconds: 600 },
 };
 
 /** Zapis "koliko/sekundi" iz env varijable ("10/600"). */

@@ -162,6 +162,12 @@ const onError = kodoviPoziva(blok(index, "app.onError("), "fail", 0);
 const fallback = kodoviPoziva(blok(index, 'app.all("*"'), "fail", 0);
 const httpApi = kodoviPoziva(izvor("api.ts"), "new HttpError", 1);
 const httpStripe = kodoviPoziva(izvor("stripe.ts"), "new HttpError", 1);
+/**
+ * Dodatna polja (Google obrazac): HttpError iz dodatna-polja.ts ide i kupnji
+ * (dohvat obrasca, provjera odgovora) i editoru (spremanje i pregled linka).
+ * Dinamički `obrazac_odbio_<status>` nastaje samo pri slanju u pozadini.
+ */
+const httpObrazac = kodoviPoziva(izvor("dodatna-polja.ts"), "new HttpError", 1);
 
 /**
  * HttpError kodovi koji NISU na putu `POST /api/narudzba` (feed, organizerRail,
@@ -189,6 +195,7 @@ const sviKodovi = new Set([
   ...onError.kodovi,
   ...fallback.kodovi,
   ...[...httpApi.kodovi, ...httpStripe.kodovi].filter((k) => !Object.hasOwn(IZVAN_KUPNJE, k)),
+  ...httpObrazac.kodovi,
 ]);
 
 // ── ekstrakcija ─────────────────────────────────────────────────────────────
@@ -357,6 +364,7 @@ const RUTE_ORGANIZATORA = [
   'app.post("/api/admin/dogadjaj/:id/odobri"',
   'app.post("/api/admin/dogadjaj/:id/vrati"',
   'app.post("/api/organizator/slika"',
+  'app.post("/api/organizator/obrazac"',
   'app.post("/api/skener/sken"',
 ];
 const organizator = RUTE_ORGANIZATORA.map((r) => kodoviPoziva(blok(index, r), "fail", 0));
@@ -429,6 +437,7 @@ const kodoviOrganizatora = new Set([
   ...onError.kodovi,
   ...fallback.kodovi,
   ...HTTP_ORGANIZATORA,
+  ...[...httpObrazac.kodovi].filter((k) => k.startsWith("obrazac_")),
 ]);
 
 test("ekstrakcija: rute organizatora i skenera daju poznate kodove, svi kao literali", () => {

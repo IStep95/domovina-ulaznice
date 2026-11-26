@@ -20,6 +20,7 @@
 // prijavu usred događaja. To je stvarna neugodnost i legitimno je riješiti je
 // drukčije — ali svako rješenje znači trajniju tajnu na tuđem uređaju, pa je
 // odluka svjesno na strani kraće sesije.
+import type { DodatnoPolje } from "../../../shared/api-tipovi.ts";
 import type { Skica } from "./editor.ts";
 import { ApiError, parseApiResponse } from "./api.ts";
 
@@ -319,6 +320,17 @@ export const kreirajDogadjaj = (
  */
 export const ucitajSliku = (token: string, slika: Blob): Promise<{ url: string }> =>
   zahtjev("/api/organizator/slika", { method: "POST", body: slika, headers: { "content-type": slika.type } }, token);
+
+/** Pregled Google obrasca: koja će se dodatna polja prikazati u kupnji. */
+export interface PregledObrasca {
+  url: string;
+  naslov: string;
+  polja: DodatnoPolje[];
+  /** Pitanja za e-mail koja Worker puni adresom kupca (ne prikazuju se). */
+  email_polja: number;
+}
+export const provjeriObrazac = (token: string, url: string): Promise<PregledObrasca> =>
+  zahtjev("/api/organizator/obrazac", { method: "POST", body: JSON.stringify({ url }) }, token);
 
 /** Skica za uređivanje (`GET /api/organizator/dogadjaj/:id`). */
 export const dohvatiSkicu = (token: string, id: string): Promise<Skica> =>

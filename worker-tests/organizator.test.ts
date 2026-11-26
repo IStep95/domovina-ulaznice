@@ -257,7 +257,7 @@ test("skica za uređivanje se čita JWT-om; vrste po redu, nepostojeća → 404"
   assert.equal(status, 200);
   assert.equal(body.campaign_id, SKICA);
   // link iz event_access (1:1) se spljošti u event
-  assert.deepEqual(body.event, { venue_name: "Dvorana", gallery: [], online_url: "https://meet.example.com/x" });
+  assert.deepEqual(body.event, { venue_name: "Dvorana", gallery: [], online_url: "https://meet.example.com/x", form_url: null });
   assert.ok(!("event_access" in body));
   assert.ok(!("venue_name" in body), "polja eventa idu u `event`, ne na vrh");
   assert.deepEqual(body.tiers.map((x) => x.id), ["t1", "t2"]);

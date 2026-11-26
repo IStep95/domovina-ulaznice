@@ -65,11 +65,26 @@ const unos = (izmjene: Partial<UnosDogadjaja> = {}): UnosDogadjaja => ({
   online: false,
   onlineLink: "",
   besplatan: false,
+  obrazac: "",
   organizator: "",
   email: "",
   web: "",
   tieri: [{ naziv: "Ulaz", cijena: "15", kolicina: "200", imenska: false }],
   ...izmjene,
+});
+
+test("dodatna polja: link obrasca se provjeri na koraku 4 i ide u tijelo samo kad postoji", () => {
+  assert.equal(validirajKorak(4, unos({ obrazac: "https://forms.gle/AbC123" })).obrazac, undefined);
+  assert.equal(validirajKorak(4, unos({ obrazac: "https://docs.google.com/forms/d/e/1FAIpQLSe_x-y/viewform" })).obrazac, undefined);
+  assert.ok(validirajKorak(4, unos({ obrazac: "https://docs.google.com/forms/d/1abc/edit" })).obrazac, "link za uređivanje");
+  assert.ok(validirajKorak(4, unos({ obrazac: "https://example.com/forma" })).obrazac);
+  assert.equal(korakPolja("obrazac"), 4);
+  assert.equal(korakZaKod("obrazac_trazi_prijavu"), 4);
+
+  assert.ok(!("form_url" in zahtjev(unos(), "e")), "bez obrasca novi događaj ne šalje form_url");
+  assert.equal(zahtjev(unos({ obrazac: " https://forms.gle/AbC123 " }), "e").form_url, "https://forms.gle/AbC123");
+  // u izmjeni prazno znači „makni obrazac”
+  assert.equal(zahtjevIzmjene(unos(), []).form_url, "");
 });
 
 test("provjera: ispravan unos nema grešaka, prazan ima sve obavezne", () => {

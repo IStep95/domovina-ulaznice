@@ -421,6 +421,70 @@ button.malaPoveznica {
   gap: var(--space-2) var(--space-4);
 }
 
+/* ── 4. dodatna polja (Google obrazac) ── */
+.obrazac {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--color-border);
+}
+
+.naslovObrasca {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.45;
+}
+
+.oznakaObrasca {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+}
+
+.redObrasca {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.redObrasca > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+/* gumb u ravnini s poljem (ispod oznake) */
+.redObrasca > button {
+  margin-top: 26px;
+  flex: none;
+}
+
+.pregledObrasca {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+  font-size: var(--font-size-sm);
+}
+
+.pregledObrasca ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+@media (max-width: 719px) {
+  .redObrasca {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .redObrasca > button {
+    margin-top: 0;
+  }
+}
+
 /* ── 5. pregled: sažetak ── */
 .sazetak {
   display: flex;

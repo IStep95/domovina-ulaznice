@@ -7,7 +7,8 @@
 // Gumb je zaključan dok forma nije valjana, dok zahtjev traje (i ref, ne samo
 // stanje, da dvoklik ne pošalje dvije narudžbe) i dok traje čekanje nakon 429.
 import { useEffect, useMemo, useRef, useState, type SubmitEvent } from "react";
-import { ApiError, createApiClient, type TierView } from "../lib/api.ts";
+import { ApiError, createApiClient, type DodatnoPolje, type TierView } from "../lib/api.ts";
+import { ocisceniOdgovori, provjeriDodatnaPolja, type OdgovoriDodatnihPolja } from "../lib/dodatna-polja.ts";
 import {
   EMAIL_MAX,
   IME_MAX,
@@ -24,6 +25,7 @@ import {
 } from "../lib/kupnja.ts";
 import { KOD_NEDOVOLJNO, greskaNarudzbe, kodIzGreske, type GreskaNarudzbe } from "../lib/poruke.ts";
 import Banner from "./Banner.tsx";
+import DodatnaPolja from "./DodatnaPolja.tsx";
 import Ikona from "./Ikona.tsx";
 import IzborTiera from "./IzborTiera.tsx";
 import OdbrojavanjeGumb from "./OdbrojavanjeGumb.tsx";
@@ -41,9 +43,18 @@ export interface KupnjaFormaProps {
   zona: string;
   /** `brand.terms_url` (već prošao sigurniUrl); bez njega samo uvjeti korištenja. */
   uvjetiOrganizatora: string | null;
+  /** Pitanja iz organizatorova Google obrasca (prazno = nema ih). */
+  dodatnaPolja?: DodatnoPolje[];
 }
 
-export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, zona, uvjetiOrganizatora }: KupnjaFormaProps) {
+export default function KupnjaForma({
+  campaignId,
+  slug,
+  tiers: pocetniTierovi,
+  zona,
+  uvjetiOrganizatora,
+  dodatnaPolja = [],
+}: KupnjaFormaProps) {
   const api = useMemo(() => createApiClient(), []);
   const [tiers, postaviTierove] = useState(pocetniTierovi);
   const [tierId, postaviTierId] = useState<string | null>(() => pocetniTier(pocetniTierovi));
@@ -54,6 +65,8 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
   const [uvjeti, postaviUvjete] = useState(false);
   const [dodirnutEmail, postaviDodirnutEmail] = useState(false);
   const [dodirnutaImena, postaviDodirnutaImena] = useState<boolean[]>([]);
+  const [odgovori, postaviOdgovore] = useState<OdgovoriDodatnihPolja>({});
+  const [dodirnutaDodatna, postaviDodirnutaDodatna] = useState<Record<string, boolean>>({});
   const [salje, postaviSalje] = useState(false);
   const [greska, postaviGresku] = useState<GreskaNarudzbe | null>(null);
   const [cekanje, postaviCekanje] = useState({ sekundi: 0, kljuc: 0 });
@@ -64,13 +77,27 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
   const max = najvecaKolicina(tier);
   const kolicina = ogranicenaKolicina(kolicinaUnos, max);
   const imena = prilagodiImena(imenaUnos, kolicina);
-  const provjera = provjeriFormu({ tier, kolicina, imena, email, uvjeti });
+  const provjeraForme = provjeriFormu({ tier, kolicina, imena, email, uvjeti });
+  const dodatna = provjeriDodatnaPolja(dodatnaPolja, odgovori);
+  const provjera = dodatna.valjano
+    ? provjeraForme
+    : {
+        ...provjeraForme,
+        valjano: false,
+        // ispred „prihvatite uvjete”, redom kojim su polja na stranici
+        nedostaje: [
+          ...provjeraForme.nedostaje.filter((n) => n !== "prihvatite uvjete"),
+          "popunite obavezna dodatna polja",
+          ...provjeraForme.nedostaje.filter((n) => n === "prihvatite uvjete"),
+        ],
+      };
   const imaKupivih = tiers.some((t) => t.buyable && najvecaKolicina(t) >= 1);
   const konacno = greska?.konacno ?? false;
   const ceka = cekanje.sekundi > 0;
   // Greška s poslužitelja za imena/e-mail: pokaži inline greške i bez dodira.
   const prisilnoImena = greska?.cilj === "imena";
   const prisilnoEmail = greska?.cilj === "email";
+  const prisilnoDodatna = greska?.cilj === "dodatna";
 
   // Povratak iz Stripea gumbom „natrag” može vratiti stranicu iz bfcachea sa
   // zaključanim gumbom („Otvaram plaćanje…”); otključaj je.
@@ -88,12 +115,15 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
   useEffect(() => {
     if (!greska) return;
     const prvoImenom = greska.cilj === "imena" ? provjera.imena.findIndex(Boolean) : -1;
+    const prvoDodatno = greska.cilj === "dodatna" ? dodatnaPolja.find((p) => dodatna.greske[p.id]) : undefined;
     const cilj =
       prvoImenom >= 0
         ? document.getElementById(`ime-${prvoImenom}`)
         : greska.cilj === "email" && provjera.email
           ? document.getElementById("kupac-email")
-          : null;
+          : prvoDodatno
+            ? document.getElementById(`dodatno-${prvoDodatno.id}`) ?? document.getElementById(`dodatno-${prvoDodatno.id}-0`)
+            : null;
     if (cilj) cilj.focus();
     else bannerRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     // Samo kad stigne nova greška, ne pri svakom tipkanju (zato samo [greska]).
@@ -138,7 +168,9 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
     postaviSalje(true);
     postaviGresku(null);
     try {
-      const odgovor = await api.kreirajNarudzbu(tijeloNarudzbe(campaignId, { tier, kolicina, imena, email, uvjeti }));
+      const tijelo = tijeloNarudzbe(campaignId, { tier, kolicina, imena, email, uvjeti });
+      if (dodatnaPolja.length) tijelo.dodatna_polja = ocisceniOdgovori(dodatnaPolja, odgovori);
+      const odgovor = await api.kreirajNarudzbu(tijelo);
       const url = adresaPlacanja(odgovor.checkout_url);
       if (!url) throw new ApiError("neispravan_odgovor", 200);
       // Stripe Checkout na računu organizatora (besplatna: ravno na narudžbu). Gumb ostaje zaključan do odlaska.
@@ -256,6 +288,24 @@ export default function KupnjaForma({ campaignId, slug, tiers: pocetniTierovi, z
               disabled={salje}
             />
           </div>
+
+          {dodatnaPolja.length > 0 && (
+            <div className={css.odjeljak}>
+              <div className={css.naslovSkupine}>
+                <span className={css.naslov}>Dodatna polja</span>
+                <span className={css.pomoc}>Podaci koje organizator traži uz prijavu. Polja sa * su obavezna.</span>
+              </div>
+              <DodatnaPolja
+                polja={dodatnaPolja}
+                odgovori={odgovori}
+                greske={dodatna.greske}
+                prikaziGreske={(id) => !!dodirnutaDodatna[id] || prisilnoDodatna}
+                onChange={(id, v) => postaviOdgovore((o) => ({ ...o, [id]: v }))}
+                onBlur={(id) => postaviDodirnutaDodatna((d) => (d[id] ? d : { ...d, [id]: true }))}
+                disabled={salje}
+              />
+            </div>
+          )}
 
           <PotvrdniOkvir id="uvjeti" checked={uvjeti} onChange={(e) => postaviUvjete(e.target.checked)}>
             Prihvaćam{" "}

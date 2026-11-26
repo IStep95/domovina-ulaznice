@@ -11,6 +11,7 @@
 //   2. baza u domovina-api — unique (payment_rail, external_payment_ref).
 //      Ponovljena dostava vraća `already_paid` i ne izdaje nove ulaznice.
 //      Sloj 1 je optimizacija i trag; sloj 2 je jamstvo.
+import { proslijediOdgovoreNarudzbe } from "./dodatna-polja";
 import type Stripe from "stripe";
 import type { Env } from "./env";
 import { HttpError } from "./env";
@@ -139,6 +140,8 @@ async function onCheckoutCompleted(
     case "paid":
     case "already_paid":
       await deliverTicketsEmail(env, orderId, confirm, payerEmail ?? null, amount);
+      // Dodatna polja u obrazac organizatora (ne baca; neuspjeh ponovi cron).
+      await proslijediOdgovoreNarudzbe(env, orderId, payerEmail ?? null);
       // Račun TEK nakon ulaznica: račun za promet koji se nije dogodio je gora
       // greška od zakašnjelog računa (racun.ts pravilo 1). Ne baca —
       // neuspjeh računa ne smije poništiti kupljenu ulaznicu.

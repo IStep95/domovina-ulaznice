@@ -6,7 +6,7 @@
 //
 // Cache: no-store (CACHE_KUPNJA) i za grešku i za formu: raspoloživost mora biti
 // svježa, a povratak sa Stripea ne smije prikazati staru stranicu.
-import { ApiError, type EventView } from "../../../lib/api.ts";
+import { ApiError, type DodatnoPolje, type EventView } from "../../../lib/api.ts";
 import { serverApi } from "../../../lib/api-ssr.ts";
 import Osnovni from "../../../layouts/Osnovni.astro";
 import Banner from "../../../components/Banner.astro";
@@ -28,6 +28,17 @@ try {
   else {
     console.error("dohvatiDogadjaj (kupnja)", slug, e);
     greska = "server";
+  }
+}
+
+// Dodatna polja (Google obrazac organizatora). Ako obrazac ne odgovara, forma
+// ide bez njih — Worker ionako odbije narudžbu s jasnom porukom.
+let dodatnaPolja: DodatnoPolje[] = [];
+if (dogadjaj) {
+  try {
+    dodatnaPolja = (await serverApi().dohvatiDodatnaPolja(dogadjaj.slug)).polja;
+  } catch (e) {
+    console.error("dohvatiDodatnaPolja", slug, e);
   }
 }
 
@@ -92,6 +103,7 @@ const uvjetiOrganizatora = sigurniUrl(dogadjaj?.brand?.terms_url);
             tiers={dogadjaj.tiers}
             zona={zona}
             uvjetiOrganizatora={uvjetiOrganizatora}
+            dodatnaPolja={dodatnaPolja}
           />
         ) : (
           <Banner ton="neutral" class="bez-prodaje">

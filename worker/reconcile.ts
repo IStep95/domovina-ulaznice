@@ -13,6 +13,7 @@ import * as api from "./api";
 import { retrievePaymentIntent } from "./stripe";
 import { logMoney } from "./webhooks";
 import { alarm } from "./alarm";
+import { odrzavajOdgovore } from "./dodatna-polja";
 
 export interface ReconcileReport {
   checked: number;
@@ -131,6 +132,10 @@ export async function reconcile(env: Env): Promise<ReconcileReport> {
   if (report.failedInvoices > 0) {
     report.problems.push(`${report.failedInvoices} narudžbi bez izdanog računa`);
   }
+
+  // ── 5. dodatna polja: ponovi prosljeđivanje u Google obrazac, rok čuvanja ──
+  // Odgovori su u jezgri (izvor istine); ovdje samo dostava organizatoru.
+  report.problems.push(...(await odrzavajOdgovore(env)));
 
   if (report.problems.length) {
     await logMoney(env, {

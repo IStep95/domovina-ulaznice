@@ -104,6 +104,11 @@ export interface UnosDogadjaja {
   onlineLink: string;
   /** Besplatan događaj: sve vrste ulaznica idu po 0 €, bez Stripea. */
   besplatan: boolean;
+  /**
+   * Link na javni Google obrazac čija se pitanja (spol, godište…) prikažu u
+   * kupnji kao „Dodatna polja”; odgovori idu u taj obrazac. Prazno = bez njih.
+   */
+  obrazac: string;
   organizator: string;
   email: string;
   web: string;
@@ -127,6 +132,7 @@ export const prazanUnos = (): UnosDogadjaja => ({
   online: false,
   onlineLink: "",
   besplatan: false,
+  obrazac: "",
   organizator: "",
   email: "",
   web: "",
@@ -161,6 +167,8 @@ export const jeKorak = (n: number): n is Korak => Number.isInteger(n) && n >= 1 
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 const HTTPS = /^https:\/\/\S+$/i;
+/** Javni Google obrazac: docs.google.com/forms/…/d/e/… ili forms.gle/… (pravu provjeru radi Worker). */
+const GOOGLE_OBRAZAC = /^https:\/\/(docs\.google\.com\/forms\/(u\/\d+\/)?d\/e\/[\w-]+|forms\.gle\/\w+)/i;
 
 /** Greške jednog koraka. Koraci 3 i 5 su prazni valjani (sve neobavezno). */
 export function validirajKorak(n: Korak, u: UnosDogadjaja): Greske {
@@ -207,6 +215,12 @@ export function validirajKorak(n: Korak, u: UnosDogadjaja): Greske {
         }
         if (t.kolicina.trim() && !/^\d{1,7}$/.test(t.kolicina.trim())) g[`tier.${i}.kolicina`] = "Količina je cijeli broj.";
       });
+      if (u.obrazac.trim()) {
+        if (u.obrazac.trim().length > 500) g.obrazac = "Link je predug.";
+        else if (!GOOGLE_OBRAZAC.test(u.obrazac.trim())) {
+          g.obrazac = "Zalijepi link za ispunjavanje obrasca (docs.google.com/forms/d/e/… ili forms.gle/…), ne link za uređivanje.";
+        }
+      }
       break;
     case 5:
       if (u.email.trim() && !EMAIL.test(u.email.trim())) g.email = "Neispravna e-mail adresa.";
@@ -233,7 +247,7 @@ export function najdaljiDopusteni(u: UnosDogadjaja): Korak {
 /** Korak kojem pripada ključ greške (`tier.2.cijena` → 4). */
 export function korakPolja(kljuc: string): Korak {
   const polje = kljuc.split(".")[0]!;
-  if (polje === "tier" || polje === "tieri") return 4;
+  if (polje === "tier" || polje === "tieri" || polje === "obrazac") return 4;
   if (["pocetak", "kraj", "mjesto", "adresa", "grad", "onlineLink"].includes(polje)) return 2;
   if (["opis", "slika", "galerija"].includes(polje)) return 3;
   if (["organizator", "email", "web"].includes(polje)) return 5;
@@ -251,7 +265,7 @@ export function korakZaKod(kod: string): Korak | null {
       .includes(kod)
   ) return 2;
   if (["invalid_cover_url", "invalid_description", "invalid_gallery", "invalid_gallery_url"].includes(kod)) return 3;
-  if (kod === "invalid_tiers" || kod.startsWith("invalid_tier_")) return 4;
+  if (kod === "invalid_tiers" || kod.startsWith("invalid_tier_") || kod.startsWith("obrazac_")) return 4;
   return null;
 }
 
@@ -278,6 +292,7 @@ export function zahtjev(u: UnosDogadjaja, eventId: string): Record<string, unkno
     organizer_name: prazno(u.organizator),
     organizer_email: prazno(u.email),
     organizer_web: prazno(u.web),
+    ...(u.obrazac.trim() ? { form_url: u.obrazac.trim() } : {}),
     tiers: u.tieri.map((t) => ({
       title: t.naziv.trim(),
       price_cents: u.besplatan ? 0 : centiIzUnosa(t.cijena),
@@ -310,6 +325,8 @@ export interface Skica {
     attendance_mode?: string | null;
     /** Iz `event_access` (Worker ga spljošti u event). */
     online_url?: string | null;
+    /** Google obrazac dodatnih polja (Worker, D1 `event_forms`). */
+    form_url?: string | null;
     organizer_name?: string | null;
     organizer_email?: string | null;
     organizer_web?: string | null;
@@ -371,6 +388,7 @@ export function unosIzSkice(s: Skica): UnosDogadjaja {
     online,
     onlineLink: tekst(e.online_url),
     besplatan,
+    obrazac: tekst(e.form_url),
     organizator: e.organizer_name && e.organizer_name !== s.title ? e.organizer_name : "",
     email: tekst(e.organizer_email),
     web: tekst(e.organizer_web),
@@ -404,6 +422,8 @@ export function zahtjevIzmjene(u: UnosDogadjaja, izvorniTierIds: readonly string
     organizer_email: u.email.trim(),
     organizer_web: u.web.trim(),
     online_url: u.online ? u.onlineLink.trim() : "",
+    // prazno = makni obrazac (Worker briše link iz event_forms)
+    form_url: u.obrazac.trim(),
     tiers: (tiers as Array<Record<string, unknown>>).map((t, i) => ({
       ...(u.tieri[i]!.id ? { id: u.tieri[i]!.id } : {}),
       ...t,

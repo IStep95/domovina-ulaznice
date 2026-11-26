@@ -153,6 +153,11 @@ function Dogadjaj({
   const vracena = skica && !d.submitted_at && !!d.review_note;
   const [greska, postaviGresku] = useState<string | null>(null);
   const { zauzeto, prihod, imenskih } = zbrojDogadjaja(d);
+  // Besplatan događaj nema što prikupiti — iznos bi bio samo „0,00 €”.
+  // Popis sudionika: imenske ulaznice, a od 26. 11. i e-mail kupca i odgovori na
+  // dodatna polja — dakle za svaki događaj koji prodaje (ne za skicu).
+  const izvoz = imenskih || !skica;
+  const besplatan = d.tiers.length > 0 && d.tiers.every((t) => t.price_cents === 0);
   const stanje = stanjeDogadjaja(d);
   const meta = [datumDogadjaja(d), d.event?.venue_city].filter(Boolean).join(" · ");
 
@@ -216,7 +221,12 @@ function Dogadjaj({
           </div>
         </div>
         <div className={css.zbroj}>
-          <strong className={css.iznos}>{eur(prihod)}</strong>
+          {!besplatan && (
+            <>
+              <span className={css.mutno}>Prikupljeno</span>
+              <strong className={css.iznos}>{eur(prihod)}</strong>
+            </>
+          )}
           <span className={css.mutno}>zauzeto: {zauzeto}</span>
         </div>
       </div>
@@ -250,7 +260,7 @@ function Dogadjaj({
 
       {greska && <Banner ton="error">{greska}</Banner>}
 
-      {(imenskih || skica) && (
+      {(izvoz || skica) && (
         <div className={css.akcije}>
           {skica && !poslana && (
             <button
@@ -279,7 +289,7 @@ function Dogadjaj({
               </button>
             </>
           )}
-          {imenskih && (
+          {izvoz && (
             <button
               type="button"
               className={`${gumb.gumb} ${gumb.sekundarni}`}

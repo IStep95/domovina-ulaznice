@@ -96,6 +96,35 @@ export interface CreateOrderRequest {
   quantity: number;
   buyer_email: string;
   holders: Array<{ full_name: string; email?: string }>;
+  /** Odgovori na dodatna polja (ključ = `DodatnoPolje.id`); samo kad ih događaj ima. */
+  dodatna_polja?: OdgovoriDodatnihPolja;
+}
+
+/**
+ * Dodatno polje kupnje (2026-11-26): pitanje iz organizatorova javnog Google
+ * obrasca. Worker ga pročita iz obrasca; odgovore šalje u taj obrazac nakon
+ * izdavanja ulaznica, pa podaci kupca završe kod organizatora (Google Sheets),
+ * ne u ticketing jezgri.
+ */
+export interface DodatnoPolje {
+  /** `entry.<id>` u Google obrascu. */
+  id: string;
+  naslov: string;
+  opis: string | null;
+  vrsta: "tekst" | "odlomak" | "izbor" | "padajuci" | "visestruki" | "skala" | "datum" | "vrijeme";
+  obavezno: boolean;
+  /** izbor | padajuci | visestruki | skala */
+  opcije?: string[];
+  /** skala: opisi krajeva („Nimalo” … „Jako”) */
+  krajevi?: [string | null, string | null];
+}
+
+/** Tekst za tekst/odlomak/izbor/padajuci/skala, YYYY-MM-DD za datum, HH:MM za vrijeme, niz za visestruki. */
+export type OdgovoriDodatnihPolja = Record<string, string | string[]>;
+
+/** GET /api/dogadjaj/:slug/dodatna-polja */
+export interface DodatnaPoljaResponse {
+  polja: DodatnoPolje[];
 }
 
 /** POST /api/narudzba — odgovor; kupca se šalje na `checkout_url`. */

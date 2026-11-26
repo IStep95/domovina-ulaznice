@@ -25,8 +25,10 @@ import {
   jeIstekla,
   kreirajDogadjaj,
   obrisiSkicu,
+  provjeriObrazac,
   ucitajSliku,
   type OrgPregled,
+  type PregledObrasca,
 } from "../lib/auth.ts";
 import { opisVremena, predlozeniKraj } from "../lib/birac-datuma.ts";
 import {
@@ -442,7 +444,16 @@ function Wizard({ sesija, odjava, istekla, uredi }: SesijaOtoka & { uredi?: Ured
               istekla={istekla}
             />
           )}
-          {korak === 4 && <Korak4 unos={unos} greske={greske} postavi={postavi} postaviTier={postaviTier} />}
+          {korak === 4 && (
+            <Korak4
+              unos={unos}
+              greske={greske}
+              postavi={postavi}
+              postaviTier={postaviTier}
+              token={sesija.access_token}
+              istekla={istekla}
+            />
+          )}
           {korak === 5 && (
             <Korak5 unos={unos} greske={greske} postavi={postavi} imeRacuna={imeRacuna} idi={idi}>
               <div className={css.samoMobitel}>
@@ -983,7 +994,9 @@ function Korak4({
   greske,
   postavi,
   postaviTier,
-}: KorakProps & { postaviTier: (i: number, izmjena: Partial<UnosTiera>) => void }) {
+  token,
+  istekla,
+}: KorakProps & { postaviTier: (i: number, izmjena: Partial<UnosTiera>) => void; token: string; istekla: () => void }) {
   const dodaj = () => {
     postavi("tieri", [...unos.tieri, prazanTier()]);
     // novi red: fokus na njegov naziv, tablica se odscrolla do njega
@@ -1094,6 +1107,99 @@ function Korak4({
         </button>
         <span className={css.mutno}>Imenska: kupac upisuje ime za svaku ulaznicu.</span>
       </div>
+      <DodatnaPoljaObrasca unos={unos} greske={greske} postavi={postavi} token={token} istekla={istekla} />
+    </div>
+  );
+}
+
+/**
+ * Dodatna polja kupnje (2026-11-26): link na javni Google obrazac. „Provjeri”
+ * pokaže koja će pitanja kupac vidjeti; Worker obrazac provjerava i pri spremanju.
+ */
+function DodatnaPoljaObrasca({
+  unos,
+  greske,
+  postavi,
+  token,
+  istekla,
+}: KorakProps & { token: string; istekla: () => void }) {
+  const [pregled, postaviPregled] = useState<PregledObrasca | null>(null);
+  const [greska, postaviGresku] = useState<string | null>(null);
+  const [radi, postaviRadi] = useState(false);
+  const link = unos.obrazac.trim();
+
+  async function provjeri() {
+    postaviGresku(null);
+    postaviPregled(null);
+    postaviRadi(true);
+    try {
+      postaviPregled(await provjeriObrazac(token, link));
+    } catch (e) {
+      if (jeIstekla(e)) istekla();
+      else postaviGresku(porukaIzGreske(e));
+    } finally {
+      postaviRadi(false);
+    }
+  }
+
+  return (
+    <div className={css.obrazac}>
+      <div className={css.naslovObrasca}>
+        <span className={css.oznakaObrasca}>Dodatna polja (neobavezno)</span>
+        <span className={css.mutno}>
+          Trebaš od kupca još podataka (ime i prezime, spol, godište…)? Napravi javni Google obrazac s tim pitanjima i
+          zalijepi njegov link. Pitanja će se prikazati u kupnji ispod e-maila. Odgovori su u popisu sudionika
+          (CSV) i stižu u tvoj obrazac (i Google tablicu) nakon izdavanja ulaznice; kod nas se brišu 90 dana nakon
+          događaja.
+        </span>
+      </div>
+      <div className={css.redObrasca}>
+        <Polje
+          id="nd-obrazac"
+          oznaka="Link na Google obrazac"
+          type="url"
+          inputMode="url"
+          placeholder="https://forms.gle/…"
+          value={unos.obrazac}
+          maxLength={500}
+          greska={greske.obrazac}
+          onChange={(e) => {
+            postavi("obrazac", e.target.value);
+            postaviPregled(null);
+            postaviGresku(null);
+          }}
+        />
+        <button
+          type="button"
+          className={`${gumb.gumb} ${gumb.sekundarni}`}
+          disabled={!link || radi || !!greske.obrazac}
+          aria-busy={radi || undefined}
+          onClick={provjeri}
+        >
+          {radi ? "Provjeravam…" : "Provjeri obrazac"}
+        </button>
+      </div>
+      {greska && <Banner ton="error">{greska}</Banner>}
+      {pregled && (
+        <div className={css.pregledObrasca} role="status">
+          <b>{pregled.naslov || "Obrazac"}</b>
+          {pregled.polja.length === 0 ? (
+            <span className={css.mutno}>Obrazac nema pitanja koja bi kupac ispunio.</span>
+          ) : (
+            <ul>
+              {pregled.polja.map((p) => (
+                <li key={p.id}>
+                  {p.naslov}
+                  {p.obavezno ? " *" : ""}
+                </li>
+              ))}
+            </ul>
+          )}
+          {pregled.email_polja > 0 && (
+            <span className={css.mutno}>Pitanje za e-mail popunjavamo sami adresom kupca.</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

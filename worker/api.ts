@@ -129,6 +129,47 @@ async function restRpc<T>(env: Env, fn: string, args: Record<string, unknown>): 
   return (text ? JSON.parse(text) : {}) as T;
 }
 
+// ------------------------------------------------- odgovori na dodatna polja
+// `ulaznice.order_answers` (domovina-api 20261126120000): sve kroz service ključ.
+
+/** Odgovor s tekstom pitanja (snimka u trenutku kupnje). */
+export interface OdgovorKupca {
+  id: string;
+  pitanje: string;
+  odgovor: string | string[];
+}
+
+export const spremiOdgovore = (env: Env, orderId: string, answers: OdgovorKupca[], formUrl: string | null) =>
+  restRpc<{ saved: boolean }>(env, "save_order_answers", { p_order_id: orderId, p_answers: answers, p_form_url: formUrl });
+
+/** Neproslijeđeni odgovori jedne narudžbe (ili null). */
+export async function odgovoriZaProslijediti(
+  env: Env,
+  orderId: string,
+): Promise<{ form_url: string; answers: OdgovorKupca[]; buyer_email: string | null } | null> {
+  const redci = await rest<Array<{ form_url: string | null; answers: OdgovorKupca[]; forwarded_at: string | null; orders: { buyer_email: string | null } | null }>>(
+    env,
+    `order_answers?select=form_url,answers,forwarded_at,orders(buyer_email)&order_id=eq.${encodeURIComponent(orderId)}`,
+  );
+  const r = redci[0];
+  if (!r || !r.form_url || r.forwarded_at) return null;
+  return { form_url: r.form_url, answers: r.answers, buyer_email: r.orders?.buyer_email ?? null };
+}
+
+/** Plaćene narudžbe čiji odgovori još nisu stigli u obrazac (cron). */
+export const odgovoriNaCekanju = (env: Env) =>
+  restRpc<Array<{ order_id: string; form_url: string; answers: OdgovorKupca[]; forward_attempts: number; buyer_email: string | null }>>(
+    env,
+    "order_answers_to_forward",
+    { p_limit: 50 },
+  );
+
+export const oznaciProslijedeno = (env: Env, orderId: string, greska: string | null) =>
+  restRpc<unknown>(env, "mark_order_answers_forwarded", { p_order_id: orderId, p_error: greska });
+
+/** Rok čuvanja odgovora (jezgra briše; vraća broj obrisanih). */
+export const ocistiOdgovore = (env: Env) => restRpc<number>(env, "purge_order_answers", {});
+
 // ------------------------------------------------------------------- tipovi
 
 export interface FeedTier {

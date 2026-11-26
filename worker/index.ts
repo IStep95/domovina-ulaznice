@@ -16,6 +16,14 @@ import { reconcile } from "./reconcile";
 import { clientIp, consume } from "./ratelimit";
 import { sendEmail, ticketAttachments, ticketMail } from "./mail";
 import { QR_PREFIX } from "./qr";
+import {
+  dohvatiObrazac,
+  linkObrasca,
+  proslijediOdgovoreNarudzbe,
+  provjeriOdgovore,
+  spremiLinkObrasca,
+  zapisiOdgovore,
+} from "./dodatna-polja";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -224,6 +232,35 @@ app.get("/api/dogadjaj/:slug", async (c) => {
 });
 
 /**
+ * Dodatna polja kupnje (2026-11-26): pitanja iz organizatorova Google obrasca.
+ * Događaj bez obrasca → prazan popis. Polja e-pošte Worker puni sam (ne vraća ih).
+ */
+app.get("/api/dogadjaj/:slug/dodatna-polja", async (c) => {
+  const { events } = await api.feed(c.env);
+  const ev = events.find((e) => e.slug === c.req.param("slug"));
+  if (!ev) return fail("event_not_found", 404);
+  const link = await linkObrasca(c.env, ev.campaign_id);
+  if (!link) return c.json({ polja: [] });
+  const obrazac = await dohvatiObrazac(link);
+  return c.json({ polja: obrazac.polja });
+});
+
+/** Odgovori na dodatna polja → Google obrazac; za plaćenu narudžbu to radi webhook. */
+async function posaljiDodatnaPolja(
+  c: { executionCtx: { waitUntil(p: Promise<unknown>): void } },
+  env: Env,
+  orderId: string,
+  email: string,
+) {
+  const posao = proslijediOdgovoreNarudzbe(env, orderId, email);
+  try {
+    c.executionCtx.waitUntil(posao);
+  } catch {
+    await posao; // bez ExecutionContexta (testovi)
+  }
+}
+
+/**
  * Narudžba → Stripe Checkout.
  *
  * Redoslijed je bitan: rezervacija u jezgri PRIJE Stripea. Ako bi session
@@ -239,6 +276,7 @@ app.post("/api/narudzba", async (c) => {
     quantity?: number;
     holders?: Array<{ full_name?: string; email?: string }>;
     buyer_email?: string;
+    dodatna_polja?: unknown;
   };
   try {
     body = await c.req.json();
@@ -276,6 +314,12 @@ app.post("/api/narudzba", async (c) => {
     }
   }
 
+  // Dodatna polja (Google obrazac organizatora): provjera PRIJE rezervacije, da
+  // kupac s neispravnim odgovorima ne zauzme mjesto.
+  const formUrl = await linkObrasca(c.env, ev.campaign_id);
+  const obrazac = formUrl ? await dohvatiObrazac(formUrl) : null;
+  const odgovori = obrazac ? provjeriOdgovore(obrazac.polja, body.dodatna_polja) : null;
+
   // Besplatna ulaznica: bez Stripea i bez Connect računa organizatora. Jezgra
   // narudžbu od 0 centi potvrdi odmah (rail 'free') i vrati QR tokene; mail ide
   // odavde, kao nakon webhooka. „checkout_url” vodi ravno na narudžbu, pa web
@@ -293,6 +337,15 @@ app.post("/api/narudzba", async (c) => {
     if (order.state !== "paid") return fail("besplatna_nije_potvrdjena", 502, { state: order.state });
     const potvrda = { ok: true, status: "paid" as const, order_id: orderId, tickets: order.tickets ?? [] };
     await deliverTicketsEmail(c.env, orderId, potvrda, buyerEmail, 0);
+    if (obrazac && odgovori) {
+      // Ulaznice su već izdane: pad upisa ne smije srušiti odgovor kupcu, samo trag.
+      try {
+        await zapisiOdgovore(c.env, orderId, obrazac, odgovori);
+        await posaljiDodatnaPolja(c, c.env, orderId, buyerEmail);
+      } catch (e) {
+        console.error(`[dodatna-polja] besplatna ${orderId}: odgovori nisu spremljeni: ${String(e)}`);
+      }
+    }
     return c.json({
       order_id: orderId,
       checkout_url: `${c.env.PUBLIC_BASE_URL}/ulaznice/${orderId}?besplatno=1`,
@@ -315,6 +368,9 @@ app.post("/api/narudzba", async (c) => {
     quantity,
     holders: tier.imenska ? holders.map((h) => ({ full_name: h.full_name, email: h.email })) : [],
   });
+  // Odgovori u jezgru PRIJE Stripea: ako upis padne, kupac ne plaća. U Google
+  // obrazac ih šalje webhook (ili cron) tek nakon izdavanja ulaznica.
+  if (obrazac && odgovori) await zapisiOdgovore(c.env, orderId, obrazac, odgovori);
 
   // Iznos i acct_… dolaze iz jezgre, ne iz klijenta — klijent ne određuje cijenu.
   const intent = await api.stripeIntent(c.env, orderId);
@@ -670,7 +726,8 @@ app.get("/api/organizator/pregled", async (c) => {
 });
 
 /**
- * Izvoz popisa sudionika (CSV) — imenske ulaznice za jedan događaj.
+ * Izvoz popisa sudionika (CSV) za jedan događaj: ulaznice, e-mail kupca i
+ * odgovori na dodatna polja (stupac po pitanju).
  *
  * PII izlazi iz sustava, pa vrijede tri stvari: RLS odlučuje smije li ovaj
  * korisnik vidjeti retke (mi ne filtriramo po accountu u kodu), izvoz je uvijek
@@ -689,18 +746,45 @@ app.get("/api/organizator/holderi.csv", async (c) => {
       holder_email: string | null;
       state: string;
       checked_in_at: string | null;
+      order_id?: string;
+      orders?: { buyer_email: string | null } | null;
     }>
   >(
     c.env,
     jwt,
-    "tickets?select=serial,holder_name,holder_email,state,checked_in_at&order=serial.asc" +
+    "tickets?select=serial,holder_name,holder_email,state,checked_in_at,order_id,orders(buyer_email)&order=serial.asc" +
       `&event_id=eq.${encodeURIComponent(campaignId)}`,
   );
 
+  // Odgovori na dodatna polja (ulaznice.order_answers, RLS: admin računa). Jezgra
+  // bez te tablice (prije migracije 20261126120000) → izvoz bez tih stupaca.
+  const odgovori = await api
+    .korisnickiRest<Array<{ order_id: string; answers: api.OdgovorKupca[] }>>(
+      c.env,
+      jwt,
+      `order_answers?select=order_id,answers&event_id=eq.${encodeURIComponent(campaignId)}`,
+    )
+    .catch(() => []);
+  const poNarudzbi = new Map(odgovori.map((o) => [o.order_id, o.answers]));
+  // Stupac po tekstu pitanja (obrazac se smio mijenjati), redom prvog pojavljivanja.
+  const pitanja = [...new Set(odgovori.flatMap((o) => o.answers.map((a) => a.pitanje)))];
+  const odgovorNa = (orderId: string | undefined, pitanje: string) => {
+    const a = orderId ? poNarudzbi.get(orderId)?.find((x) => x.pitanje === pitanje) : undefined;
+    return a ? (Array.isArray(a.odgovor) ? a.odgovor.join(", ") : a.odgovor) : "";
+  };
+
   const csv = [
-    "serial;ime;email;stanje;ulazak",
+    ["serial", "ime", "email", "stanje", "ulazak", "kupac", ...pitanja].map(csvPolje).join(";"),
     ...redci.map((r) =>
-      [r.serial, r.holder_name ?? "", r.holder_email ?? "", r.state, r.checked_in_at ?? ""]
+      [
+        r.serial,
+        r.holder_name ?? "",
+        r.holder_email ?? "",
+        r.state,
+        r.checked_in_at ?? "",
+        r.orders?.buyer_email ?? "",
+        ...pitanja.map((p) => odgovorNa(r.order_id, p)),
+      ]
         .map(csvPolje)
         .join(";"),
     ),
@@ -748,8 +832,47 @@ app.post("/api/organizator/dogadjaj", async (c) => {
   // galerija: oblik i https provjerava events-organizer; ovdje samo da smeće ne ide na mrežu
   if ("gallery" in body && (!Array.isArray(body.gallery) || body.gallery.length > 20)) return fail("invalid_gallery");
 
+  const obrazac = await linkObrascaIzTijela(body);
+
   const podaci = Object.fromEntries(["event_id", "account_id", ...POLJA_DOGADJAJA].filter((k) => k in body).map((k) => [k, body[k]]));
-  return c.json(await api.kreirajDogadjaj(c.env, jwt, podaci));
+  const rezultat = await api.kreirajDogadjaj(c.env, jwt, podaci);
+  // Tek nakon jezgre: ona provjerava smije li korisnik stvarati na tom računu.
+  if (obrazac !== undefined) await spremiLinkObrasca(c.env, rezultat.id, obrazac);
+  return c.json(rezultat);
+});
+
+/**
+ * `form_url` iz tijela editora: undefined = ne diraj, null = makni, inače
+ * provjeren viewform link (obrazac mora biti javan i čitljiv već pri spremanju).
+ */
+async function linkObrascaIzTijela(body: Record<string, unknown>): Promise<string | null | undefined> {
+  if (!("form_url" in body)) return undefined;
+  const v = body.form_url;
+  if (v === null || (typeof v === "string" && v.trim() === "")) return null;
+  if (typeof v !== "string" || v.length > 500) return odbij("obrazac_neispravan_link");
+  return (await dohvatiObrazac(v, { svjeze: true })).url;
+}
+const odbij = (code: string): never => {
+  throw new HttpError(422, code);
+};
+
+/**
+ * Pregled Google obrasca u editoru: koja će se dodatna polja prikazati u
+ * kupnji. Samo prijavljenom (bearer), uz limit — Worker dohvaća stranicu s Googlea.
+ */
+app.post("/api/organizator/obrazac", async (c) => {
+  if (!bearer(c)) return fail("nije_prijavljen", 401);
+  const rl = await consume(c.env, "obrazac", clientIp(c.req.raw));
+  if (!rl.allowed) return fail("previse_pokusaja", 429, { retry_after: rl.retryAfter });
+  let body: { url?: unknown };
+  try {
+    body = await c.req.json();
+  } catch {
+    return fail("bad_json");
+  }
+  if (typeof body.url !== "string" || body.url.length > 500) return fail("obrazac_neispravan_link", 422);
+  const o = await dohvatiObrazac(body.url, { svjeze: true });
+  return c.json({ url: o.url, naslov: o.naslov, polja: o.polja, email_polja: o.emailPolja.length });
 });
 
 /** Polja `ulaznice.events` koja editor dobiva u objektu `event` (prije tablica `events`). */
@@ -789,6 +912,7 @@ app.get("/api/organizator/dogadjaj/:id", async (c) => {
   const event = {
     ...Object.fromEntries(POLJA_SKICE_EVENTA.filter((k) => k in r).map((k) => [k, r[k]])),
     online_url: pristup?.online_url ?? null,
+    form_url: await linkObrasca(c.env, String(campaign_id)),
   };
   return c.json({ campaign_id, account_id, slug, title, state, event, tiers });
 });
@@ -813,8 +937,13 @@ app.put("/api/organizator/dogadjaj/:id", async (c) => {
   if ("gallery" in body && (!Array.isArray(body.gallery) || body.gallery.length > 20)) return fail("invalid_gallery");
   if ("remove_tier_ids" in body && !Array.isArray(body.remove_tier_ids)) return fail("invalid_tiers");
 
+  const obrazac = await linkObrascaIzTijela(body);
+
   const podaci = Object.fromEntries([...POLJA_DOGADJAJA, "remove_tier_ids"].filter((k) => k in body).map((k) => [k, body[k]]));
-  return c.json(await api.organizatorAkcija(c.env, jwt, "update", { ...podaci, campaign_id: id }));
+  const rezultat = await api.organizatorAkcija(c.env, jwt, "update", { ...podaci, campaign_id: id });
+  // Tek nakon jezgre: uspješan update znači da je korisnik admin računa događaja.
+  if (obrazac !== undefined) await spremiLinkObrasca(c.env, id, obrazac);
+  return c.json(rezultat);
 });
 
 /** Brisanje skice → `delete_event_draft` (admin računa, samo skica bez narudžbi). */

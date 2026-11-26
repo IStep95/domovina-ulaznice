@@ -1,0 +1,56 @@
+/* Dodatna polja kupnje (Google obrazac organizatora): skupine opcija. */
+.skupina {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.skupina legend {
+  padding: 0;
+  margin-bottom: 6px;
+}
+
+.opcije {
+  display: flex;
+  flex-direction: column;
+}
+
+.skala {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-4);
+}
+
+.opcija {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--tap-min);
+  font-size: 15px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.opcija input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-ink);
+  cursor: pointer;
+}
+
+.kraj {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.odlomak {
+  min-height: 96px;
+  padding: 12px 14px;
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.5;
+}

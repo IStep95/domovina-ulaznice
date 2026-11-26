@@ -27,6 +27,8 @@ export interface TestCtx {
   env: Env;
   db: DatabaseSync;
   ctx: ExecutionContext;
+  /** Obećanja predana `ctx.waitUntil` (test ih čeka s `await Promise.all(t.pozadina)`). */
+  pozadina: Promise<unknown>[];
   calls: FetchCall[];
   api: ApiState;
   restore(): void;
@@ -91,6 +93,15 @@ export interface ApiState {
   onlineUrl: string | null;
   /** Feed dobiva i besplatnu vrstu (TIER_BESPLATNA, 0 €). */
   besplatnaVrsta: boolean;
+  /** Google obrazac (dodatna polja): HTML stranice `viewform`, status i primljeni `formResponse`. */
+  googleForma: string;
+  googleStatus: number;
+  googleOdgovorStatus: number;
+  googleOdgovori: string[];
+  /** `ulaznice.order_answers` po narudžbi (RPC-ovi save/to_forward/mark/purge). */
+  odgovori: Record<string, { answers: unknown[]; form_url: string | null; forwarded_at: string | null; forward_attempts: number; forward_error: string | null }>;
+  /** Status RPC-a save_order_answers (npr. 404 kad jezgra još nema migraciju). */
+  odgovoriStatus: number;
 }
 
 export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestCtx {
@@ -133,6 +144,12 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     emails: [],
     onlineUrl: null,
     besplatnaVrsta: false,
+    googleForma: "",
+    googleStatus: 200,
+    googleOdgovorStatus: 200,
+    googleOdgovori: [],
+    odgovori: {},
+    odgovoriStatus: 200,
   };
 
   const env = {
@@ -152,13 +169,14 @@ export function testEnv(overrides: Partial<Record<string, unknown>> = {}): TestC
     ...overrides,
   } as unknown as Env;
 
+  const pozadina: Promise<unknown>[] = [];
   const ctx = {
-    waitUntil: () => undefined,
+    waitUntil: (p: Promise<unknown>) => void pozadina.push(p),
     passThroughOnException: () => undefined,
   } as unknown as ExecutionContext;
 
   const { calls, restore } = installFetchStub(state);
-  return { env, db, ctx, calls, api: state, restore };
+  return { env, db, ctx, pozadina, calls, api: state, restore };
 }
 
 // ------------------------------------------------------------------- pozivi
@@ -398,6 +416,46 @@ function installFetchStub(state: ApiState) {
         tickets: state.tickets.map((t) => ({ ...t, qr_token: "b".repeat(64) })),
       });
     }
+    if (url.includes("/rest/v1/rpc/save_order_answers")) {
+      if (headers.authorization !== `Bearer ${SERVICE_KEY}`) throw new Error("order_answers pisan bez service ključa");
+      if (state.odgovoriStatus !== 200) return json({ code: "PGRST202" }, state.odgovoriStatus);
+      const p = JSON.parse(body || "{}");
+      const novo = !state.odgovori[p.p_order_id];
+      if (novo) {
+        state.odgovori[p.p_order_id] = { answers: p.p_answers, form_url: p.p_form_url ?? null, forwarded_at: null, forward_attempts: 0, forward_error: null };
+      }
+      return json({ order_id: p.p_order_id, saved: novo });
+    }
+    if (url.includes("/rest/v1/rpc/order_answers_to_forward")) {
+      return json(
+        Object.entries(state.odgovori)
+          .filter(([, r]) => r.form_url && !r.forwarded_at && r.forward_attempts < 20 && state.orderState === "paid")
+          .map(([order_id, r]) => ({ order_id, form_url: r.form_url, answers: r.answers, forward_attempts: r.forward_attempts, buyer_email: state.buyerEmail })),
+      );
+    }
+    if (url.includes("/rest/v1/rpc/mark_order_answers_forwarded")) {
+      const p = JSON.parse(body || "{}");
+      const r = state.odgovori[p.p_order_id];
+      if (r && !r.forwarded_at) {
+        r.forward_attempts += 1;
+        r.forward_error = p.p_error ?? null;
+        if (!p.p_error) r.forwarded_at = new Date().toISOString();
+      }
+      return new Response(null, { status: 204 });
+    }
+    if (url.includes("/rest/v1/rpc/purge_order_answers")) return json(0);
+    if (url.includes("/rest/v1/order_answers?") && url.includes("event_id=eq.")) {
+      // izvoz sudionika: U IME organizatora (RLS), nikad service ključem
+      if (headers.authorization !== `Bearer ${state.jwt}`) throw new Error("izvoz odgovora bez korisnikovog JWT-a");
+      if (state.odgovoriStatus !== 200) return json({ code: "42P01" }, state.odgovoriStatus);
+      return json(Object.entries(state.odgovori).map(([order_id, r]) => ({ order_id, answers: r.answers })));
+    }
+    if (url.includes("/rest/v1/order_answers?")) {
+      if (headers.authorization !== `Bearer ${SERVICE_KEY}`) throw new Error("order_answers čitan bez service ključa");
+      const id = decodeURIComponent(/order_id=eq\.([^&]+)/.exec(url)?.[1] ?? "");
+      const r = state.odgovori[id];
+      return json(r ? [{ ...r, orders: { buyer_email: state.buyerEmail } }] : []);
+    }
     if (url.includes("/rest/v1/rpc/refund_ticket_order")) {
       return json({ status: state.refundStatus, order_id: JSON.parse(body || "{}").p_order_id, voided: 2 });
     }
@@ -447,6 +505,7 @@ function installFetchStub(state: ApiState) {
         holder_email: t.holder_email ?? null,
         state: t.state ?? "issued",
         checked_in_at: null,
+        ...(url.includes("order_id,orders(") ? { order_id: t.order_id ?? null, orders: { buyer_email: t.buyer_email ?? null } } : {}),
       })));
     }
 
@@ -484,6 +543,14 @@ function installFetchStub(state: ApiState) {
       if (state.emailFails) return json({ message: "domena nije verificirana" }, 403);
       state.emails.push(JSON.parse(body || "{}"));
       return json({ id: "email_test_1" });
+    }
+
+    if (url.startsWith("https://docs.google.com/forms/")) {
+      if (url.endsWith("/formResponse")) {
+        state.googleOdgovori.push(body);
+        return new Response("<html>Vaš je odgovor zabilježen.</html>", { status: state.googleOdgovorStatus });
+      }
+      return new Response(state.googleForma, { status: state.googleStatus, headers: { "content-type": "text/html" } });
     }
 
     throw new Error(`neočekivan mrežni poziv u testu: ${method} ${url}`);
