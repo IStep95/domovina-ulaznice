@@ -585,7 +585,6 @@ function Korak1({
         id="nd-naslov"
         oznaka="Naziv događaja"
         value={unos.naslov}
-        placeholder="npr. Koncert u parku"
         maxLength={160}
         greska={greske.naslov}
         pomoc={greske.naslov ? undefined : "Kupci ga vide na popisu i na stranici događaja."}
@@ -674,7 +673,6 @@ function Korak2({ unos, greske, postavi }: KorakProps) {
             id="nd-mjesto"
             oznaka="Naziv mjesta"
             value={unos.mjesto}
-            placeholder="npr. Dom sportova"
             maxLength={160}
             greska={greske.mjesto}
             onChange={(e) => postavi("mjesto", e.target.value)}
@@ -684,7 +682,6 @@ function Korak2({ unos, greske, postavi }: KorakProps) {
               id="nd-adresa"
               oznaka="Adresa (neobavezno)"
               value={unos.adresa}
-              placeholder="Trg Krešimira Ćosića 11"
               maxLength={200}
               onChange={(e) => postavi("adresa", e.target.value)}
             />
@@ -692,7 +689,6 @@ function Korak2({ unos, greske, postavi }: KorakProps) {
               id="nd-grad"
               oznaka="Grad"
               value={unos.grad}
-              placeholder="Zagreb"
               maxLength={80}
               greska={greske.grad}
               onChange={(e) => postavi("grad", e.target.value)}
@@ -1264,7 +1260,6 @@ function Korak5({
             id="nd-organizator"
             oznaka="Ime organizatora koje kupci vide (prazno = naziv događaja)"
             value={unos.organizator}
-            placeholder="npr. Udruga Prilika za Susret"
             maxLength={160}
             onChange={(e) => postavi("organizator", e.target.value)}
           />

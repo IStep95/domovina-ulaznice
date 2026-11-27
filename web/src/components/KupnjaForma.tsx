@@ -236,6 +236,12 @@ export default function KupnjaForma({
     (provjera.email ? 0 : 1) +
     obaveznaDodatna.filter((p) => !dodatna.greske[p.id]).length +
     (uvjeti ? 1 : 0);
+  // „Popunjeno z/w opcionalnih polja”: neobavezna dodatna polja s odgovorom (prazno se ne broji).
+  const opcionalnaDodatna = dodatnaPolja.filter((p) => !p.obavezno);
+  const popunjenihOpcionalnih = opcionalnaDodatna.filter((p) => {
+    const v = odgovori[p.id];
+    return Array.isArray(v) ? v.length > 0 : typeof v === "string" && v.trim() !== "";
+  }).length;
   const natrag = `/dogadjaj/${encodeURIComponent(slug)}`;
 
   return (
@@ -384,7 +390,13 @@ export default function KupnjaForma({
         />
         {pokusaj && tier && max >= 1 && !konacno && (
           <span className={css.popunjeno} aria-live="polite">
-            Popunjeno {popunjenihObaveznih}/{ukupnoObaveznih} odgovora
+            Popunjeno {popunjenihObaveznih}/{ukupnoObaveznih} obveznih polja
+            {opcionalnaDodatna.length > 0 && (
+              <>
+                <br />
+                Popunjeno {popunjenihOpcionalnih}/{opcionalnaDodatna.length} opcionalnih polja
+              </>
+            )}
           </span>
         )}
         {nedostaje && (
