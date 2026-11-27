@@ -68,6 +68,10 @@ export default function KupnjaForma({
   const [odgovori, postaviOdgovore] = useState<OdgovoriDodatnihPolja>({});
   const [dodirnutaDodatna, postaviDodirnutaDodatna] = useState<Record<string, boolean>>({});
   const [salje, postaviSalje] = useState(false);
+  // Klik na sivi gumb: pokaži greške svih obaveznih polja, i nedodirnutih.
+  const [pokusaj, postaviPokusaj] = useState(false);
+  // Prije hidracije gumb ostaje pravi `disabled` (inače bi klik poslao formu bez JS-a).
+  const [hidrirano, postaviHidrirano] = useState(false);
   const [greska, postaviGresku] = useState<GreskaNarudzbe | null>(null);
   const [cekanje, postaviCekanje] = useState({ sekundi: 0, kljuc: 0 });
   const slanje = useRef(false);
@@ -95,9 +99,11 @@ export default function KupnjaForma({
   const konacno = greska?.konacno ?? false;
   const ceka = cekanje.sekundi > 0;
   // Greška s poslužitelja za imena/e-mail: pokaži inline greške i bez dodira.
-  const prisilnoImena = greska?.cilj === "imena";
-  const prisilnoEmail = greska?.cilj === "email";
-  const prisilnoDodatna = greska?.cilj === "dodatna";
+  const prisilnoImena = pokusaj || greska?.cilj === "imena";
+  const prisilnoEmail = pokusaj || greska?.cilj === "email";
+  const prisilnoDodatna = pokusaj || greska?.cilj === "dodatna";
+
+  useEffect(() => postaviHidrirano(true), []);
 
   // Povratak iz Stripea gumbom „natrag” može vratiti stranicu iz bfcachea sa
   // zaključanim gumbom („Otvaram plaćanje…”); otključaj je.
@@ -150,6 +156,23 @@ export default function KupnjaForma({
     });
   }
 
+  /** Redom kojim su na stranici: imena, e-mail, dodatna polja, uvjeti. */
+  function fokusirajPrvoNeispravno() {
+    const prvoImenom = provjera.imena.findIndex(Boolean);
+    const prvoDodatno = dodatnaPolja.find((p) => dodatna.greske[p.id]);
+    const cilj =
+      prvoImenom >= 0
+        ? document.getElementById(`ime-${prvoImenom}`)
+        : provjera.email
+          ? document.getElementById("kupac-email")
+          : prvoDodatno
+            ? document.getElementById(`dodatno-${prvoDodatno.id}`) ?? document.getElementById(`dodatno-${prvoDodatno.id}-0`)
+            : !uvjeti
+              ? document.getElementById("uvjeti")
+              : null;
+    cilj?.focus();
+  }
+
   /** Ponovno učitaj tierove nakon što je narudžba odbijena zbog raspoloživosti. */
   async function osvjeziTierove(): Promise<TierView[] | null> {
     try {
@@ -163,7 +186,12 @@ export default function KupnjaForma({
 
   async function posalji(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (slanje.current || !tier || !provjera.valjano || ceka || konacno) return;
+    if (slanje.current || ceka || konacno) return;
+    if (!tier || !provjera.valjano) {
+      postaviPokusaj(true);
+      fokusirajPrvoNeispravno();
+      return;
+    }
     slanje.current = true;
     postaviSalje(true);
     postaviGresku(null);
@@ -200,6 +228,14 @@ export default function KupnjaForma({
   const besplatna = tier?.price_cents === 0;
   const stavke = tier ? [{ opis: `${tier.title} × ${kolicina}`, iznosCenti: iznosCenti(tier, kolicina) }] : [];
   const nedostaje = !provjera.valjano && !salje && !ceka && !konacno && provjera.nedostaje.length > 0;
+  // „Popunjeno x/y” (tek nakon klika na sivi gumb): sve što traži gumb — imena, e-mail, obavezna dodatna polja, uvjeti.
+  const obaveznaDodatna = dodatnaPolja.filter((p) => p.obavezno);
+  const ukupnoObaveznih = provjera.imena.length + 1 + obaveznaDodatna.length + 1;
+  const popunjenihObaveznih =
+    provjera.imena.filter((g) => !g).length +
+    (provjera.email ? 0 : 1) +
+    obaveznaDodatna.filter((p) => !dodatna.greske[p.id]).length +
+    (uvjeti ? 1 : 0);
   const natrag = `/dogadjaj/${encodeURIComponent(slug)}`;
 
   return (
@@ -338,13 +374,19 @@ export default function KupnjaForma({
           salje={salje}
           sekundi={cekanje.sekundi}
           kljuc={cekanje.kljuc}
-          disabled={!provjera.valjano || konacno}
+          disabled={konacno || (!hidrirano && !provjera.valjano)}
+          izgledaOnemoguceno={!provjera.valjano}
           opisano={nedostaje ? "kupnja-nedostaje" : undefined}
           onIstek={() => {
             postaviCekanje({ sekundi: 0, kljuc: 0 });
             if (greska?.ton === "wait") postaviGresku(null);
           }}
         />
+        {pokusaj && tier && max >= 1 && !konacno && (
+          <span className={css.popunjeno} aria-live="polite">
+            Popunjeno {popunjenihObaveznih}/{ukupnoObaveznih} odgovora
+          </span>
+        )}
         {nedostaje && (
           <span id="kupnja-nedostaje" className={css.nedostaje}>
             Za nastavak: {provjera.nedostaje.join(", ")}.

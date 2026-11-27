@@ -24,6 +24,11 @@ export interface OdbrojavanjeGumbProps {
   tekstSlanja?: string;
   /** Onemogućen i izvan odbrojavanja (npr. forma nije valjana). */
   disabled?: boolean;
+  /**
+   * Izgleda onemogućeno (aria-disabled) ali prima klik: kupnja tada pokaže
+   * greške obaveznih polja umjesto da klik nestane u prazno.
+   */
+  izgledaOnemoguceno?: boolean;
   varijanta?: "sekundarni" | "naglasni" | "primarni";
   velik?: boolean;
   blok?: boolean;
@@ -42,6 +47,7 @@ export default function OdbrojavanjeGumb({
   salje = false,
   tekstSlanja = "Šaljem…",
   disabled = false,
+  izgledaOnemoguceno = false,
   varijanta = "sekundarni",
   velik = false,
   blok = false,
@@ -71,12 +77,14 @@ export default function OdbrojavanjeGumb({
   }, [sekundi, kljuc]);
 
   const ceka = preostalo > 0;
+  const onemogucen = ceka || salje || disabled;
   const klase = [gumb.gumb, gumb[varijanta], velik ? gumb.velik : null, blok ? gumb.blok : null].filter(Boolean).join(" ");
   return (
     <button
       type={type}
       className={klase}
-      disabled={ceka || salje || disabled}
+      disabled={onemogucen}
+      aria-disabled={!onemogucen && izgledaOnemoguceno ? true : undefined}
       aria-busy={salje ? true : undefined}
       aria-describedby={opisano}
       onClick={onClick}

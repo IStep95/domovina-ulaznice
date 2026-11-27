@@ -208,7 +208,8 @@ class Stranica {
   /**
    * Pravi klik mišem (Input.dispatchMouseEvent) na prvi VIDLJIVI element koji odgovara
    * selektoru; `tekst` dodatno traži element čiji innerText sadrži tekst. Čeka da element
-   * postoji i nije `disabled`.
+   * postoji i nije `disabled` ni `aria-disabled` (sivi gumb kupnje prima klik i samo
+   * pokaže greške, v. KupnjaForma).
    */
   async klik(sel, { tekst } = {}) {
     const nadji = `(() => {
@@ -216,7 +217,7 @@ class Stranica {
       return [...document.querySelectorAll(${JSON.stringify(sel)})].find((el) => {
         const r = el.getBoundingClientRect();
         return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden" &&
-          !el.disabled && (t === null || el.innerText.includes(t));
+          !el.disabled && el.getAttribute("aria-disabled") !== "true" && (t === null || el.innerText.includes(t));
       });
     })()`;
     const opis = tekst ? `${sel} s tekstom „${tekst}”` : sel;
