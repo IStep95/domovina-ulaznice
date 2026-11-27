@@ -1,11 +1,11 @@
 ---
 // Zaglavlje svih stranica za kupce (Popis-1280, Dogadjaj-1280/390): logo
 // „Ulaznice” i navigacija. Platformsko: bez naglasne boje organizatora.
-import Ikona from "./Ikona.astro";
+// Znak je Domovina „D” s ulaznicom (2026-11-27), po uzoru na mediakit.domovina.tv.
 ---
 <header class="zaglavlje">
   <a class="logo" href="/">
-    <Ikona ime="logo" velicina={22} />
+    <img class="znak" src="/domovina_ulaznice_znak.svg" width="40" height="42" alt="" />
     Ulaznice
   </a>
   <nav class="nav" aria-label="Glavna navigacija">
@@ -23,6 +23,12 @@ import Ikona from "./Ikona.astro";
     gap: var(--space-4);
     padding: 14px var(--space-6);
     border-bottom: 1px solid var(--color-border);
+  }
+  /* Znak bez bijele pločice (domovina_ulaznice_znak.svg), izrezan na slovo „D”. */
+  .znak {
+    flex: none;
+    width: 40px;
+    height: 42px;
   }
   .logo {
     display: flex;
