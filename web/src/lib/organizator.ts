@@ -36,12 +36,14 @@ export function zbrojDogadjaja(d: Pick<OrgEvent, "tiers">): ZbrojDogadjaja {
  * `submitted_at`). Nepoznato stanje se prikazuje kako je stiglo.
  */
 export function stanjeDogadjaja(
-  d: Pick<OrgEvent, "state" | "submitted_at" | "review_note">,
+  d: Pick<OrgEvent, "state" | "submitted_at" | "review_note" | "archived_at">,
 ): { tekst: string; ton: "ok" | "neutral" | "wait" } {
+  if (d.archived_at) return { tekst: "arhivirano", ton: "neutral" };
   if (d.state === "active") return { tekst: "objavljen", ton: "ok" };
   if (d.state === "draft" && d.submitted_at) return { tekst: "čeka odobrenje", ton: "neutral" };
   if (d.state === "draft" && d.review_note) return { tekst: "vraćeno na doradu", ton: "wait" };
   if (d.state === "draft") return { tekst: "skica", ton: "wait" };
+  if (d.state === "closed") return { tekst: "prodaja zatvorena", ton: "neutral" };
   return { tekst: d.state, ton: "neutral" };
 }
 

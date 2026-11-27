@@ -662,7 +662,7 @@ app.post("/api/organizator/prijava", async (c) => {
 // web/test/auth.test.ts čita ovaj regex: svaka putanja mora imati Astro stranicu.
 function adresaPovratka(url: string, unos: unknown): string {
   const povratak = typeof unos === "string" ? unos : "";
-  const put = /^\/(organizator|organizator\/novi|skener)$/.test(povratak) ? povratak : "/organizator";
+  const put = /^\/(organizator|organizator\/novi|organizator\/arhivirano|skener)$/.test(povratak) ? povratak : "/organizator";
   return new URL(url).origin + put;
 }
 
@@ -968,6 +968,27 @@ app.post("/api/organizator/dogadjaj/:id/posalji", async (c) => {
 });
 
 /**
+ * Arhiva („kanta”, 2026-11-27): objavljeni događaj → `archive_event` (skriven,
+ * prodaja stoji, prodane ulaznice vrijede), natrag → `unarchive_event`.
+ * Smije admin računa događaja ili admin platforme; odlučuje jezgra.
+ */
+app.post("/api/organizator/dogadjaj/:id/arhiviraj", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  return c.json(await api.organizatorAkcija(c.env, jwt, "archive", { campaign_id: id }));
+});
+
+app.post("/api/organizator/dogadjaj/:id/vrati-iz-arhive", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const id = c.req.param("id");
+  if (!UUID_RE.test(id)) return fail("invalid_campaign_id");
+  return c.json(await api.organizatorAkcija(c.env, jwt, "unarchive", { campaign_id: id }));
+});
+
+/**
  * Admin platforme (`ulaznice.platform_admins`): red skica koje čekaju
  * odobrenje, odobri (→ objavljen i javan) i vrati na doradu s napomenom.
  * Worker ne zna tko je admin: odlučuju RPC-i jezgre (`not_authorized` → 403).
@@ -976,6 +997,13 @@ app.get("/api/admin/odobrenja", async (c) => {
   const jwt = bearer(c);
   if (!jwt) return fail("nije_prijavljen", 401);
   return c.json(await api.organizatorAkcija(c.env, jwt, "review_queue", {}));
+});
+
+/** Svi objavljeni i arhivirani događaji (admin platforme, za arhiviranje tuđih). */
+app.get("/api/admin/dogadjaji", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  return c.json(await api.organizatorAkcija(c.env, jwt, "platform_events", {}));
 });
 
 app.post("/api/admin/dogadjaj/:id/odobri", async (c) => {

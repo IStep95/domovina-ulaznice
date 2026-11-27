@@ -428,6 +428,9 @@ const JEZGRA_ORGANIZATORA = [
   "event_not_submitted",
   "event_no_working_rail",
   "invalid_review_note",
+  // arhiva (migracija ulaznice_arhiva)
+  "event_is_draft",
+  "event_not_archived",
 ];
 /** Klijent: api.ts, kodIzGreske i Googleov povratak (src/lib/auth.ts). */
 const KLIJENT_ORGANIZATORA = [...KLIJENT, "google_neuspjelo"];

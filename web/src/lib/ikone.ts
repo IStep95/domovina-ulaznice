@@ -42,6 +42,9 @@ export const IKONE = {
   vrtnja: { sadrzaj: '<path d="M21 12a9 9 0 1 1-6.2-8.56"/>', crta: 2.5 },
   natrag: { sadrzaj: '<path d="m15 18-6-6 6-6"/>' },
   /** „Kupujete izravno od organizatora” */
+  kanta: {
+    sadrzaj: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6M14 11v6"/>',
+  },
   lokot: { sadrzaj: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>' },
   email: { sadrzaj: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>' },
   vanjski: { sadrzaj: '<path d="M14 3h7v7M21 3l-9 9M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/>' },

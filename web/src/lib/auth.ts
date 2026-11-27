@@ -264,6 +264,8 @@ export interface OrgEvent {
   submitted_at?: string | null;
   /** Napomena admina kad je skicu vratio na doradu. */
   review_note?: string | null;
+  /** Događaj je u kanti (archive_event); null = nije. */
+  archived_at?: string | null;
   event: { venue_city?: string; starts_at?: string | null; timezone?: string } | null;
   tiers: OrgTier[];
 }
@@ -363,6 +365,43 @@ export const vratiDogadjaj = (token: string, id: string, napomena: string): Prom
     { method: "POST", body: JSON.stringify({ napomena }) },
     token,
   );
+
+/** Objavljeni događaj u kantu (admin računa ili admin platforme). */
+export const arhivirajDogadjaj = (token: string, id: string): Promise<unknown> =>
+  zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}/arhiviraj`, { method: "POST" }, token);
+
+/** Iz kante natrag u stanje prije arhiviranja. */
+export const vratiIzArhive = (token: string, id: string): Promise<unknown> =>
+  zahtjev(`/api/organizator/dogadjaj/${encodeURIComponent(id)}/vrati-iz-arhive`, { method: "POST" }, token);
+
+/** Objavljeni ili arhivirani događaj bilo kojeg organizatora (`platform_events`). */
+export interface DogadjajPlatforme {
+  campaign_id: string;
+  account_id: string;
+  account_name: string;
+  slug: string;
+  title: string;
+  state: string;
+  visibility: string;
+  archived_at: string | null;
+  starts_at: string | null;
+  venue_city: string | null;
+  claimed: number;
+}
+
+/**
+ * Admin platforme: svi objavljeni i arhivirani događaji. Dok jezgra nema
+ * `platform_events` (stara `events-organizer`: `unknown_action`), prazan popis
+ * umjesto greške, da pregled prodaje ne pokaže crveni banner.
+ */
+export async function dohvatiDogadjajePlatforme(token: string): Promise<{ events: DogadjajPlatforme[] }> {
+  try {
+    return await zahtjev<{ events: DogadjajPlatforme[] }>("/api/admin/dogadjaji", { method: "GET" }, token);
+  } catch (e) {
+    if (e instanceof ApiError && e.code === "unknown_action") return { events: [] };
+    throw e;
+  }
+}
 
 /** Izvoz sudionika (CSV); s tokenom, pa se datoteka dohvaća fetchom, ne linkom. */
 export async function preuzmiHoldere(token: string, campaignId: string): Promise<Blob> {

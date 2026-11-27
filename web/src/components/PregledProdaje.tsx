@@ -12,17 +12,20 @@
 // „Zauzeto” (ne „prodano”) uključuje i rezervacije: v. zbrojDogadjaja.
 import { useEffect, useState } from "react";
 import {
+  dohvatiDogadjajePlatforme,
   dohvatiPregled,
   jeIstekla,
   obrisiSkicu,
   posaljiNaOdobrenje,
   preuzmiHoldere,
+  type DogadjajPlatforme,
   type OrgEvent,
   type OrgPregled,
 } from "../lib/auth.ts";
 import { cijena, eur } from "../lib/format.ts";
 import { datumDogadjaja, imeCsvDatoteke, stanjeDogadjaja, zbrojDogadjaja } from "../lib/organizator.ts";
 import { porukaIzGreske } from "../lib/poruke.ts";
+import { AkcijaArhive, LinkArhive, OdjeljakArhive, stavkaIzPlatforme } from "./Arhiva.tsx";
 import Banner from "./Banner.tsx";
 import Odobrenja from "./Odobrenja.tsx";
 import SaPrijavom, { type SesijaOtoka } from "./SaPrijavom.tsx";
@@ -38,8 +41,11 @@ export default function PregledProdaje() {
 function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
   const [pregled, postaviPregled] = useState<OrgPregled | null>(null);
   const [greska, postaviGresku] = useState<string | null>(null);
-  // Povećava se nakon odobrenja: adminov vlastiti događaj u „Događaji” postaje objavljen.
+  // Povećava se nakon odobrenja i arhiviranja: pregled (i adminov popis) se ponovno učita.
   const [osvjezi, postaviOsvjezi] = useState(0);
+  // Admin platforme: objavljeni i arhivirani događaji svih organizatora.
+  const [platforma, postaviPlatformu] = useState<DogadjajPlatforme[] | null>(null);
+  const admin = !!pregled?.platform_admin;
 
   useEffect(() => {
     let vazi = true;
@@ -55,12 +61,38 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
     };
   }, [sesija.access_token, istekla, osvjezi]);
 
+  useEffect(() => {
+    if (!admin) return;
+    let vazi = true;
+    dohvatiDogadjajePlatforme(sesija.access_token)
+      .then((r) => vazi && postaviPlatformu(r.events))
+      .catch((e) => {
+        if (!vazi) return;
+        if (jeIstekla(e)) istekla();
+        else postaviGresku(porukaIzGreske(e));
+      });
+    return () => {
+      vazi = false;
+    };
+  }, [admin, sesija.access_token, istekla, osvjezi]);
+
+  const ponovno = () => postaviOsvjezi((n) => n + 1);
+  // Arhivirani su na /organizator/arhivirano; ovdje samo njihov broj na ikoni kante.
+  const aktivni = pregled?.events.filter((d) => !d.archived_at) ?? [];
+  const vlastiti = new Set(pregled?.events.map((d) => d.campaign_id));
+  const tudji = (platforma ?? []).filter((d) => !vlastiti.has(d.campaign_id));
+  const brojArhiviranih =
+    (pregled?.events.filter((d) => d.archived_at).length ?? 0) + tudji.filter((d) => d.archived_at).length;
+
   return (
     <div className={css.pregled}>
       <TrakaSesije naslov="Pregled prodaje" email={sesija.email} odjava={odjava}>
-        <a className={`${gumb.gumb} ${gumb.primarni}`} href="/organizator/novi">
-          + Novi događaj
-        </a>
+        <div className={css.akcijeTrake}>
+          <a className={`${gumb.gumb} ${gumb.primarni}`} href="/organizator/novi">
+            + Novi događaj
+          </a>
+          <LinkArhive broj={brojArhiviranih} />
+        </div>
       </TrakaSesije>
 
       {greska && <Banner ton="error">{greska}</Banner>}
@@ -100,13 +132,14 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
           <h2 id="pregled-dogadjaji" className={css.podnaslov}>
             Događaji
           </h2>
-          {pregled.events.length === 0 && <p className={css.mutno}>Nemate nijedan događaj.</p>}
-          {pregled.events.map((d) => (
+          {aktivni.length === 0 && <p className={css.mutno}>Nemate nijedan događaj.</p>}
+          {aktivni.map((d) => (
             <Dogadjaj
               key={d.campaign_id}
               d={d}
               token={sesija.access_token}
               istekla={istekla}
+              arhiviran={ponovno}
               obrisan={() =>
                 postaviPregled((p) => p && { ...p, events: p.events.filter((x) => x.campaign_id !== d.campaign_id) })
               }
@@ -124,6 +157,18 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
         </section>
       )}
 
+      {admin && (
+        <OdjeljakArhive
+          id="pregled-tudji"
+          naslov="Objavljeni događaji drugih organizatora"
+          opis="Vidiš ih kao admin platforme. Arhivirani događaj nestaje s popisa i prodaja staje."
+          stavke={tudji.filter((d) => !d.archived_at).map(stavkaIzPlatforme)}
+          token={sesija.access_token}
+          istekla={istekla}
+          gotovo={ponovno}
+        />
+      )}
+
       <p className={css.napomena}>
         Isplate i računi kartičnih uplata su na vašem Stripe računu — platforma ne drži vaš novac i ne naplaćuje
         naknadu na prodaju.
@@ -136,12 +181,14 @@ function Dogadjaj({
   d,
   token,
   istekla,
+  arhiviran,
   obrisan,
   promijenjen,
 }: {
   d: OrgEvent;
   token: string;
   istekla: () => void;
+  arhiviran: () => void;
   obrisan: () => void;
   promijenjen: (izmjena: Partial<OrgEvent>) => void;
 }) {
@@ -260,8 +307,7 @@ function Dogadjaj({
 
       {greska && <Banner ton="error">{greska}</Banner>}
 
-      {(izvoz || skica) && (
-        <div className={css.akcije}>
+      <div className={css.akcije}>
           {skica && !poslana && (
             <button
               type="button"
@@ -300,8 +346,18 @@ function Dogadjaj({
               {radi ? "Pripremam…" : "Preuzmi popis sudionika (CSV)"}
             </button>
           )}
-        </div>
-      )}
+          {!skica && (
+            <AkcijaArhive
+              id={d.campaign_id}
+              naslov={d.title}
+              vrati={false}
+              token={token}
+              istekla={istekla}
+              gotovo={arhiviran}
+              naGresku={postaviGresku}
+            />
+          )}
+      </div>
     </article>
   );
 }

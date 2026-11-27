@@ -647,15 +647,26 @@ export const kreirajDogadjaj = (
 ): Promise<{ id: string; slug: string; existing: boolean }> => organizatorAkcija(env, jwt, "create", podaci);
 
 /**
- * Akcija `events-organizer` (`create`, `update`, `delete`, `submit`, i za admina
- * platforme `review_queue`, `approve`, `reject`) KORISNIKOVIM JWT-om. Isto
+ * Akcija `events-organizer` (`create`, `update`, `delete`, `submit`, `archive`,
+ * `unarchive`, i za admina platforme `review_queue`, `approve`, `reject`,
+ * `platform_events`) KORISNIKOVIM JWT-om. Isto
  * mapiranje grešaka za sve: RLS odbijanje → `nema_prava_kreiranja`,
  * strojni kod jezgre prolazi, sirova poruka baze ne izlazi prema browseru.
  */
 export async function organizatorAkcija<T = Record<string, unknown>>(
   env: Env,
   jwt: string,
-  action: "create" | "update" | "delete" | "submit" | "review_queue" | "approve" | "reject",
+  action:
+    | "create"
+    | "update"
+    | "delete"
+    | "submit"
+    | "archive"
+    | "unarchive"
+    | "review_queue"
+    | "approve"
+    | "reject"
+    | "platform_events",
   podaci: Record<string, unknown>,
 ): Promise<T> {
   const res = await fetch(`${env.DOMOVINA_API_URL}/functions/v1/events-organizer`, {

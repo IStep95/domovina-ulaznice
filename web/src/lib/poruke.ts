@@ -401,6 +401,9 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   event_no_working_rail:
     "Događaj s plaćenim ulaznicama ne može se objaviti dok organizator nema aktivan Stripe račun.",
   invalid_review_note: "Napomena je preduga (najviše 1000 znakova).",
+  // ── jezgra: arhiva (archive_event, unarchive_event) ──
+  event_is_draft: "Skica se ne arhivira; obriši je gumbom „Obriši skicu”.",
+  event_not_archived: "Taj događaj više nije arhiviran. Osvježi stranicu.",
   // dodatna polja: link na Google obrazac (worker/dodatna-polja.ts)
   obrazac_neispravan_link:
     "To nije link na javni Google obrazac. U obrascu klikni „Pošalji” → ikona linka i zalijepi taj link (docs.google.com/forms/d/e/…/viewform ili forms.gle/…).",

@@ -1,0 +1,23 @@
+---
+// Arhivirani događaji (2026-11-27): otok Arhivirano (`client:only`), kao pregled
+// prodaje. Do ovamo se dolazi ikonom kante na /organizator; „Vrati iz arhive”
+// vraća događaj u stanje prije arhiviranja (jezgra, unarchive_event).
+import Osnovni from "../../layouts/Osnovni.astro";
+import Arhivirano from "../../components/Arhiva.tsx";
+import { CACHE_ORGANIZATOR } from "../../lib/stranica.ts";
+
+Astro.response.headers.set("cache-control", CACHE_ORGANIZATOR);
+---
+<Osnovni title="Arhivirano · Ulaznice" opis="Arhivirani događaji organizatora." sirina="srednja" noindex>
+  <Arhivirano client:only="react">
+    <p slot="fallback" class="ucitavanje" role="status">Učitavanje…</p>
+  </Arhivirano>
+  <noscript><p class="ucitavanje">Za prijavu i arhivu potreban je JavaScript.</p></noscript>
+</Osnovni>
+
+<style>
+  .ucitavanje {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+</style>

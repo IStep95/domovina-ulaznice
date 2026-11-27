@@ -139,3 +139,40 @@
   white-space: pre-line;
   color: var(--color-text);
 }
+
+/* Arhiva (2026-11-27): „+ Novi događaj” i ikona kante u istom redu. */
+.akcijeTrake {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ikonaArhive {
+  position: relative;
+  min-width: var(--tap-min);
+  padding-inline: 0;
+}
+
+.brojArhive {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-ink);
+  color: var(--color-on-accent);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+.natrag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}

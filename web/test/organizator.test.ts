@@ -47,10 +47,18 @@ test("zbrojDogadjaja: zauzeto i prihod u cijelim centima; imenski tier otvara iz
   assert.equal(zbrojDogadjaja({ tiers: [dogadjaj.tiers[0]!] }).imenskih, false);
 });
 
-test("stanjeDogadjaja: active → objavljen (ok), draft → skica, ostalo kako je stiglo", () => {
+test("stanjeDogadjaja: active → objavljen (ok), draft → skica, closed → prodaja zatvorena, ostalo kako je stiglo", () => {
   assert.deepEqual(stanjeDogadjaja({ state: "active" }), { tekst: "objavljen", ton: "ok" });
   assert.deepEqual(stanjeDogadjaja({ state: "draft" }), { tekst: "skica", ton: "wait" });
-  assert.deepEqual(stanjeDogadjaja({ state: "closed" }), { tekst: "closed", ton: "neutral" });
+  assert.deepEqual(stanjeDogadjaja({ state: "closed" }), { tekst: "prodaja zatvorena", ton: "neutral" });
+  assert.deepEqual(stanjeDogadjaja({ state: "nesto" }), { tekst: "nesto", ton: "neutral" });
+});
+
+test("stanjeDogadjaja: arhiviran → arhivirano, bez obzira na stanje", () => {
+  assert.deepEqual(stanjeDogadjaja({ state: "closed", archived_at: "2026-11-27T10:00:00Z" }), {
+    tekst: "arhivirano",
+    ton: "neutral",
+  });
 });
 
 test("stanjeDogadjaja: skica poslana na odobrenje i vraćena na doradu", () => {
