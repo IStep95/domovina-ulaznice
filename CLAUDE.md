@@ -15,7 +15,9 @@ djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; Connect onboard
 `/organizator/novi` sprema novu *privatnu skicu* s ulaznicama kroz `events-organizer`
 (treba admin računa + provjeren identitet); od 2026-11-24 i naslovnu i galeriju (link ili
 upload u Storage `pinka-covers`, jezgra grana `events-media`); od 2026-11-25 događaj može biti
-online (link samo vlasnicima ulaznica) i besplatan (0 €, bez Stripea; jezgra grana `events-format`). Objava, uređivanje i
+online (link samo vlasnicima ulaznica) i besplatan (0 €, bez Stripea; jezgra grana `events-format`). Od 2026-11-26 organizator
+može vezati javni Google obrazac čija se pitanja prikažu u kupnji kao „Dodatna polja”; odgovori su u
+jezgri (`ulaznice.order_answers`) i idu u obrazac organizatora (`docs/2026-11-27-dodatna-polja-google-obrazac.md`). Objava, uređivanje i
 koordinate još idu kao dosad: organizator događaj priprema na svoj način (Google
 Forms, FIRA `Config.gs`…), a agent ga u chatu formalizira u seed — pravila
 mapiranja: `docs/2026-09-28-unos-dogadjaja-kroz-chat.md`. Na **stagingu prodaja radi**
