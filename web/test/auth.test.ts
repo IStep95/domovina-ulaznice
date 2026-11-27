@@ -151,7 +151,7 @@ test("Google povratak: svaka putanja koju Worker prihvaća ima Astro stranicu s 
   const m = /const put = \/\^\\\/\(([^)]+)\)\$\/\.test\(povratak\)/.exec(worker);
   assert.ok(m, "regex povratka u worker/index.ts (/api/organizator/google) nije pronađen");
   const putanje = m[1]!.split("|").map((p) => p.replace(/\\\//g, "/"));
-  assert.deepEqual(putanje, ["organizator", "organizator/novi", "organizator/arhivirano", "skener"]);
+  assert.deepEqual(putanje, ["organizator", "organizator/novi", "organizator/arhivirano", "organizator/postavke", "skener"]);
   for (const p of putanje) {
     const stranica = [`../src/pages/${p}.astro`, `../src/pages/${p}/index.astro`].find((f) =>
       existsSync(new URL(f, import.meta.url)),

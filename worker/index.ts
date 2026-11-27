@@ -11,6 +11,7 @@ import type { Env } from "./env";
 import { HttpError } from "./env";
 import * as api from "./api";
 import { createCheckoutSession, formatWhen } from "./stripe";
+import * as connect from "./connect";
 import { deliverTicketsEmail, handleStripeWebhook, logMoney } from "./webhooks";
 import { reconcile } from "./reconcile";
 import { clientIp, consume } from "./ratelimit";
@@ -662,7 +663,7 @@ app.post("/api/organizator/prijava", async (c) => {
 // web/test/auth.test.ts čita ovaj regex: svaka putanja mora imati Astro stranicu.
 function adresaPovratka(url: string, unos: unknown): string {
   const povratak = typeof unos === "string" ? unos : "";
-  const put = /^\/(organizator|organizator\/novi|organizator\/arhivirano|skener)$/.test(povratak) ? povratak : "/organizator";
+  const put = /^\/(organizator|organizator\/novi|organizator\/arhivirano|organizator\/postavke|skener)$/.test(povratak) ? povratak : "/organizator";
   return new URL(url).origin + put;
 }
 
@@ -723,6 +724,34 @@ app.get("/api/organizator/pregled", async (c) => {
     "organizer_overview",
   );
   return c.json(pregled);
+});
+
+/**
+ * Postavke organizatora (2026-11-27): računi na kojima je admin i stanje
+ * Stripe Connecta, te „Poveži Stripe” (connected account + Account Link).
+ * Pravo na račun provjerava jezgra (organizer_overview); v. worker/connect.ts.
+ */
+app.get("/api/organizator/postavke", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  c.header("cache-control", "no-store");
+  return c.json(await connect.postavke(c.env, jwt));
+});
+
+app.post("/api/organizator/stripe/povezi", async (c) => {
+  const jwt = bearer(c);
+  if (!jwt) return fail("nije_prijavljen", 401);
+  const rl = await consume(c.env, "stripe", clientIp(c.req.raw));
+  if (!rl.allowed) return fail("previse_pokusaja", 429, { retry_after: rl.retryAfter });
+  let body: { account_id?: unknown } = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    return fail("bad_json");
+  }
+  const accountId = typeof body.account_id === "string" ? body.account_id : "";
+  if (!UUID_RE.test(accountId)) return fail("invalid_account_id");
+  return c.json(await connect.poveziStripe(c.env, jwt, accountId, connect.emailIzJwt(jwt)));
 });
 
 /**

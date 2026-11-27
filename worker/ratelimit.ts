@@ -36,6 +36,8 @@ export const DEFAULT_RULES: Record<string, Rule> = {
   slika: { limit: 60, windowSeconds: 600 },
   // provjera Google obrasca u editoru (dohvat stranice obrasca s Googlea)
   obrazac: { limit: 30, windowSeconds: 600 },
+  // „Poveži Stripe”: svaki klik je Account Link (i prvi put novi račun) na Stripeu
+  stripe: { limit: 20, windowSeconds: 600 },
 };
 
 /** Zapis "koliko/sekundi" iz env varijable ("10/600"). */

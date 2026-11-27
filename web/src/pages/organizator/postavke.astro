@@ -1,0 +1,22 @@
+---
+// Postavke organizatora (2026-11-27): otok Postavke (`client:only`), kao pregled
+// prodaje: povezivanje Stripe računa (Connect onboarding, worker/connect.ts).
+import Osnovni from "../../layouts/Osnovni.astro";
+import Postavke from "../../components/Postavke.tsx";
+import { CACHE_ORGANIZATOR } from "../../lib/stranica.ts";
+
+Astro.response.headers.set("cache-control", CACHE_ORGANIZATOR);
+---
+<Osnovni title="Postavke · Ulaznice" opis="Postavke organizatora: povezivanje Stripe računa." sirina="srednja" noindex>
+  <Postavke client:only="react">
+    <p slot="fallback" class="ucitavanje" role="status">Učitavanje…</p>
+  </Postavke>
+  <noscript><p class="ucitavanje">Za prijavu i postavke potreban je JavaScript.</p></noscript>
+</Osnovni>
+
+<style>
+  .ucitavanje {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-muted);
+  }
+</style>

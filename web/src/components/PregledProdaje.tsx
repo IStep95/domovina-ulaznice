@@ -91,6 +91,9 @@ function Pregled({ sesija, odjava, istekla }: SesijaOtoka) {
           <a className={`${gumb.gumb} ${gumb.primarni}`} href="/organizator/novi">
             + Novi događaj
           </a>
+          <a className={`${gumb.gumb} ${gumb.sekundarni}`} href="/organizator/postavke">
+            Postavke
+          </a>
           <LinkArhive broj={brojArhiviranih} />
         </div>
       </TrakaSesije>

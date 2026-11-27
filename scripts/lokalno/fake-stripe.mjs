@@ -2,7 +2,7 @@
 import http from "node:http";
 import crypto from "node:crypto";
 const WHSEC = process.env.WHSEC, WORKER = process.env.WORKER || "http://127.0.0.1:8788";
-const sessions = new Map(), mails = [];
+const sessions = new Map(), mails = [], accounts = new Map(), linkovi = new Map();
 const rid = (p) => p + "_" + crypto.randomBytes(12).toString("hex");
 const eur = (c) => (c / 100).toFixed(2).replace(".", ",") + " €";
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
@@ -66,6 +66,42 @@ http.createServer(async (req, res) => {
     if (req.method === "POST" && u.pathname === "/v1/refunds") {
       const p = parseForm(body);
       return send(res, 200, { id: rid("re"), object: "refund", status: "succeeded", payment_intent: p.payment_intent, amount: Number(p.amount ?? 0) });
+    }
+    // ---- Connect onboarding (worker/connect.ts): račun, Account Link, lažni obrazac
+    if (req.method === "POST" && u.pathname === "/v1/accounts") {
+      const p = parseForm(body), kljuc = req.headers["idempotency-key"];
+      const postojeci = kljuc && [...accounts.values()].find((a) => a._kljuc === kljuc);
+      if (postojeci) { const { _kljuc, ...pub } = postojeci; return send(res, 200, pub); }
+      const a = { id: "acct_" + crypto.randomBytes(8).toString("hex"), object: "account", type: p.type, country: p.country,
+        email: p.email ?? null, business_profile: p.business_profile ?? {}, metadata: p.metadata ?? {},
+        charges_enabled: false, payouts_enabled: false, details_submitted: false, _kljuc: kljuc };
+      accounts.set(a.id, a);
+      console.log("[connect] novi račun", a.id, a.type, p.business_profile?.name);
+      const { _kljuc, ...pub } = a; return send(res, 200, pub);
+    }
+    if (req.method === "GET" && u.pathname.startsWith("/v1/accounts/")) {
+      const a = accounts.get(u.pathname.split("/").pop());
+      if (!a) return send(res, 404, { error: { type: "invalid_request_error", message: "No such account" } });
+      const { _kljuc, ...pub } = a; return send(res, 200, pub);
+    }
+    if (req.method === "POST" && u.pathname === "/v1/account_links") {
+      const p = parseForm(body), id = rid("al");
+      linkovi.set(id, p);
+      return send(res, 200, { object: "account_link", url: `http://127.0.0.1:8901/connect/${id}`, expires_at: Math.floor(Date.now() / 1000) + 300 });
+    }
+    if (u.pathname.startsWith("/connect/")) {
+      const l = linkovi.get(u.pathname.split("/")[2]), a = l && accounts.get(l.account);
+      if (!a) return send(res, 404, "Nepoznat link", "text/html");
+      if (req.method === "POST") {
+        a.charges_enabled = a.payouts_enabled = a.details_submitted = true;
+        const { _kljuc, ...obj } = a;
+        await sendWebhook("account.updated", obj, a.id);
+        res.writeHead(303, { location: l.return_url }); return res.end();
+      }
+      return send(res, 200, page("Stripe onboarding", `<div class=w><div><h2>Poveži račun s platformom</h2><div class=amt>${esc(a.business_profile?.name ?? a.id)}</div>
+<p class=muted>Lažni Stripe ${esc(a.type)} onboarding za ${esc(a.id)}. „Dovrši” označi račun kao spreman za naplatu i pošalje account.updated.</p>
+<p><a class=muted href="${esc(l.return_url)}">Vrati se bez dovršavanja</a> · <a class=muted href="${esc(l.refresh_url)}">Simuliraj istekli link</a></p></div>
+<form method=post><label>Pravna osoba</label><input value="${esc(a.business_profile?.name ?? "")}" readonly><label>IBAN</label><input value="HR12 1001 0051 8630 0016 0" readonly><button>Dovrši</button></form></div>`), "text/html");
     }
     // ---- checkout stranica
     if (u.pathname.startsWith("/pay/")) {

@@ -78,9 +78,14 @@ neuspjele isporuke).
 3. **Sandbox: „Multiple capabilities paused — a required task is past due”.**
    Banner na `acct_1U2CO1QoZhPywPyh`. Treba otvoriti *View task* i zatvoriti ga,
    inače sandbox kupnja može pasti na capability provjeri.
-4. **Onboarding u kodu ne postoji** (dio U3). Kad se radi, restricted keyu
-   treba dodati dozvole za **Accounts** i **Account Links** (stupac platforme,
-   ne Connect), a `account.updated` već puni `organizer_payment_rails.charges_enabled`.
+4. **Onboarding u kodu postoji od 27. 11.** (`worker/connect.ts`,
+   `/organizator/postavke` → „Poveži Stripe”): `accounts.create` tipa
+   `STRIPE_CONNECT_TIP` (zadano **standard**, odluka iz točke 2 za produkciju i
+   dalje otvorena), `accountLinks.create`, povratak na postavke osvježi stanje
+   sa Stripea (`accounts.retrieve`), a `account.updated` ga puni i inače.
+   Restricted keyu trebaju dozvole za **Accounts** (Write) i **Account Links**
+   (Write) u stupcu **platforme**, ne Connect; bez njih „Poveži Stripe” vraća
+   `stripe_bez_dozvole`. Deploy-dug #27.
 5. **Most prema računu (FIRA)** je preduvjet za pravi novac, v.
    [2026-08-08 §7.4](2026-08-08-deploy-okruzenja-i-stripe.md#74-most-narudžba--račun-fira-i-dalje-ne-postoji).
 

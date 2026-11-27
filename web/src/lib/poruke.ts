@@ -401,6 +401,13 @@ export const PORUKE_ORGANIZATORA: Readonly<Record<string, string>> = {
   event_no_working_rail:
     "Događaj s plaćenim ulaznicama ne može se objaviti dok organizator nema aktivan Stripe račun.",
   invalid_review_note: "Napomena je preduga (najviše 1000 znakova).",
+  // ── worker/connect.ts: Stripe Connect onboarding (/organizator/postavke) ──
+  stripe_bez_dozvole:
+    "Stripe ključ platforme nema dozvolu za povezivanje računa (Accounts i Account Links). Javi administratoru.",
+  stripe_onboarding_neuspio: "Stripe trenutačno ne može otvoriti povezivanje računa. Pokušaj ponovno za koju minutu.",
+  stripe_not_configured: "Stripe na ovom okruženju još nije postavljen.",
+  service_key_missing: "Sustav trenutačno nije dostupan (nedostaje konfiguracija).",
+  api_rail_update_failed: "Stripe račun je stvoren, ali ga nismo uspjeli spremiti. Pokušaj ponovno.",
   // ── jezgra: arhiva (archive_event, unarchive_event) ──
   event_is_draft: "Skica se ne arhivira; obriši je gumbom „Obriši skicu”.",
   event_not_archived: "Taj događaj više nije arhiviran. Osvježi stranicu.",

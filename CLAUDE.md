@@ -10,7 +10,8 @@ Organizator prodaje s vlastite stranice, novac ide izravno na njegov Stripe rač
 koji se skenira na ulazu.
 
 Status: **U1 ✅ živ na `api.domovina.ai` · U2 ✅ deployan na staging · U3/U4/U5 🟡
-djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; Connect onboarding i
+djelomično** (pregled prodaje, skener ulaza i FIRA račun rade; Connect onboarding od
+2026-11-27 na `/organizator/postavke` — Standard račun + Account Link, `worker/connect.ts`;
 `domovina_fiskal` ne). **Editor događaja je tek začet** (Ivan, 2026-11-20; od S8 wizard u Astru):
 `/organizator/novi` sprema novu *privatnu skicu* s ulaznicama kroz `events-organizer`
 (treba admin računa + provjeren identitet); od 2026-11-24 i naslovnu i galeriju (link ili

@@ -75,6 +75,8 @@ export interface Env {
 
   // tajne (wrangler secret put)
   STRIPE_SECRET_KEY?: string;
+  /** Tip connected accounta pri onboardingu (worker/connect.ts): `standard` (zadano) ili `express`. */
+  STRIPE_CONNECT_TIP?: string;
   STRIPE_WEBHOOK_SECRET?: string;
   EVENTS_STRIPE_CONFIRM_SECRET?: string;
   DOMOVINA_API_SERVICE_KEY?: string;

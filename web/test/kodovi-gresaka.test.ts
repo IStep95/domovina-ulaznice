@@ -360,6 +360,11 @@ const RUTE_ORGANIZATORA = [
   'app.put("/api/organizator/dogadjaj/:id"',
   'app.delete("/api/organizator/dogadjaj/:id"',
   'app.post("/api/organizator/dogadjaj/:id/posalji"',
+  'app.post("/api/organizator/dogadjaj/:id/arhiviraj"',
+  'app.post("/api/organizator/dogadjaj/:id/vrati-iz-arhive"',
+  'app.get("/api/admin/dogadjaji"',
+  'app.get("/api/organizator/postavke"',
+  'app.post("/api/organizator/stripe/povezi"',
   'app.get("/api/admin/odobrenja"',
   'app.post("/api/admin/dogadjaj/:id/odobri"',
   'app.post("/api/admin/dogadjaj/:id/vrati"',
@@ -391,6 +396,22 @@ const HTTP_ORGANIZATORA = [
   "slika_vrsta",
   "slika_nije_spremljena",
 ];
+/**
+ * Stripe Connect onboarding (worker/connect.ts) i ono što on zove: stripeClient
+ * (stripe.ts), servisRest i spremiStripeRacun (api.ts). Svaki mora postojati u
+ * tim datotekama (test niže).
+ */
+const HTTP_CONNECT = [
+  "invalid_account_id",
+  "not_authorized",
+  "stripe_bez_dozvole",
+  "stripe_onboarding_neuspio",
+  "stripe_not_configured",
+  "service_key_missing",
+  "api_rail_update_failed",
+];
+const izvorConnecta = ["connect.ts", "stripe.ts", "api.ts"].map(izvor).join("\n");
+
 /**
  * Kodovi jezgre koje api.ts prosljeđuje dinamički (`code`): events-organizer
  * (create_event, validacija editora) i events-checkin (redeem_ticket). Ručno,
@@ -440,6 +461,7 @@ const kodoviOrganizatora = new Set([
   ...onError.kodovi,
   ...fallback.kodovi,
   ...HTTP_ORGANIZATORA,
+  ...HTTP_CONNECT,
   ...[...httpObrazac.kodovi].filter((k) => k.startsWith("obrazac_")),
 ]);
 
@@ -454,6 +476,10 @@ test("ekstrakcija: rute organizatora i skenera daju poznate kodove, svi kao lite
 
 test("HTTP_ORGANIZATORA: svaki kod stvarno postoji u worker/api.ts", () => {
   for (const k of HTTP_ORGANIZATORA) assert.ok(httpApi.kodovi.has(k), `${k} više nije u worker/api.ts`);
+});
+
+test("HTTP_CONNECT: svaki kod stvarno postoji u connect.ts, stripe.ts ili api.ts", () => {
+  for (const k of HTTP_CONNECT) assert.ok(izvorConnecta.includes(`"${k}"`), `${k} više nije u worker/connect.ts ni stripe.ts ni api.ts`);
 });
 
 test("svaki kod organizatora i skenera ima poruku u PORUKE_ORGANIZATORA", () => {

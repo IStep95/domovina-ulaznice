@@ -403,6 +403,22 @@ export async function dohvatiDogadjajePlatforme(token: string): Promise<{ events
   }
 }
 
+/** Stanje Stripe Connecta za jedan račun organizatora (bez `acct_…`). */
+export interface RacunPostavki {
+  id: string;
+  name: string;
+  is_personal: boolean;
+  stripe: { povezan: boolean; naplata: boolean; isplate: boolean };
+}
+
+/** Postavke organizatora: računi na kojima je admin i njihov Stripe. */
+export const dohvatiPostavke = (token: string): Promise<{ stripe_dostupan: boolean; racuni: RacunPostavki[] }> =>
+  zahtjev("/api/organizator/postavke", { method: "GET" }, token);
+
+/** „Poveži Stripe”: adresa Stripeova onboardinga za taj račun. */
+export const poveziStripe = (token: string, accountId: string): Promise<{ url: string }> =>
+  zahtjev("/api/organizator/stripe/povezi", { method: "POST", body: JSON.stringify({ account_id: accountId }) }, token);
+
 /** Izvoz sudionika (CSV); s tokenom, pa se datoteka dohvaća fetchom, ne linkom. */
 export async function preuzmiHoldere(token: string, campaignId: string): Promise<Blob> {
   const res = await fetch(`/api/organizator/holderi.csv?campaign_id=${encodeURIComponent(campaignId)}`, {

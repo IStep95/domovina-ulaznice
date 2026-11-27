@@ -784,6 +784,44 @@ export const refundOrder = (
     p_external_ref: p.external_ref ?? null,
   });
 
+/** Service-key čitanje za module izvan api.ts (npr. connect.ts). */
+export const servisRest = <T>(env: Env, path: string): Promise<T> => rest<T>(env, path);
+
+/**
+ * Novi connected account organizatora → `organizer_payment_rails` (upsert po
+ * `account_id`). Piše samo service_role; `acct_…` ostaje u jezgri i Workeru.
+ */
+export async function spremiStripeRacun(
+  env: Env,
+  accountId: string,
+  stripeAccountId: string,
+  s: { charges_enabled: boolean; payouts_enabled: boolean },
+): Promise<void> {
+  if (!env.DOMOVINA_API_SERVICE_KEY) {
+    throw new HttpError(503, "service_key_missing", "DOMOVINA_API_SERVICE_KEY nije postavljen");
+  }
+  const res = await fetch(`${env.DOMOVINA_API_URL}/rest/v1/organizer_payment_rails?on_conflict=account_id`, {
+    method: "POST",
+    headers: {
+      apikey: env.DOMOVINA_API_SERVICE_KEY,
+      Authorization: `Bearer ${env.DOMOVINA_API_SERVICE_KEY}`,
+      "Content-Profile": SHEMA,
+      "content-type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      account_id: accountId,
+      stripe_account_id: stripeAccountId,
+      stripe_charges_enabled: s.charges_enabled,
+      stripe_payouts_enabled: s.payouts_enabled,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!res.ok) {
+    throw new HttpError(502, "api_rail_update_failed", `organizer_payment_rails upsert: ${res.status} ${(await res.text()).slice(0, 200)}`);
+  }
+}
+
 /** Osvježi Stripe stanje organizatora iz `account.updated` webhooka. */
 export async function upsertOrganizerRail(
   env: Env,
